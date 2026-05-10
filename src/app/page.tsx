@@ -1,29 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default function Home() {
-  // Mengambil kunci dari brankas .env.local
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  // Mengambil kunci dari brankas
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Menyalakan mesin Supabase
+  // Jika kunci kosong, kita tampilkan error di layar, JANGAN paksa mesin menyala
+  if (!supabaseUrl || !supabaseKey) {
+    return (
+      <main style={{ padding: '50px', textAlign: 'center' }}>
+        <h2 style={{ color: 'red' }}>🚨 Kunci Tidak Terbaca!</h2>
+        <p>URL terbaca: {supabaseUrl ? '✅ Ya' : '❌ Tidak'}</p>
+        <p>Key terbaca: {supabaseKey ? '✅ Ya' : '❌ Tidak'}</p>
+      </main>
+    );
+  }
+
+  // Jika kunci ada, baru nyalakan mesin
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   return (
     <main style={{ padding: '50px', fontFamily: 'sans-serif', textAlign: 'center' }}>
       <h1>Tes Koneksi Supabase 🚀</h1>
-
       <div style={{ marginTop: '20px', padding: '20px', border: '1px solid #ccc', borderRadius: '10px' }}>
-        {supabaseUrl ? (
-          <div>
-            <h2 style={{ color: 'green' }}>✅ Koneksi Berhasil!</h2>
-            <p>Next.js sudah berhasil membaca kunci Supabase-mu.</p>
-            <code style={{ background: '#eee', padding: '5px', borderRadius: '5px' }}>
-              URL Proyek: {supabaseUrl.substring(0, 25)}...
-            </code>
-          </div>
-        ) : (
-          <h2 style={{ color: 'red' }}>❌ Koneksi Gagal!</h2>
-        )}
+        <h2 style={{ color: 'green' }}>✅ Koneksi Berhasil!</h2>
+        <p>Mesin Next.js sudah berhasil membaca kuncimu.</p>
       </div>
     </main>
   );
