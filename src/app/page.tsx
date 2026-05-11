@@ -2,241 +2,324 @@
 
 import { useState } from 'react';
 import {
-    ShieldCheck,
-    LayoutGrid,
-    FileText,
-    CheckSquare,
-    History,
-    BarChart3,
-    User,
-    LogOut,
-    Menu,
-    Vault,
-    GraduationCap,
-    Wallet,
-    Filter,
-    Download,
-    Shield
+  ShieldCheck,
+  Menu,
+  X,
+  PlayCircle,
+  LayoutDashboard,
+  AlertTriangle,
+  History,
+  Clock,
+  CheckCircle2,
+  FileSearch2,
+  ArrowUpRightFromCircle,
+  Lock,
+  BookOpen,
+  Layers
 } from 'lucide-react';
+import Link from 'next/link';
 
-export default function DashboardKeuangan() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function LandingPage() {
+  const [open, setOpen] = useState(false);
 
-    return (
-        <div className="font-sans antialiased bg-slate-custom text-slate-900 min-h-screen">
-            {/* Mobile Sidebar Overlay */}
-            {sidebarOpen && (
-                <div
-                    onClick={() => setSidebarOpen(false)}
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                ></div>
-            )}
+  return (
+    <div className="font-sans text-slate-900 bg-white overflow-x-hidden relative min-h-screen">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .islamic-pattern {
+            background-color: #ffffff;
+            background-image: url("https://www.transparenttextures.com/patterns/arabesque.png");
+            opacity: 0.95;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        }
+      `}} />
+      
+      {/* Islamic pattern wrapper */}
+      <div className="islamic-pattern fixed inset-0 z-[-1] pointer-events-none"></div>
 
-            {/* Sidebar */}
-            <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-primary text-emerald-100 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
-            >
-                <div className="flex flex-col h-full">
-                    <div className="p-8">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-accent p-2 rounded-xl">
-                                <ShieldCheck className="text-primary w-6 h-6" />
-                            </div>
-                            <span className="text-xl font-extrabold text-white tracking-tight">
-                                Smart <span className="text-accent">Santri</span>
-                            </span>
-                        </div>
+      <nav className="fixed w-full z-50 bg-white/95 backdrop-blur-sm shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-20 items-center">
+                <div className="flex items-center gap-2">
+                    <div className="bg-primary p-2 rounded-lg">
+                        <ShieldCheck className="text-accent w-6 h-6" />
                     </div>
-
-                    <nav className="flex-1 px-4 space-y-2">
-                        <a href="#" className="flex items-center gap-4 px-4 py-3 bg-emerald-800 text-white rounded-xl transition-all">
-                            <LayoutGrid className="w-5 h-5" />
-                            <span className="font-semibold">Beranda</span>
-                        </a>
-                        <a href="#" className="flex items-center gap-4 px-4 py-3 hover:bg-emerald-800 hover:text-white rounded-xl transition-all group">
-                            <FileText className="w-5 h-5 opacity-70 group-hover:opacity-100" />
-                            <span>Pengajuan</span>
-                        </a>
-                        <a href="#" className="flex items-center gap-4 px-4 py-3 hover:bg-emerald-800 hover:text-white rounded-xl transition-all group">
-                            <CheckSquare className="w-5 h-5 opacity-70 group-hover:opacity-100" />
-                            <span>Approval</span>
-                            <span className="ml-auto bg-accent text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">3 Baru</span>
-                        </a>
-                        <a href="#" className="flex items-center gap-4 px-4 py-3 hover:bg-emerald-800 hover:text-white rounded-xl transition-all group">
-                            <History className="w-5 h-5 opacity-70 group-hover:opacity-100" />
-                            <span>Riwayat</span>
-                        </a>
-                        <a href="#" className="flex items-center gap-4 px-4 py-3 hover:bg-emerald-800 hover:text-white rounded-xl transition-all group">
-                            <BarChart3 className="w-5 h-5 opacity-70 group-hover:opacity-100" />
-                            <span>Laporan</span>
-                        </a>
-                    </nav>
-
-                    <div className="p-6 border-t border-emerald-800">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600">
-                                <User className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-emerald-300 font-medium">Aktif Sebagai</p>
-                                <p className="text-sm font-bold text-white">Bendahara Unit (Pusat)</p>
-                            </div>
-                        </div>
-                        <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition-all font-bold text-sm">
-                            <LogOut className="w-4 h-4" />
-                            Keluar Sistem
-                        </button>
+                    <span className="font-serif text-2xl font-bold text-primary tracking-tight">Smart <span className="text-accent">Santri</span></span>
+                </div>
+                
+                <div className="hidden md:flex items-center space-x-8">
+                    <a href="#home" className="font-medium text-secondary hover:text-accent transition-colors">Beranda</a>
+                    <a href="#features" className="font-medium text-secondary hover:text-accent transition-colors">Artikel</a>
+                    <a href="#about" className="font-medium text-secondary hover:text-accent transition-colors">Tentang Kami</a>
+                    <div className="flex items-center gap-4">
+                        <Link href="/admin" className="px-5 py-2 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent hover:text-white transition-all">Log In</Link>
+                        <a href="#" className="px-5 py-2 bg-accent text-white font-semibold rounded-lg shadow-lg shadow-amber-200 hover:bg-accent-hover transition-all">Hubungi Kami</a>
                     </div>
                 </div>
-            </aside>
 
-            {/* Main Content */}
-            <main className="lg:ml-72 min-h-screen">
-                <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
-                    <div className="flex items-center justify-between px-8 py-5">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
-                            >
-                                <Menu />
-                            </button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Dashboard Keuangan Pesantren</h1>
-                                <p className="text-sm text-slate-500 font-medium">Real-time monitoring dana (Restricted vs Unrestricted)</p>
-                            </div>
-                        </div>
-                        <div className="hidden md:flex items-center gap-4">
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Status Sistem</p>
-                                <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 justify-end">
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Sinkronisasi Aktif
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <div className="p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-white rounded-2xl shadow-sm border-l-8 border-accent p-6 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="bg-amber-100 text-amber-700 text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider">Restricted</span>
-                                <Vault className="text-slate-300 w-5 h-5" />
-                            </div>
-                            <p className="text-slate-500 text-sm font-semibold mb-1">Dana Wakaf / Zakat</p>
-                            <h3 className="text-2xl font-extrabold text-primary tracking-tight">Rp 150.000.000</h3>
-                            <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 border-t border-slate-50 pt-3">
-                                <Shield className="w-3.5 h-3.5 text-accent" />
-                                <span>Sharia Compliance Validator Active</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-2xl shadow-sm border-l-8 border-accent p-6 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="bg-amber-100 text-amber-700 text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider">Restricted</span>
-                                <GraduationCap className="text-slate-300 w-5 h-5" />
-                            </div>
-                            <p className="text-slate-500 text-sm font-semibold mb-1">Dana BOS / Pendidikan</p>
-                            <h3 className="text-2xl font-extrabold text-primary tracking-tight">Rp 100.000.000</h3>
-                            <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 border-t border-slate-50 pt-3">
-                                <Shield className="w-3.5 h-3.5 text-accent" />
-                                <span>Sharia Compliance Validator Active</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-2xl shadow-sm border-l-8 border-emerald-500 p-6 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider">Unrestricted</span>
-                                <Wallet className="text-slate-300 w-5 h-5" />
-                            </div>
-                            <p className="text-slate-500 text-sm font-semibold mb-1">Dana Bebas / Operasional</p>
-                            <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Rp 45.000.000</h3>
-                            <p className="mt-4 text-[10px] text-emerald-600 font-bold bg-emerald-50 inline-block px-2 py-1 rounded">Siap Digunakan Tanpa Syarat Akad Khusus</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-800">Aktivitas Transaksi & Jejak Audit</h2>
-                                <p className="text-xs text-slate-500 font-medium">Pencatatan real-time siklus pengeluaran kas pesantren.</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="bg-slate-100 p-2 rounded-lg text-slate-600 hover:bg-slate-200">
-                                    <Filter className="w-4 h-4" />
-                                </button>
-                                <button className="bg-slate-100 p-2 rounded-lg text-slate-600 hover:bg-slate-200">
-                                    <Download className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100">
-                                    <tr>
-                                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tgl</th>
-                                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unit</th>
-                                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Keterangan</th>
-                                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    <tr className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-5 text-sm text-slate-600 font-medium whitespace-nowrap">05 Feb 2026</td>
-                                        <td className="px-8 py-5 text-sm font-bold text-primary">Tahfidz Putri</td>
-                                        <td className="px-8 py-5">
-                                            <p className="text-sm font-bold text-slate-800">Beli Kitab Itmamu Ni&apos;mah</p>
-                                            <p className="text-[10px] text-slate-400">Dana: Wakaf Terikat</p>
-                                        </td>
-                                        <td className="px-8 py-5 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">PND</span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right">
-                                            <button className="px-4 py-1.5 border border-emerald-600 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-600 hover:text-white transition-all">Lihat</button>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-5 text-sm text-slate-600 font-medium whitespace-nowrap">04 Feb 2026</td>
-                                        <td className="px-8 py-5 text-sm font-bold text-primary">Operasional</td>
-                                        <td className="px-8 py-5">
-                                            <p className="text-sm font-bold text-slate-800">Biaya Listrik Kantor</p>
-                                            <p className="text-[10px] text-slate-400">Dana: Unrestricted</p>
-                                        </td>
-                                        <td className="px-8 py-5 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">ACC</span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right">
-                                            <button className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-md shadow-emerald-100 transition-all">Cair</button>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-5 text-sm text-slate-600 font-medium whitespace-nowrap">04 Feb 2026</td>
-                                        <td className="px-8 py-5 text-sm font-bold text-primary">Asrama Putra</td>
-                                        <td className="px-8 py-5">
-                                            <p className="text-sm font-bold text-slate-800">Pembelian AC Kamar</p>
-                                            <p className="text-[10px] text-slate-400">Dana: Zakat (Inappropriate)</p>
-                                        </td>
-                                        <td className="px-8 py-5 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">REJ</span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right">
-                                            <button className="px-4 py-1.5 border border-slate-300 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed">Lihat</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div className="text-center text-slate-400 text-xs">
-                        <p>&copy; 2026 Smart Santri - Dirancang untuk Akuntabilitas Umat oleh Sidqi Alaudin Johari.</p>
-                    </div>
-                </div>
-            </main>
+                <button onClick={() => setOpen(!open)} className="md:hidden text-primary">
+                    {!open ? <Menu /> : <X />}
+                </button>
+            </div>
         </div>
-    );
+
+        {open && (
+          <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 shadow-lg absolute w-full">
+              <a href="#home" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Beranda</a>
+              <a href="#features" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Artikel</a>
+              <a href="#about" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Tentang Kami</a>
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                  <Link href="/admin" onClick={() => setOpen(false)} className="text-center py-2 border-2 border-accent text-accent rounded-lg font-semibold">Log In</Link>
+                  <a href="#" onClick={() => setOpen(false)} className="text-center py-2 bg-accent text-white rounded-lg font-semibold">Hubungi Kami</a>
+              </div>
+          </div>
+        )}
+      </nav>
+
+      <section id="home" className="pt-32 pb-20 md:pt-48 md:pb-32 hero-gradient text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-full" style={{backgroundImage: "url('https://www.transparenttextures.com/patterns/islamic-art.png')"}}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                        Wujudkan Tata Kelola Keuangan Pesantren yang <span className="text-accent italic">Amanah</span>, Transparan, dan Sesuai Syariah.
+                    </h1>
+                    <p className="text-emerald-100 text-lg md:text-xl mb-8 leading-relaxed">
+                        Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SI-KAS TREN—Sistem Informasi Akuntansi Kas berbasis web untuk menjaga kemurnian harta pesantren.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Link href="/admin" className="px-8 py-4 bg-accent text-primary font-bold rounded-xl text-center hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
+                            <PlayCircle className="w-5 h-5" /> Coba Demo Sistem
+                        </Link>
+                        <a href="#about" className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl text-center transition-all flex items-center justify-center gap-2">
+                            Pelajari Lebih Lanjut
+                        </a>
+                    </div>
+                </div>
+                <div className="relative">
+                    <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl">
+                        <div className="bg-slate-800 rounded-xl aspect-video flex items-center justify-center overflow-hidden border border-slate-700 relative group">
+                             {/* eslint-disable-next-line @next/next/no-img-element */}
+                             <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" alt="Dashboard Preview" className="opacity-80 group-hover:scale-110 transition-transform duration-500 w-full h-full object-cover" />
+                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="bg-primary/80 p-4 rounded-full">
+                                    <LayoutDashboard className="w-12 h-12 text-accent" />
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                    <div className="absolute -bottom-6 -left-6 bg-accent p-4 rounded-lg shadow-xl hidden md:block z-20">
+                        <p className="text-primary font-bold text-sm">✓ Terintegrasi ISAK 35</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gray-50 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mb-4">Mengubah &quot;Kepercayaan Lisan&quot; Menjadi &quot;Sistem Terintegrasi&quot;</h2>
+                <p className="text-slate-600 italic">Smart Santri hadir mendigitalkan Siklus Pengeluaran Kas untuk menjaga amanah.</p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-xl transition-shadow group">
+                    <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500 transition-colors">
+                        <AlertTriangle className="text-red-600 group-hover:text-white" />
+                    </div>
+                    <h3 className="font-bold text-xl mb-3 text-primary">Fund Commingling</h3>
+                    <p className="text-slate-600 leading-relaxed">Risiko tercampurnya dana zakat, wakaf, dan operasional yang membahayakan kepatuhan syariah.</p>
+                </div>
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-xl transition-shadow group">
+                    <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-amber-500 transition-colors">
+                        <History className="text-amber-600 group-hover:text-white" />
+                    </div>
+                    <h3 className="font-bold text-xl mb-3 text-primary">Jejak Audit Lemah</h3>
+                    <p className="text-slate-600 leading-relaxed">Sulit menelusuri penanggung jawab pengeluaran di masa lalu karena dokumentasi fisik yang berantakan.</p>
+                </div>
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-xl transition-shadow group">
+                    <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-500 transition-colors">
+                        <Clock className="text-emerald-600 group-hover:text-white" />
+                    </div>
+                    <h3 className="font-bold text-xl mb-3 text-primary">Manual & Lambat</h3>
+                    <p className="text-slate-600 leading-relaxed">Proses persetujuan yang memakan waktu lama menghambat mobilitas program dakwah pesantren.</p>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section id="about" className="py-20 overflow-hidden bg-white relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row items-center gap-16">
+                <div className="lg:w-1/2">
+                    <div className="relative">
+                        <div className="absolute -top-4 -left-4 w-64 h-64 bg-accent/20 rounded-full blur-3xl"></div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="https://images.unsplash.com/photo-1584291527905-f930791814b0?auto=format&fit=crop&q=80&w=800" alt="Philosophy" className="rounded-3xl shadow-2xl relative z-10 border-8 border-white w-full h-auto" />
+                    </div>
+                </div>
+                <div className="lg:w-1/2">
+                    <span className="text-accent font-bold tracking-widest uppercase text-sm">Filosofi Kami</span>
+                    <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mt-4 mb-6">Digital Guard: Penjaga Amanah di Era Modern</h2>
+                    <p className="text-slate-600 text-lg mb-6 leading-relaxed">
+                        Kami percaya bahwa teknologi bukan sekadar alat, melainkan wasilah untuk memastikan setiap rupiah yang dititipkan umat dikelola dengan standar akuntansi tertinggi.
+                    </p>
+                    <ul className="space-y-4">
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="text-accent mt-1 shrink-0" />
+                            <span className="text-slate-700 font-medium">Validasi Akad otomatis di setiap transaksi.</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="text-accent mt-1 shrink-0" />
+                            <span className="text-slate-700 font-medium">Pemisahan entitas dana sesuai regulasi organisasi nirlaba.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section id="features" className="py-20 bg-white relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-primary rounded-[3rem] p-8 md:p-16 border-4 border-accent relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <ShieldCheck className="w-64 h-64 text-white" />
+                </div>
+                
+                <div className="relative z-10 text-center mb-12">
+                    <h2 className="font-serif text-3xl md:text-5xl font-bold text-white mb-4">Automated Sharia Compliance Validator</h2>
+                    <p className="text-emerald-100 text-lg">Fitur premium pertama yang menjamin kepatuhan syariah secara real-time.</p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 relative z-10">
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
+                        <div className="text-accent mb-4"><FileSearch2 className="w-10 h-10" /></div>
+                        <h4 className="text-white font-bold text-xl mb-2">Deteksi Akad Otomatis</h4>
+                        <p className="text-emerald-50/70 text-sm">Kecerdasan buatan yang mengklasifikasikan transaksi sesuai standar ISAK 35.</p>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="text-accent mb-4"><ArrowUpRightFromCircle className="w-10 h-10" /></div>
+                        <h4 className="text-white font-bold text-xl mb-2">Validasi Peruntukan</h4>
+                        <p className="text-emerald-50/70 text-sm">Mencegah penggunaan Dana Wakaf untuk keperluan operasional yang tidak sesuai akad.</p>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="text-accent mb-4"><Lock className="w-10 h-10" /></div>
+                        <h4 className="text-white font-bold text-xl mb-2">Pencegahan Preventif</h4>
+                        <p className="text-emerald-50/70 text-sm">Fitur <i>Auto-Reject</i> jika sistem mendeteksi ketidaksesuaian antara dana dan akad.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-slate-50 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="font-serif text-center text-3xl md:text-4xl font-bold text-primary mb-16">Dua Pondasi Kokoh</h2>
+            <div className="grid md:grid-cols-2 gap-0 rounded-3xl overflow-hidden shadow-xl">
+                <div className="bg-emerald-800 p-12 text-white">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-accent rounded-lg text-primary"><BookOpen /></div>
+                        <h3 className="text-2xl font-bold">Kepatuhan Syariah & Regulasi (ISAK 35)</h3>
+                    </div>
+                    <p className="text-emerald-100 leading-relaxed mb-6">
+                        Menjamin transparansi dengan memisahkan Dana Dengan Pembatasan (Zakat/Wakaf Terikat) dan Dana Tanpa Pembatasan (Operasional/Infaq Umum).
+                    </p>
+                    <div className="bg-white/10 p-4 rounded-lg text-sm italic">
+                        &quot;Setiap pengeluaran kas harus memiliki dasar hukum syar&apos;i dan bukti dokumentasi yang sah.&quot;
+                    </div>
+                </div>
+                <div className="bg-white p-12 text-slate-800 border-y md:border-y-0 md:border-r">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-primary rounded-lg text-accent"><Layers /></div>
+                        <h3 className="text-2xl font-bold text-primary">Pengendalian Internal (COSO Framework)</h3>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed mb-6">
+                        Mengurangi risiko <i>human error</i> dan <i>fraud</i> melalui sistem otorisasi berjenjang dan pencatatan jejak audit digital yang permanen.
+                    </p>
+                    <div className="flex gap-4">
+                        <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold uppercase tracking-wider">Otorisasi</span>
+                        <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold uppercase tracking-wider">Audit Trail</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-white relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="font-serif text-center text-3xl font-bold text-primary mb-16">Alur Kerja Sistem Keuangan</h2>
+            <div className="relative">
+                <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-emerald-100 -translate-y-1/2"></div>
+                
+                <div className="grid md:grid-cols-4 gap-8 relative z-10">
+                    <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                        <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">1</div>
+                        <h4 className="font-bold text-primary">Staf Unit</h4>
+                        <p className="text-xs text-slate-500 mt-2">Input pengajuan dana & unggah bukti/RAB</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                        <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">2</div>
+                        <h4 className="font-bold text-primary">Kepala Unit</h4>
+                        <p className="text-xs text-slate-500 mt-2">Verifikasi kesesuaian program & anggaran</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                        <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">3</div>
+                        <h4 className="font-bold text-primary">Pimpinan</h4>
+                        <p className="text-xs text-slate-500 mt-2">Otorisasi strategis (Persetujuan Akhir)</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                        <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">4</div>
+                        <h4 className="font-bold text-primary">Bendahara</h4>
+                        <p className="text-xs text-slate-500 mt-2">Eksekusi pembayaran & pencatatan jurnal</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-12 bg-gray-50 border-y border-gray-100 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Powering by Modern Tech Stack</p>
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 grayscale opacity-60">
+                <span className="text-2xl font-black text-slate-800">ASTRO</span>
+                <span className="text-2xl font-black text-slate-800">SUPABASE</span>
+                <span className="text-2xl font-black text-slate-800">CLOUDINARY</span>
+                <span className="text-2xl font-black text-slate-800">TAILWIND</span>
+            </div>
+        </div>
+      </section>
+
+      <footer className="bg-primary text-white pt-20 pb-10 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+                <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Akuntabilitas Ganda: <br /><span className="text-accent underline decoration-wavy underline-offset-8">Kepada Umat dan Kepada Tuhan.</span></h2>
+                <p className="text-emerald-200 text-lg mt-6">Smart Santri - Digitizing Trust, Ensuring Sharia Compliance.</p>
+                <div className="mt-10">
+                    <Link href="/admin" className="inline-block px-10 py-4 bg-accent text-primary font-black rounded-full hover:scale-110 transition-transform">Dapatkan Akses Sekarang</Link>
+                </div>
+            </div>
+            
+            <hr className="border-emerald-800 mb-8" />
+            
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-emerald-300">
+                <div className="flex items-center gap-2">
+                    <div className="bg-accent p-1 rounded">
+                        <ShieldCheck className="text-primary w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-white">Smart Santri © 2024</span>
+                </div>
+                <div className="text-center md:text-right">
+                    <p>Dikembangkan oleh: <span className="text-white font-semibold">Sidqi Alaudin Johari</span></p>
+                    <p className="text-xs opacity-70">Mahasiswa Akuntansi Syariah, Universitas Tazkia.</p>
+                </div>
+            </div>
+        </div>
+      </footer>
+    </div>
+  );
 }
