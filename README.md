@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Santri 🎓
+**Sistem Informasi Akuntansi Pengeluaran Kas Pesantren Terintegrasi AI**
 
-## Getting Started
+Smart Santri adalah Sistem Informasi Akuntansi (SIA) cerdas berbasis web yang dirancang khusus untuk mengelola siklus pengeluaran kas di lingkungan pesantren. Dikembangkan sebagai proyek penelitian skripsi dengan pendekatan *Design Science Research* (DSR), sistem ini tidak hanya mencatat transaksi keuangan, tetapi juga bertindak sebagai instrumen pengendalian internal preventif (*Smart Compliance Audit*). 
 
-First, run the development server:
+Sistem ini didukung oleh kecerdasan buatan guna memastikan setiap pengeluaran mematuhi prinsip syariah, pedoman Juknis BOS, serta standar akuntansi ISAK 335 (pemisahan Aset Neto dengan dan tanpa pembatasan).
+
+## 🚀 Teknologi Utama
+
+Proyek ini dibangun menggunakan arsitektur *full-stack* modern yang skalabel dan aman:
+
+- **[Next.js](https://nextjs.org/) & [Vercel](https://vercel.com/)**: Kerangka kerja utama pendukung arsitektur *Single Page Application* (SPA) dengan *Server-Side Rendering* (SSR) yang optimal dan di-*deploy* melalui Vercel untuk stabilitas *core web vitals*.
+- **[TypeScript](https://www.typescriptlang.org/)**: Memberikan sistem pengetikan statis yang ketat untuk menekan *runtime errors* dan memastikan integritas data.
+- **[Tailwind CSS](https://tailwindcss.com/)**: *Framework* CSS *utility-first* untuk merancang antarmuka pengguna yang responsif, modern, dan modular.
+- **[Supabase](https://supabase.com/) (PostgreSQL)**: Platform *Backend-as-a-Service* (BaaS) yang menyediakan basis data relasional, autentikasi terpusat, dan lapisan keamanan *Row-Level Security* (RLS) serta perlindungan enkripsi AES-256.
+- **[LangChain.js](https://js.langchain.com/) & OpenAI**: Orkestrator *Retrieval-Augmented Generation* (RAG) *pipeline* yang menelusuri *vector store* untuk memvalidasi kepatuhan transaksi terhadap dokumen regulasi.
+
+## ✨ Fitur Utama
+
+- **Smart Compliance Audit (Validasi AI)**: Fitur pengecekan anomali pengajuan dana secara otomatis. Sistem akan membandingkan narasi transaksi pengeluaran dengan aturan Juknis BOS dan ISAK 335, lalu memberikan peringatan dini (*early warning*) yang dilandasi kutipan pasal regulasi secara akurat tanpa risiko halusinasi.
+- **Manajemen Siklus Pengeluaran Kas**: Digitalisasi alur pengajuan, verifikasi, hingga realisasi pencairan dana untuk meminimalisir risiko kesalahan manual dan mencegah percampuran dana.
+- **Keamanan Data & Otorisasi Berlapis**: Akses sistem berbasis peran (Role-Based Access Control) yang ketat antara Pengurus, Bendahara, dan Pimpinan Pesantren, dijamin oleh Supabase RLS.
+- **Pemisahan Aset Sesuai ISAK 335**: Sistem pencatatan yang secara otomatis mendisiplinkan pemisahan antara dana dengan pembatasan (*restricted*) dan tanpa pembatasan (*unrestricted*).
+
+## 🛠️ Cara Instalasi Lokal
+
+Ikuti langkah-langkah di bawah ini untuk menjalankan proyek Smart Santri di lingkungan lokal (*development*) Anda.
+
+### Prasyarat
+Pastikan Anda telah menginstal [Node.js](https://nodejs.org/) (versi 18.x atau lebih baru disarankan) di komputer Anda.
+
+### 1. Instalasi Dependensi
+
+Buka terminal Anda, arahkan ke direktori proyek `smart_santri`, dan jalankan perintah berikut untuk menginstal semua paket dan dependensi yang dibutuhkan:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+npm install
