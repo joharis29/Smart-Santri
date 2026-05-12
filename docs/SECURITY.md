@@ -19,11 +19,12 @@ Untuk mencegah tereksposnya infrastruktur *backend* dan pembengkakan tagihan lay
 
 ## 2. Autentikasi & Pemisahan Tugas (*Segregation of Duties*) 🔐
 
-Sistem menggunakan Supabase Auth yang dipadukan dengan *Role-Based Access Control* (RBAC) yang ketat untuk memastikan pemisahan tugas akuntansi yang sehat:
+Sistem menggunakan Supabase Auth yang dipadukan dengan *Role-Based Access Control* (RBAC) yang ketat untuk memastikan pemisahan tugas akuntansi yang memitigasi risiko manipulasi:
 
-- **Pimpinan Pesantren**: Bertindak sebagai pemegang hak veto (*Authorizer*). Hanya pimpinan yang memiliki kewenangan menyetujui/menolak pencairan dana dan mengakses temuan anomali dari Dasbor Audit AI, tanpa memiliki akses untuk menginput pengajuan awal.
-- **Bendahara**: Bertindak sebagai eksekutor finansial. Bendahara berwenang memverifikasi pengajuan, melakukan klasifikasi dana sesuai standar ISAK 335 (Aset Neto Dengan/Tanpa Pembatasan), dan mengeksekusi pencairan kas, namun tidak dapat menyetujui (otorisasi) pengajuannya sendiri.
-- **Pengurus (Pemohon)**: Diberikan akses sektoral secara eksklusif. Pengurus hanya diizinkan untuk membuat, mengedit, dan melampirkan kuitansi realisasi untuk transaksi yang diajukannya sendiri. Mereka tidak memiliki akses untuk melihat arus kas pengurus atau departemen lain.
+- **Pimpinan Pesantren (Pengawas)**: Bertindak murni pada fungsi pengawasan dan audit (*Read-Only*). Pimpinan memiliki akses menyeluruh untuk memantau saldo, melacak status pengajuan, dan mengevaluasi temuan anomali dari Dasbor Audit AI, **tanpa** memiliki kewenangan untuk melakukan otorisasi atau mengubah data transaksi.
+- **Bendahara Pusat (Yayasan)**: Bertindak sebagai eksekutor dan otorisator finansial tertinggi. Memiliki hak penuh untuk menyetujui, menolak, atau mengubah nominal pengajuan (RKA) dari setiap Jenjang/Unit, serta mengelola pencairan kas dan pemisahan sumber dana.
+- **Kepala Jenjang / Unit**: Bertindak sebagai verifikator tingkat pertama. Berwenang untuk meninjau dan menyetujui pengajuan anggaran dari staf di unitnya secara internal sebelum diteruskan ke Bendahara Pusat.
+- **Bendahara Jenjang / Staf Unit**: Bertindak sebagai pemohon (*Submitter*) dan pelapor. Hanya diizinkan untuk membuat pengajuan RKA, mengunggah bukti realisasi (kuitansi), dan melihat arus kas pada unit/jenjang mereka masing-masing.
 
 *Catatan: Validasi peran ditegakkan berlapis, yakni pada Next.js Middleware (pengamanan rute aplikasi) dan pada tingkat skema Basis Data.*
 
@@ -34,7 +35,7 @@ Sistem menggunakan Supabase Auth yang dipadukan dengan *Role-Based Access Contro
 Pengamanan lapis utama (*Core Defense*) diterapkan langsung di tingkat PostgreSQL menggunakan fitur **Row Level Security (RLS)** untuk mencegah kebocoran data finansial akibat celah *endpoint*.
 
 - **Akses Bawaan Tertutup (*Default Deny*)**: Seluruh tabel transaksi (pengajuan dana, buku besar, kuitansi) berstatus *RLS Enabled*. Tanpa kebijakan otorisasi yang eksplisit, seluruh permintaan data dari antarmuka akan otomatis diblokir.
-- **Validasi Kriptografis Klien (`auth.uid()`)**: Akses data dibatasi berdasarkan verifikasi token pengguna yang aktif. Misalnya, entitas *Pengurus* hanya bisa memodifikasi baris pada tabel `pengajuan_dana` apabila nilai pada kolom `pemohon_id` identik dengan `auth.uid()` mereka. Mekanisme ini mencegah insiden *Broken Object Level Authorization* (BOLA) di mana peretas mencoba memanipulasi ID transaksi milik orang lain melalui modifikasi *payload*.
+- **Validasi Kriptografis Klien (`auth.uid()`)**: Akses data dibatasi berdasarkan verifikasi token pengguna yang aktif. Misalnya, entitas *Bendahara Jenjang* hanya bisa membaca atau memodifikasi baris pada tabel `pengajuan_dana` apabila nilai pada kolom `unit_id` identik dengan profil mereka. Sebaliknya, Bendahara Pusat memiliki akses `UPDATE` lintas unit namun dibatasi pada kolom status persetujuan. Mekanisme ini mencegah insiden *Broken Object Level Authorization* (BOLA).
 
 ---
 
@@ -42,8 +43,8 @@ Pengamanan lapis utama (*Core Defense*) diterapkan langsung di tingkat PostgreSQ
 
 Penggunaan LangChain dan OpenAI diikat oleh aturan keamanan pemrosesan data untuk mencegah eksploitasi model:
 
-- **Isolasi Prompt (*Prompt Injection Prevention*)**: Input narasi realisasi dari pengguna harus melalui sanitasi teks (*text sanitization*) sebelum disisipkan ke dalam *System Prompt* LangChain. Hal ini untuk mencegah pihak internal yang mencoba memanipulasi AI agar meloloskan transaksi yang melanggar Juknis BOS.
-- **Minimalisasi Data (*Data Minimization*)**: Hanya teks narasi penggunaan barang/jasa yang dikirimkan ke model OpenAI untuk pencocokan dengan *Vector Store*. Data identitas sensitif atau nominal rekening dilarang disertakan dalam kueri AI.
+- **Isolasi Prompt (*Prompt Injection Prevention*)**: Input narasi realisasi dari pengguna harus melalui sanitasi teks (*text sanitization*) sebelum disisipkan ke dalam *System Prompt* LangChain. Hal ini untuk mencegah pihak internal yang mencoba memanipulasi AI agar meloloskan transaksi yang melanggar Juknis BOS atau ISAK 335.
+- **Minimalisasi Data (*Data Minimization*)**: Hanya teks narasi penggunaan barang/jasa dan kategori pendanaan yang dikirimkan ke model OpenAI untuk pencocokan dengan *Vector Store* (ISAK, BOS, PAP, SOP). Data identitas sensitif atau nominal rekening dilarang disertakan dalam kueri AI.
 
 ---
 
@@ -51,6 +52,6 @@ Penggunaan LangChain dan OpenAI diikat oleh aturan keamanan pemrosesan data untu
 
 Sebagai antisipasi terhadap insiden kerusakan data, serangan siber, atau kebutuhan audit forensik:
 
-- **Imutabilitas Log Audit (*Append-Only*)**: Sistem mengimplementasikan tabel Jejak Audit (*Audit Trail*) via *Database Triggers*. Tabel ini bersifat *read-only* bagi semua level pengguna aplikasi (termasuk pimpinan) untuk mencegah manipulasi rekam jejak penghapusan atau pengubahan transaksi.
+- **Imutabilitas Log Audit (*Append-Only*)**: Sistem mengimplementasikan tabel Jejak Audit (*Audit Trail*) via *Database Triggers*. Tabel ini bersifat *read-only* bagi semua level pengguna aplikasi (termasuk Admin/Bendahara Pusat) untuk mencegah manipulasi rekam jejak penghapusan atau pengubahan transaksi.
 - **Pencadangan Finansial Harian**: Sistem dikonfigurasi untuk melakukan *Full Backup* harian yang mencakup seluruh skema operasional dan *Vector Store* referensi regulasi.
 - **Protokol Darurat (Maintenance Mode)**: Jika terdeteksi manipulasi data massal secara anomali, sistem dapat dialihkan ke *Maintenance Mode* via Vercel Edge Config, membekukan sementara seluruh lalu lintas mutasi kas hingga proses investigasi dan pemulihan (*Point-in-Time Recovery*) dari *dashboard* Supabase selesai dilakukan.
