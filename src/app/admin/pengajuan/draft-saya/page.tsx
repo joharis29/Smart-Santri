@@ -161,7 +161,7 @@ export default function DraftSayaPage() {
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{draft.period}</p>
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <p className="text-xs font-black text-slate-800 italic tracking-tighter leading-tight mb-0.5">Rp {(draft.type === 'RKA' ? draft.budget : draft.realisasi).toLocaleString('id-ID')}</p>
+                                                <p className="text-xs font-black text-slate-800 italic tracking-tighter leading-tight mb-0.5">Rp {(draft.type === 'RKA' ? (draft as any).budget : (draft as any).realisasi).toLocaleString('id-ID')}</p>
                                                 <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest leading-none">{draft.items} Items</p>
                                             </td>
                                             <td className="px-4 py-3 text-center">
