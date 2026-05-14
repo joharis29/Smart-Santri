@@ -1,11 +1,8 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700;900&display=swap');
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc; /* matching the user's slate-custom */
+  --foreground: #0f172a; /* slate-900 */
 }
 
 @theme inline {
@@ -16,9 +13,7 @@
   --color-accent: #f59e0b;
   --color-accent-hover: #d97706;
   --color-slate-custom: #f8fafc;
-  --font-sans: 'Inter', 'Plus Jakarta Sans', var(--font-geist-sans);
-  --font-serif: 'Merriweather', serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plus-jakarta), sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

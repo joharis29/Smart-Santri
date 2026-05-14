@@ -50,7 +50,6 @@ export default function LandingPage() {
                         </div>
 
                         <div className="hidden md:flex items-center space-x-8">
-                            <a href="#home" className="font-medium text-secondary hover:text-accent transition-colors">Beranda</a>
                             <a href="#features" className="font-medium text-secondary hover:text-accent transition-colors">Artikel</a>
                             <a href="#about" className="font-medium text-secondary hover:text-accent transition-colors">Tentang Kami</a>
                             <div className="flex items-center gap-4">
@@ -67,7 +66,6 @@ export default function LandingPage() {
 
                 {open && (
                     <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 shadow-lg absolute w-full">
-                        <a href="#home" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Beranda</a>
                         <a href="#features" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Artikel</a>
                         <a href="#about" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Tentang Kami</a>
                         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
@@ -78,7 +76,7 @@ export default function LandingPage() {
                 )}
             </nav>
 
-            <section id="home" className="pt-32 pb-20 md:pt-48 md:pb-32 hero-gradient text-white relative overflow-hidden">
+            <section id="home" className="pt-20 pb-16 md:pt-24 md:pb-20 hero-gradient text-white relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/islamic-art.png')" }}></div>
                 </div>
@@ -86,17 +84,17 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div>
-                            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                                 Wujudkan Tata Kelola Keuangan Pesantren yang <span className="text-accent italic">Amanah</span>, Transparan, dan Sesuai Syariah.
                             </h1>
                             <p className="text-emerald-100 text-lg md:text-xl mb-8 leading-relaxed">
-                                Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SI-KAS TREN—Sistem Informasi Akuntansi Kas berbasis web untuk menjaga kemurnian harta pesantren.
+                                Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SMART SANTRI—Sistem Informasi Akuntansi Kas berbasis web untuk menjaga kemurnian harta pesantren.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Link href="/admin" className="px-8 py-4 bg-accent text-primary font-bold rounded-xl text-center hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
+                                <Link href="/register" className="px-8 py-4 bg-accent text-primary font-bold rounded-xl text-center hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
                                     <PlayCircle className="w-5 h-5" /> Coba Demo Sistem
                                 </Link>
-                                <a href="#about" className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl text-center transition-all flex items-center justify-center gap-2">
+                                <a href="#problem" className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl text-center transition-all flex items-center justify-center gap-2">
                                     Pelajari Lebih Lanjut
                                 </a>
                             </div>
@@ -121,7 +119,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            <section className="py-20 bg-gray-50 relative z-10">
+            <section id="problem" className="py-20 bg-gray-50 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-16">
                         <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mb-4">Mengubah &quot;Kepercayaan Lisan&quot; Menjadi &quot;Sistem Terintegrasi&quot;</h2>
