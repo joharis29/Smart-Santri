@@ -12,12 +12,18 @@ interface Preferences {
   showUangSaku: boolean;
 }
 
-export function YayasanWidgets({ preferences }: { preferences: Preferences }) {
+export function YayasanWidgets({ 
+  preferences,
+  simulatedBalances 
+}: { 
+  preferences: Preferences,
+  simulatedBalances?: { spp: number, yayasan: number }
+}) {
   return (
     <>
       <WidgetCard 
         title="Dompet SPP" 
-        amount="Rp 450.000.000" 
+        amount={`Rp ${simulatedBalances?.spp.toLocaleString('id-ID') || '450.000.000'}`} 
         type="Unrestricted" 
         icon={Vault} 
         colorType="emerald" 
@@ -35,7 +41,7 @@ export function YayasanWidgets({ preferences }: { preferences: Preferences }) {
       />
       <WidgetCard 
         title="Infaq Pesantren/Yayasan" 
-        amount="Rp 15.000.000" 
+        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '15.000.000'}`} 
         type="Unrestricted" 
         icon={HandCoins} 
         colorType="emerald" 

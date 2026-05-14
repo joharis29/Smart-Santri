@@ -70,7 +70,6 @@ export default function RiwayatPengajuanPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-slate-800 tracking-tight">Riwayat Pengajuan</h1>
-                        <p className="text-xs text-slate-500 font-medium">Arsip daftar pengajuan yang telah selesai diproses (Sudah Diterima / Cair).</p>
                     </div>
                 </div>
             </div>

@@ -37,17 +37,32 @@ export default function RekapitulasiDraftPage() {
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
     const [selectedUnit, setSelectedUnit] = useState<string[]>([]);
+
+    // Close filter when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const activeQueue = activeTab === 'RKA' ? rkaQueue : lpjQueue;
     const setActiveQueue = activeTab === 'RKA' ? setRkaQueue : setLpjQueue;
 
     // Filter Logic
     const filteredItems = activeQueue.filter(item => {
-        if (selectedSumber.length > 0 && !selectedSumber.includes(item.sumber)) return false;
-        if (selectedUnit.length > 0 && !selectedUnit.includes(item.unit)) return false;
-        return true;
+        const matchesSearch = item.pengaju.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             item.kegiatan.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             item.unit.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSumber = selectedSumber.length === 0 || selectedSumber.includes(item.sumber);
+        const matchesUnit = selectedUnit.length === 0 || selectedUnit.includes(item.unit);
+        return matchesSearch && matchesSumber && matchesUnit;
     });
 
     const totalSelectedNominal = filteredItems.filter(i => i.selected).reduce((acc, curr) => acc + curr.nominal, 0);
@@ -92,8 +107,7 @@ export default function RekapitulasiDraftPage() {
                         <CheckSquare className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase italic">Rekapitulasi Draft</h1>
-                        <p className="text-xs text-slate-500 font-medium tracking-wide">Pemeriksaan & Otorisasi Berjenjang (Mode Checker)</p>
+                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Rekapitulasi Draft</h1>
                     </div>
                 </div>
             </div>
@@ -119,17 +133,89 @@ export default function RekapitulasiDraftPage() {
 
                 <div className="flex flex-1 gap-2 lg:max-w-md">
                     <div className="relative flex-1 group">
-                        <Search className="absolute left-4 top-3 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-4 top-3 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                         <input 
                             type="text" 
                             placeholder={`Cari pengaju, kegiatan, atau unit...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-11 pr-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
                         />
                     </div>
-                    <button className="bg-white border border-slate-200 p-2.5 rounded-2xl hover:bg-slate-50 text-slate-600 transition-all">
-                        <Filter className="w-5 h-5" />
-                    </button>
-                    <button className="bg-white border border-slate-200 p-2.5 rounded-2xl hover:bg-slate-50 text-slate-600 transition-all">
+                    <div className="relative" ref={filterRef}>
+                        <button 
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`p-2.5 rounded-2xl border transition-all shadow-sm ${isFilterOpen || selectedSumber.length > 0 || selectedUnit.length > 0 ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                        >
+                            <Filter className="w-5 h-5" />
+                        </button>
+
+                        {isFilterOpen && (
+                            <div className="absolute right-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-5">
+                                    <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Filter Antrean</h3>
+                                        {(selectedSumber.length > 0 || selectedUnit.length > 0) && (
+                                            <button 
+                                                onClick={() => { setSelectedSumber([]); setSelectedUnit([]); }}
+                                                className="text-[10px] font-black text-rose-500 hover:underline uppercase"
+                                            >
+                                                Reset
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Sumber Dana Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Sumber Dana</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['Kas Operasional', 'Zakat Maal', 'Dana BOS', 'Kas Internal'].map(s => (
+                                                <button
+                                                    key={s}
+                                                    onClick={() => {
+                                                        setSelectedSumber(prev => 
+                                                            prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+                                                        );
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedSumber.includes(s) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Unit Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Unit Satuan</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['SDIT 1', 'Dapur Pusat', 'SMPIT 1', 'Yayasan'].map(u => (
+                                                <button
+                                                    key={u}
+                                                    onClick={() => {
+                                                        setSelectedUnit(prev => 
+                                                            prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]
+                                                        );
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedUnit.includes(u) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    {u}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setIsFilterOpen(false)}
+                                        className="w-full bg-slate-900 text-white text-[10px] font-black py-3 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all uppercase tracking-widest"
+                                    >
+                                        Terapkan Filter
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <button className="bg-white border border-slate-200 p-2.5 rounded-2xl hover:bg-slate-50 text-slate-600 transition-all shadow-sm">
                         <Download className="w-5 h-5" />
                     </button>
                 </div>

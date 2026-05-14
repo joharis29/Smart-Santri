@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <ClipboardCheck className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
                             <span className="truncate">Riwayat Pengajuan</span>
                         </Link>
-                        <Link href="#" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
+                        <Link href="/admin/realisasi/riwayat" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
                             <History className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
                             <span className="truncate">Riwayat Dokumen</span>
                         </Link>

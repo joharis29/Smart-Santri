@@ -16,7 +16,7 @@ export function AsramaWidgets({
   unitType: string;
   preferences: Preferences;
 }) {
-  const isTHQ = unitType === 'THQ';
+  const isTHQ = unitType.trim() === 'THQ';
 
   return (
     <>

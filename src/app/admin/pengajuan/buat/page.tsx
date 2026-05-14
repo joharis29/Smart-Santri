@@ -367,7 +367,6 @@ export default function BuatPengajuanPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-800 tracking-tight">Buat Pengajuan Dana Baru</h1>
-                <p className="text-xs text-slate-500 font-medium italic">Pastikan pengajuan sesuai dengan alokasi anggaran dan prinsip syariah.</p>
               </div>
             </div>
 
@@ -831,17 +830,16 @@ export default function BuatPengajuanPage() {
                 {isDapurMode ? 'Kirim ke Bendahara Pusat' : 'Kirim ke Tahap Persetujuan Unit'}
             </span>
           </button>
-          <div className={`${isDapurMode ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'} border p-3 rounded-2xl flex gap-3`}>
-            <div className={`${isDapurMode ? 'bg-amber-600' : 'bg-emerald-600'} text-white p-1.5 rounded-lg h-fit`}>
-              <AlertTriangle className="w-4 h-4" />
+          {isDapurMode && (
+            <div className="bg-amber-50 border-amber-100 border p-3 rounded-2xl flex gap-3">
+              <div className="bg-amber-600 text-white p-1.5 rounded-lg h-fit">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <p className="text-[11px] leading-relaxed font-medium text-amber-800">
+                Laporan ini berbasis reimbursement (belanja riil). Pastikan seluruh lampiran nota sudah terunggah dengan jelas untuk verifikasi Bendahara Pusat.
+              </p>
             </div>
-            <p className={`text-[11px] leading-relaxed font-medium ${isDapurMode ? 'text-amber-800' : 'text-emerald-800'}`}>
-              {isDapurMode 
-                ? 'Laporan ini berbasis reimbursement (belanja riil). Pastikan seluruh lampiran nota sudah terunggah dengan jelas untuk verifikasi Bendahara Pusat.'
-                : 'Data yang Anda kirim akan masuk ke antrean persetujuan Kepala Unit/Jenjang. Pastikan seluruh rincian RKA telah diverifikasi secara internal.'
-              }
-            </p>
-          </div>
+          )}
         </div>
       </div>
 

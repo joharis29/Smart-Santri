@@ -13,20 +13,22 @@ interface Preferences {
 
 export function PendidikanWidgets({ 
   unitType, 
-  preferences 
+  preferences,
+  simulatedBalances
 }: { 
   unitType: string;
   preferences: Preferences;
+  simulatedBalances?: { yayasan: number, bos: number }
 }) {
-  const isDiniyah = unitType === 'Diniyah';
-  const isTK = unitType === 'TK';
+  const isDiniyah = unitType.trim() === 'Diniyah';
+  const isTK = unitType.trim() === 'TK';
 
   return (
     <>
       {!isDiniyah && (
         <WidgetCard 
           title="Dana BOS" 
-          amount="Rp 150.000.000" 
+          amount={`Rp ${simulatedBalances?.bos.toLocaleString('id-ID') || '150.000.000'}`} 
           type="Restricted" 
           icon={GraduationCap} 
           colorType="accent" 
@@ -37,7 +39,7 @@ export function PendidikanWidgets({
       
       <WidgetCard 
         title="Dana Yayasan / Pesantren" 
-        amount="Rp 85.000.000" 
+        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '85.000.000'}`} 
         type="Unrestricted" 
         icon={Library} 
         colorType="emerald" 
