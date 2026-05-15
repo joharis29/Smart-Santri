@@ -28,14 +28,8 @@ interface RiwayatDokumen {
 }
 
 export default function RiwayatDokumenPage() {
-    // Simulasi data LPJ "SELESAI"
-    const [riwayatItems, setRiwayatItems] = useState<RiwayatDokumen[]>([
-        { id: 'LPJ-S-001', tanggal: '14 Feb 2026', pengaju: 'Staf Kebersihan', unit: 'SDIT 1', kegiatan: 'Beli Sapu & Alat Pel', sumber: 'Kas Operasional', nominal: 160000, status: 'SELESAI' },
-        { id: 'LPJ-S-002', tanggal: '12 Feb 2026', pengaju: 'Staf Kurikulum', unit: 'SMPIT 1', kegiatan: 'Beli Peta Dunia 3D', sumber: 'Dana BOS', nominal: 750000, status: 'SELESAI' },
-        { id: 'LPJ-S-003', tanggal: '10 Feb 2026', pengaju: 'Staf Keamanan', unit: 'Yayasan', kegiatan: 'Service CCTV Utama', sumber: 'Kas Internal', nominal: 1200000, status: 'SELESAI' },
-        { id: 'LPJ-S-004', tanggal: '08 Feb 2026', pengaju: 'Staf Dapur', unit: 'Dapur Asrama Putra', kegiatan: 'Belanja Beras Mingguan', sumber: 'Kas Internal', nominal: 8500000, status: 'SELESAI' },
-        { id: 'LPJ-S-005', tanggal: '05 Feb 2026', pengaju: 'Staf Asrama', unit: 'Asrama Putri', kegiatan: 'Penggantian Lampu Kamar', sumber: 'Dana Yayasan', nominal: 450000, status: 'SELESAI' },
-    ]);
+    // Real Data (Empty for production)
+    const [riwayatItems, setRiwayatItems] = useState<RiwayatDokumen[]>([]);
 
     // Filter States
     const [isFilterOpen, setIsFilterOpen] = useState(false);

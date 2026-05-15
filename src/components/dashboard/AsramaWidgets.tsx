@@ -22,7 +22,7 @@ export function AsramaWidgets({
     <>
       <WidgetCard 
         title="Dana Yayasan / Pesantren" 
-        amount="Rp 35.000.000" 
+        amount="Rp 0" 
         type="Unrestricted" 
         icon={Home} 
         colorType="emerald" 
@@ -33,7 +33,7 @@ export function AsramaWidgets({
       {!isTHQ && (
         <WidgetCard 
           title="Kas Internal" 
-          amount="Rp 2.500.000" 
+          amount="Rp 0" 
           type="Unrestricted" 
           icon={Banknote} 
           colorType="emerald" 
@@ -44,7 +44,7 @@ export function AsramaWidgets({
 
       <WidgetCard 
         title="Uang Saku Santri" 
-        amount="Rp 45.000.000" 
+        amount="Rp 0" 
         type="Restricted" 
         icon={Wallet} 
         colorType="accent" 
@@ -55,7 +55,7 @@ export function AsramaWidgets({
       {isTHQ && (
         <WidgetCard 
           title="Tabungan Siswa" 
-          amount="Rp 15.000.000" 
+          amount="Rp 0" 
           type="Restricted" 
           icon={PiggyBank} 
           colorType="accent" 

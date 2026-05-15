@@ -99,6 +99,59 @@ const OPERASIONAL_CATEGORIES = [
   'Lain-lain'
 ]
 
+const RKA_PROGRAMS = [
+  'Optimalisasi Manajemen Pengarsipan/Mengelola surat statis & dinamis',
+  'Optimalisasi Manajemen Pengarsipan/Mutasi santri',
+  'Optimalisasi Manajemen Pengarsipan/Arsip proposal/laporan',
+  'Optimalisasi Manajemen Pengarsipan/Backup dokumen Naqieb',
+  'Optimalisasi ATK & Sarpras/Pengadaan ATK',
+  'Optimalisasi ATK & Sarpras/Sarpras kantor',
+  'Optimalisasi ATK & Sarpras/Pemeliharaan sarpras',
+  'Optimalisasi ATK & Sarpras/Inventarisasi aset',
+  'Optimalisasi ATK & Sarpras/Seragam pengurus',
+  'Manajemen Buku Admin/Pengadaan, pengisian rutin, dan evaluasi kelengkapan buku administrasi',
+  'Database Santri/Update data semesteran & digitalisasi database santri',
+  'Layanan & Komunikasi/WAG Ortu',
+  'Layanan & Komunikasi/Booklet profil',
+  'Layanan & Komunikasi/Buku santri',
+  'Layanan & Komunikasi/Penyambutan santri baru',
+  'Layanan & Komunikasi/Optimasi IG asrama',
+  'Koordinasi Rapat/Rapat pekanan',
+  'Koordinasi Rapat/Rapat terbatas',
+  'Koordinasi Rapat/Rapat Naqieb',
+  'Koordinasi Rapat/Rapat Kerja (Raker)',
+  'Sistem Keuangan/Penyusunan RAB',
+  'Sistem Keuangan/Pencairan dana',
+  'Sistem Keuangan/Pencatatan BKU',
+  'Sistem Keuangan/Pelaporan realisasi',
+  'Manajemen Aset/Penitipan uang santri',
+  'Manajemen Aset/Pengadaan sarpras kebutuhan santri',
+  'Kegiatan Pendidikan/KISS (Kajian Senin Subuh)',
+  'Kegiatan Pendidikan/Halaqah Masa',
+  'Kegiatan Pendidikan/Bimbel sore',
+  'Kegiatan Pendidikan/Rapot Asrama Bulanan',
+  'Penegakan Disiplin/Operasi rambut/kerapihan',
+  'Penegakan Disiplin/Sidak kamar',
+  'Penegakan Disiplin/Pembinaan santri',
+  'Penegakan Disiplin/Reward & punishment',
+  'Minat Bakat/Muhadharah (Pidato)',
+  'Minat Bakat/Olahraga pekanan',
+  'Minat Bakat/Seni Bela Diri',
+  'Program Tahfidz/Setoran hafalan harian',
+  'Program Tahfidz/Tasmi\'',
+  'Program Tahfidz/Munaqasyah',
+  'Program Tahfidz/Wisuda Tahfidz',
+  'Pembiasaan Ibadah/Shalat berjamaah 5 waktu',
+  'Pembiasaan Ibadah/Tahajjud bersama',
+  'Pembiasaan Ibadah/Puasa Sunnah',
+  'Lingkungan & Kesehatan/Roan (Kerja bakti)',
+  'Lingkungan & Kesehatan/Pengelolaan sampah',
+  'Lingkungan & Kesehatan/Layanan Poskestren',
+  'Lingkungan & Kesehatan/Sosialisasi PHBS',
+  'Pemeliharaan/Perbaikan sarana rusak',
+  'Pemeliharaan/Pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)'
+]
+
 export default function BuatPengajuanPage() {
   // --- States ---
   const [unit, setUnit] = useState('SDIT 1')
@@ -555,16 +608,16 @@ export default function BuatPengajuanPage() {
             <table className="w-full border-collapse">
               <thead className="bg-slate-100 border-b border-slate-200">
                 <tr className="divide-x divide-slate-200">
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest text-center w-10">No.</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[200px]">Nama Program/ Kegiatan <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[150px]">Operasional <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[90px] text-center">Jml Kegiatan <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[90px]">Waktu <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[110px]">Tempat <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[120px]">Penanggung Jawab <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[110px]">Sasaran <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[140px] text-right">Rencana Anggaran <span className="text-rose-500">*</span></th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest text-center min-w-[80px]">Aksi</th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest text-center w-10">No.</th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[200px]">Nama Program/ Kegiatan <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[150px]">Operasional <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[90px] text-center">Jml Kegiatan <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[90px]">Waktu <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[110px]">Tempat <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[120px]">Penanggung Jawab <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[110px]">Sasaran <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest min-w-[140px] text-right">Rencana Anggaran <span className="text-rose-600">*</span></th>
+                  <th className="px-2 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest text-center min-w-[80px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -580,13 +633,12 @@ export default function BuatPengajuanPage() {
                         <select 
                           value={row.program}
                           onChange={(e) => updateRow(row.id, 'program', e.target.value)}
-                          className={`w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium focus:bg-emerald-50/50 transition-colors appearance-none ${row.program === '' ? 'text-slate-400 italic' : 'text-slate-700'}`}
+                          className={`w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none ${row.program === '' ? 'text-slate-600 italic' : 'text-black'}`}
                         >
                           <option value="">Pilih Program...</option>
-                          <option value="Konsumsi Rapat Mingguan">Konsumsi Rapat Mingguan</option>
-                          <option value="Pembelian ATK">Pembelian ATK</option>
-                          <option value="Honor Guru">Honor Guru</option>
-                          <option value="Sarana Ibadah">Sarana Ibadah</option>
+                          {RKA_PROGRAMS.map(prog => (
+                            <option key={prog} value={prog}>{prog}</option>
+                          ))}
                         </select>
                         <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                       </td>
@@ -594,7 +646,7 @@ export default function BuatPengajuanPage() {
                         <select 
                           value={row.operasional}
                           onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
-                          className={`w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-bold focus:bg-emerald-50/50 transition-colors appearance-none ${row.operasional === '' ? 'text-slate-400 italic' : 'text-emerald-700'}`}
+                          className={`w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none ${row.operasional === '' ? 'text-slate-600 italic' : 'text-emerald-900'}`}
                         >
                           <option value="">Pilih Operasional...</option>
                           {OPERASIONAL_CATEGORIES.map(cat => (
@@ -608,7 +660,7 @@ export default function BuatPengajuanPage() {
                           type="text" 
                           value={row.jumlah}
                           onChange={(e) => updateRow(row.id, 'jumlah', e.target.value)}
-                          className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium text-center focus:bg-white"
+                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-center text-black focus:ring-2 focus:ring-emerald-500 transition-all"
                           placeholder="0"
                         />
                       </td>
@@ -617,7 +669,7 @@ export default function BuatPengajuanPage() {
                           type="text" 
                           value={row.waktu}
                           onChange={(e) => updateRow(row.id, 'waktu', e.target.value)}
-                          className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium focus:bg-white"
+                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
                           placeholder="-"
                         />
                       </td>
@@ -626,7 +678,7 @@ export default function BuatPengajuanPage() {
                           type="text" 
                           value={row.tempat}
                           onChange={(e) => updateRow(row.id, 'tempat', e.target.value)}
-                          className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium focus:bg-white"
+                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
                           placeholder="-"
                         />
                       </td>
@@ -635,7 +687,7 @@ export default function BuatPengajuanPage() {
                           type="text" 
                           value={row.pic}
                           onChange={(e) => updateRow(row.id, 'pic', e.target.value)}
-                          className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium focus:bg-white"
+                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
                           placeholder="-"
                         />
                       </td>
@@ -644,7 +696,7 @@ export default function BuatPengajuanPage() {
                           type="text" 
                           value={row.sasaran}
                           onChange={(e) => updateRow(row.id, 'sasaran', e.target.value)}
-                          className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium focus:bg-white"
+                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
                           placeholder="-"
                         />
                       </td>

@@ -28,7 +28,7 @@ export function PendidikanWidgets({
       {!isDiniyah && (
         <WidgetCard 
           title="Dana BOS" 
-          amount={`Rp ${simulatedBalances?.bos.toLocaleString('id-ID') || '150.000.000'}`} 
+          amount={`Rp ${simulatedBalances?.bos.toLocaleString('id-ID') || '0'}`} 
           type="Restricted" 
           icon={GraduationCap} 
           colorType="accent" 
@@ -39,7 +39,7 @@ export function PendidikanWidgets({
       
       <WidgetCard 
         title="Dana Yayasan / Pesantren" 
-        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '85.000.000'}`} 
+        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '0'}`} 
         type="Unrestricted" 
         icon={Library} 
         colorType="emerald" 
@@ -50,7 +50,7 @@ export function PendidikanWidgets({
       {!isDiniyah && (
         <WidgetCard 
           title="Tabungan Siswa" 
-          amount="Rp 45.000.000" 
+          amount="Rp 0" 
           type="Restricted" 
           icon={PiggyBank} 
           colorType="accent" 
@@ -62,7 +62,7 @@ export function PendidikanWidgets({
       {isTK && (
         <WidgetCard 
           title="Iuran Non-Wajib (Antar Jemput)" 
-          amount="Rp 5.500.000" 
+          amount="Rp 0" 
           type="Unrestricted" 
           icon={Bus} 
           colorType="emerald" 
@@ -75,7 +75,7 @@ export function PendidikanWidgets({
         <>
           <WidgetCard 
             title="Subsidi Pesantren" 
-            amount="Rp 12.000.000" 
+            amount="Rp 0" 
             type="Restricted" 
             icon={HeartHandshake} 
             colorType="accent" 
@@ -84,7 +84,7 @@ export function PendidikanWidgets({
           />
           <WidgetCard 
             title="Infaq Siswa" 
-            amount="Rp 1.500.000" 
+            amount="Rp 0" 
             type="Unrestricted" 
             icon={PiggyBank} 
             colorType="emerald" 

@@ -23,7 +23,7 @@ export function YayasanWidgets({
     <>
       <WidgetCard 
         title="Dompet SPP" 
-        amount={`Rp ${simulatedBalances?.spp.toLocaleString('id-ID') || '450.000.000'}`} 
+        amount={`Rp ${simulatedBalances?.spp.toLocaleString('id-ID') || '0'}`} 
         type="Unrestricted" 
         icon={Vault} 
         colorType="emerald" 
@@ -32,7 +32,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Dana Zakat" 
-        amount="Rp 75.000.000" 
+        amount="Rp 0" 
         type="Restricted" 
         icon={HandCoins} 
         colorType="accent" 
@@ -41,7 +41,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Infaq Pesantren/Yayasan" 
-        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '15.000.000'}`} 
+        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '0'}`} 
         type="Unrestricted" 
         icon={HandCoins} 
         colorType="emerald" 
@@ -50,7 +50,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Laba Usaha Koperasi" 
-        amount="Rp 12.500.000" 
+        amount="Rp 0" 
         type="Unrestricted" 
         icon={Store} 
         colorType="emerald" 
@@ -59,7 +59,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Laba Usaha Poskestren" 
-        amount="Rp 3.200.000" 
+        amount="Rp 0" 
         type="Unrestricted" 
         icon={Activity} 
         colorType="emerald" 
@@ -68,7 +68,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Tabungan Wajib Santri" 
-        amount="Rp 120.000.000" 
+        amount="Rp 0" 
         type="Restricted" 
         icon={PiggyBank} 
         colorType="accent" 
@@ -77,7 +77,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Total Uang Saku" 
-        amount="Rp 85.000.000" 
+        amount="Rp 0" 
         type="Restricted" 
         icon={Wallet} 
         colorType="accent" 

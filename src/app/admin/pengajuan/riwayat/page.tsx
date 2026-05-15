@@ -5,15 +5,8 @@ import { ClipboardCheck, Download, Eye, FileText, Search, Filter, ArrowUpRight }
 import Link from 'next/link';
 
 export default function RiwayatPengajuanPage() {
-    // Simulasi data "SUDAH DITERIMA"
-    const [riwayatItems, setRiwayatItems] = useState([
-        { id: 1, tanggal: '12 Feb 2026', pengaju: 'Staf Kebersihan', unit: 'SDIT 1', kegiatan: 'Perbaikan AC Kelas', sumber: 'Dana Yayasan/Pesantren', nominal: 350000 },
-        { id: 2, tanggal: '10 Feb 2026', pengaju: 'Staf Asrama', unit: 'Asrama Putri', kegiatan: 'Beli Sabun & Alat Kebersihan', sumber: 'Dana Yayasan/Pesantren', nominal: 1200000 },
-        { id: 3, tanggal: '08 Feb 2026', pengaju: 'Staf Dapur', unit: 'Dapur Asrama Putra', kegiatan: 'Belanja Sayur Mingguan', sumber: 'Kas Internal', nominal: 5000000 },
-        { id: 4, tanggal: '05 Feb 2026', pengaju: 'Guru TK', unit: 'TK', kegiatan: 'Beli Crayon & Kertas', sumber: 'Dana Yayasan/Pesantren', nominal: 250000 },
-        { id: 5, tanggal: '01 Feb 2026', pengaju: 'Staf Tata Usaha', unit: 'MA', kegiatan: 'Honor Kepanitiaan Lomba', sumber: 'Dana BOS', nominal: 3000000 },
-        { id: 6, tanggal: '28 Jan 2026', pengaju: 'Staf Keamanan', unit: 'Pusat (Yayasan)', kegiatan: 'Service Kamera CCTV', sumber: 'Kas Internal', nominal: 800000 }
-    ]);
+    // Real Data (Empty for production)
+    const [riwayatItems, setRiwayatItems] = useState<any[]>([]);
 
     // Filter States
     const [isFilterOpen, setIsFilterOpen] = useState(false);

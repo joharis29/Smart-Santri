@@ -18,12 +18,14 @@ import {
     ChevronDown,
     ChevronRight,
     ShieldAlert,
-    PlusCircle
+    PlusCircle,
+    Banknote
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [expensesOpen, setExpensesOpen] = useState(false);
 
     return (
         <div className="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen">
@@ -57,34 +59,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <LayoutGrid className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                             <span className="font-semibold">Dasbor</span>
                         </Link>
-                        <Link href="/admin/pengajuan/buat" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <FileText className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Buat Pengajuan</span>
-                        </Link>
-                        <Link href="/admin/realisasi/buat" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <ClipboardCheck className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Buat Realisasi Anggaran</span>
-                        </Link>
-                        <Link href="/admin/pengajuan/draft-saya" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <PlusCircle className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span>Draft Saya (Personal)</span>
-                        </Link>
-                        <Link href="/admin/pengajuan/rekap" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <CheckSquare className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                            <span className="truncate">Rekap Draft (Bendahara)</span>
-                        </Link>
-                        <Link href="/admin/pengajuan/riwayat" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <ClipboardCheck className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                            <span className="truncate">Riwayat Pengajuan</span>
-                        </Link>
-                        <Link href="/admin/realisasi/riwayat" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <History className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                            <span className="truncate">Riwayat Dokumen</span>
-                        </Link>
-                        <Link href="#" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
+
+                        {/* Menu Pengeluaran (Dropdown) */}
+                        <div className="pt-1">
+                            <button 
+                                onClick={() => setExpensesOpen(!expensesOpen)}
+                                className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Banknote className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                    <span className="font-semibold truncate">Pengeluaran</span>
+                                </div>
+                                {expensesOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                            </button>
+                            
+                            {expensesOpen && (
+                                <div className="mt-1 space-y-1 px-3">
+                                    <Link href="/admin/pengajuan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Buat Pengajuan</span>
+                                    </Link>
+                                    <Link href="/admin/realisasi/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Buat Realisasi Anggaran</span>
+                                    </Link>
+                                    <Link href="/admin/pengajuan/draft-saya" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <PlusCircle className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Draft Saya (Personal)</span>
+                                    </Link>
+                                    <Link href="/admin/pengajuan/rekap" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <CheckSquare className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Rekap Draft (Bendahara)</span>
+                                    </Link>
+                                    <Link href="/admin/pengajuan/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Riwayat Pengajuan</span>
+                                    </Link>
+                                    <Link href="/admin/realisasi/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Riwayat Dokumen</span>
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+
+                        <Link href="/admin/laporan/buku-besar" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
                             <BarChart3 className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
                             <span className="truncate">Laporan (Buku Besar)</span>
                         </Link>
+                        
                         {/* Pengaturan Menu */}
                         <div className="pt-2">
                             <button 
@@ -109,6 +138,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                         <ShieldAlert className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
                                         <span className="truncate">Manajemen Role</span>
+                                    </Link>
+                                    <Link href="/admin/pengaturan/rka-referensi" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <FileText className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                        <span className="truncate">Program</span>
                                     </Link>
                                 </div>
                             )}

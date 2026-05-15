@@ -61,20 +61,13 @@ export default function AdminDashboardPage() {
   const [catatanRevisi, setCatatanRevisi] = useState('');
   const [editForm, setEditForm] = useState({ title: '', nominal: 0 });
 
-  // --- SIMULATED DATA ---
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'RKA', unit: 'THQ', date: '05 Feb 2026', title: 'Beli ATK & Buku Hafalan', desc: 'Dana: Yayasan', status: 'MENUNGGU PUSAT', nominal: 1250000, statusColor: 'bg-orange-100 text-orange-700' },
-    { id: 2, type: 'LPJ', unit: 'SDIT 1', date: '04 Feb 2026', title: 'Realisasi Service AC', desc: 'Dana: Yayasan', status: 'DRAFT', nominal: 800000, statusColor: 'bg-slate-100 text-slate-500', note: 'Nota kuitansi terpotong.' },
-    { id: 3, type: 'RKA', unit: 'MA', date: '03 Feb 2026', title: 'Honor Kepanitiaan Lomba', desc: 'Dana: BOS', status: 'MENUNGGU KEPALA', nominal: 3500000, statusColor: 'bg-amber-100 text-amber-700' },
-    { id: 4, type: 'LPJ', unit: 'Dapur Asrama Putra', date: '02 Feb 2026', title: 'Realisasi Belanja Beras', desc: 'Kas Internal', status: 'SELESAI', nominal: 8500000, statusColor: 'bg-emerald-100 text-emerald-700' },
-    { id: 5, type: 'RKA', unit: 'SDIT 1', date: '01 Feb 2026', title: 'Perbaikan Gedung', desc: 'Dana: Yayasan', status: 'SUDAH DITERIMA', nominal: 750000, statusColor: 'bg-indigo-100 text-indigo-700' },
-    { id: 6, type: 'RKA', unit: 'TK', date: '30 Jan 2026', title: 'Beli Crayon', desc: 'Dana: Yayasan', status: 'DRAFT', nominal: 250000, statusColor: 'bg-slate-100 text-slate-500' },
-  ]);
+  // --- REAL DATA (Initialized Empty) ---
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   const [balances, setBalances] = useState({
-    yayasan: 85000000,
-    bos: 150000000,
-    spp: 450000000,
+    yayasan: 0,
+    bos: 0,
+    spp: 0,
   });
 
   const [prefs, setPrefs] = useState({

@@ -36,17 +36,9 @@ interface Draft {
     note?: string;
 }
 
-// Mock Data
-const MOCK_RKA_DRAFTS: Draft[] = [
-    { id: 'DRF-001', type: 'RKA', name: 'Kurikulum', unit: 'SDIT 1', period: 'Mei 2025', budget: 2500000, items: 4, status: 'Drafting', lastUpdate: '2 jam yang lalu' },
-    { id: 'DRF-002', type: 'RKA', name: 'Sarpras', unit: 'SDIT 1', period: 'Juni 2025', budget: 12500000, items: 12, status: 'Drafting', lastUpdate: 'Kemarin' },
-    { id: 'DRF-003', type: 'RKA', name: 'Kesiswaan', unit: 'SDIT 1', period: 'Mei 2025', budget: 1500000, items: 3, status: 'Revisi', note: 'Nota untuk item konsumsi kurang jelas.', lastUpdate: '3 jam yang lalu' },
-];
-
-const MOCK_LPJ_DRAFTS: Draft[] = [
-    { id: 'LPJ-001', type: 'LPJ', name: 'Beli Sapu & Alat Pel', unit: 'SDIT 1', period: 'Mei 2025', realisasi: 160000, items: 1, status: 'Drafting', lastUpdate: '10 menit yang lalu' },
-    { id: 'LPJ-002', type: 'LPJ', name: 'Konsumsi Rapat', unit: 'SDIT 1', period: 'Mei 2025', realisasi: 550000, items: 1, status: 'Revisi', note: 'Tolong jelaskan rincian kelebihan belanja di narasi.', lastUpdate: '1 jam yang lalu' },
-];
+// Real Data Containers (Empty for production)
+const MOCK_RKA_DRAFTS: Draft[] = [];
+const MOCK_LPJ_DRAFTS: Draft[] = [];
 
 export default function DraftSayaPage() {
     const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ'>('RKA');

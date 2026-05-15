@@ -18,17 +18,9 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 
-// Mock Data for Queue
-const MOCK_RKA_QUEUE = [
-    { id: 1, pengaju: 'Staf Kebersihan', unit: 'SDIT 1', coa: 'Pemeliharaan', kegiatan: 'Beli Sapu dan Alat Pel', sumber: 'Kas Operasional', nominal: 150000, selected: true },
-    { id: 2, pengaju: 'Staf Asrama', unit: 'SDIT 1', coa: 'Aset Tetap', kegiatan: 'Lemari Pakaian', sumber: 'Zakat Maal', nominal: 2500000, selected: true },
-    { id: 3, pengaju: 'Staf Dapur', unit: 'Dapur Pusat', coa: 'Beban Konsumsi', kegiatan: 'Beras 100 Karung', sumber: 'Dana BOS', nominal: 15000000, selected: false }
-];
-
-const MOCK_LPJ_QUEUE = [
-    { id: 101, pengaju: 'Staf Kurikulum', unit: 'SMPIT 1', coa: 'Alat Peraga', kegiatan: 'Beli Peta Dunia 3D', sumber: 'Dana BOS', nominal: 750000, selected: true },
-    { id: 102, pengaju: 'Staf Keamanan', unit: 'Yayasan', coa: 'Pemeliharaan', kegiatan: 'Service CCTV Utama', sumber: 'Kas Internal', nominal: 1200000, selected: true }
-];
+// Real Data Containers (Empty for production)
+const MOCK_RKA_QUEUE: any[] = [];
+const MOCK_LPJ_QUEUE: any[] = [];
 
 export default function RekapitulasiDraftPage() {
     const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ'>('RKA');

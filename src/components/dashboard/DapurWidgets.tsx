@@ -13,7 +13,7 @@ export function DapurWidgets({ preferences }: { preferences: Preferences }) {
     <>
       <WidgetCard 
         title="Saldo Kas Saat Ini" 
-        amount="Rp 4.500.000" 
+        amount="Rp 0" 
         type="Unrestricted" 
         icon={Utensils} 
         colorType="emerald" 
@@ -22,7 +22,7 @@ export function DapurWidgets({ preferences }: { preferences: Preferences }) {
       />
       <WidgetCard 
         title="Akumulasi Pengeluaran" 
-        amount="Rp 12.300.000" 
+        amount="Rp 0" 
         type="Restricted" 
         icon={TrendingDown} 
         colorType="accent" 
