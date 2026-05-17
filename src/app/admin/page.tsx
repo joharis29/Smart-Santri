@@ -69,7 +69,7 @@ export default function AdminDashboardPage() {
   const [verificationQueue, setVerificationQueue] = useState<any[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const [balances, setBalances] = useState({
+  const [balances, setBalances] = useState<Record<string, any>>({
     yayasan: 0,
     bos: 0,
     spp: 0,
@@ -375,21 +375,22 @@ export default function AdminDashboardPage() {
           return uName.trim() === activeUnit.trim();
         });
 
-        let sppVal = 0;
-        let yayasanVal = 0;
-        let bosVal = 0;
+        const newBalances: Record<string, any> = {
+          yayasan: 0,
+          bos: 0,
+          spp: 0
+        };
 
         activeWallets.forEach((w: any) => {
-          if (w.kategori === 'SPP') sppVal = Number(w.saldo);
-          else if (w.kategori === 'YAYASAN' || w.kategori === 'INFAQ') yayasanVal = Number(w.saldo);
-          else if (w.kategori === 'BOS') bosVal = Number(w.saldo);
+          if (w.kategori === 'SPP') newBalances.spp = Number(w.saldo);
+          else if (w.kategori === 'YAYASAN' || w.kategori === 'INFAQ') newBalances.yayasan = Number(w.saldo);
+          else if (w.kategori === 'BOS') newBalances.bos = Number(w.saldo);
+
+          // Save exact category balance
+          newBalances[w.kategori] = Number(w.saldo);
         });
 
-        setBalances({
-          spp: sppVal,
-          yayasan: yayasanVal,
-          bos: bosVal
-        });
+        setBalances(newBalances);
       }
     } catch (err) {
       console.error('Error fetching live balances:', err);
@@ -550,18 +551,29 @@ export default function AdminDashboardPage() {
           {activeCategory === 'pusat' && (
               <YayasanWidgets 
                   preferences={prefs} 
-                  simulatedBalances={{ spp: balances.spp, yayasan: balances.yayasan }} 
+                  balances={balances} 
               />
           )}
           {activeCategory === 'pendidikan' && (
               <PendidikanWidgets 
                   unitType={activeUnit} 
                   preferences={prefs} 
-                  simulatedBalances={{ yayasan: balances.yayasan, bos: balances.bos }}
+                  balances={balances}
               />
           )}
-          {activeCategory === 'asrama' && <AsramaWidgets unitType={activeUnit} preferences={prefs} />}
-          {activeCategory === 'dapur' && <DapurWidgets preferences={prefs} />}
+          {activeCategory === 'asrama' && (
+              <AsramaWidgets 
+                  unitType={activeUnit} 
+                  preferences={prefs} 
+                  balances={balances}
+              />
+          )}
+          {activeCategory === 'dapur' && (
+              <DapurWidgets 
+                  preferences={prefs} 
+                  balances={balances}
+              />
+          )}
         </div>
       ) : (
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">

@@ -11,18 +11,20 @@ interface Preferences {
 
 export function AsramaWidgets({ 
   unitType, 
-  preferences 
+  preferences,
+  balances = {}
 }: { 
   unitType: string;
   preferences: Preferences;
+  balances?: Record<string, number>
 }) {
   const isTHQ = unitType.trim() === 'THQ';
 
   return (
     <>
       <WidgetCard 
-        title="Dana Yayasan / Pesantren" 
-        amount="Rp 0" 
+        title="Dana Pesantren / Yayasan" 
+        amount={`Rp ${(balances['YAYASAN'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={Home} 
         colorType="emerald" 
@@ -33,7 +35,7 @@ export function AsramaWidgets({
       {!isTHQ && (
         <WidgetCard 
           title="Kas Internal" 
-          amount="Rp 0" 
+          amount={`Rp ${(balances['KAS_INTERNAL'] || 0).toLocaleString('id-ID')}`} 
           type="Unrestricted" 
           icon={Banknote} 
           colorType="emerald" 
@@ -43,8 +45,8 @@ export function AsramaWidgets({
       )}
 
       <WidgetCard 
-        title="Uang Saku Santri" 
-        amount="Rp 0" 
+        title="Uang Saku" 
+        amount={`Rp ${(balances['UANG_SAKU'] || 0).toLocaleString('id-ID')}`} 
         type="Restricted" 
         icon={Wallet} 
         colorType="accent" 
@@ -55,7 +57,7 @@ export function AsramaWidgets({
       {isTHQ && (
         <WidgetCard 
           title="Tabungan Siswa" 
-          amount="Rp 0" 
+          amount={`Rp ${(balances['TABUNGAN_SISWA'] || 0).toLocaleString('id-ID')}`} 
           type="Restricted" 
           icon={PiggyBank} 
           colorType="accent" 

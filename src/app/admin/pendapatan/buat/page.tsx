@@ -37,14 +37,58 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
         'Tabungan Siswa', 
         'Uang Saku'
     ],
-    'TK': ['Dana BOS', 'Dana Pesantren/Yayasan', 'Iuran Non-Wajib'],
-    'SDIT 1': ['Dana BOS', 'Dana Pesantren/Yayasan'],
-    'SDIT 2': ['Dana BOS', 'Dana Pesantren/Yayasan'],
-    'MTs': ['Dana BOS', 'Dana Pesantren/Yayasan'],
-    'MA': ['Dana BOS', 'Dana Pesantren/Yayasan'],
-    'Diniyah': ['Infaq Siswa', 'Dana Pesantren/Yayasan'],
-    'Asrama Putra': ['Kas Internal', 'Dana Pesantren/Yayasan'],
-    'Asrama Putri': ['Kas Internal', 'Dana Pesantren/Yayasan'],
+    'TK': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa', 
+        'Iuran Non-Wajib'
+    ],
+    'SDIT 1': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'SDIT 2': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'MTs': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'MA': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'Diniyah': [
+        'Dana Pesantren/Yayasan', 
+        'Subsidi Pesantren', 
+        'Infaq Siswa'
+    ],
+    'Asrama Putra': [
+        'Dana Pesantren/Yayasan', 
+        'Kas Internal', 
+        'Uang Saku'
+    ],
+    'Asrama Putri': [
+        'Dana Pesantren/Yayasan', 
+        'Kas Internal', 
+        'Uang Saku'
+    ],
+    'THQ': [
+        'Dana Pesantren/Yayasan', 
+        'Uang Saku', 
+        'Tabungan Siswa'
+    ],
+    'Dapur Asrama Putra': [
+        'Kas Internal'
+    ],
+    'Dapur Asrama Putri': [
+        'Kas Internal'
+    ]
 };
 
 const MONTH_NAMES = [

@@ -1,29 +1,31 @@
 import React from 'react';
-import { Vault, HandCoins, Store, Activity, PiggyBank, Wallet } from 'lucide-react';
+import { Vault, HandCoins, Store, Activity, PiggyBank, Wallet, Landmark } from 'lucide-react';
 import { WidgetCard } from './WidgetCard';
 
 interface Preferences {
   showSpp: boolean;
   showZakat: boolean;
+  showWakaf?: boolean;
   showInfaqYayasan: boolean;
   showKoperasi: boolean;
   showPoskestren: boolean;
   showTabungan: boolean;
+  showTabunganSiswa?: boolean;
   showUangSaku: boolean;
 }
 
 export function YayasanWidgets({ 
   preferences,
-  simulatedBalances 
+  balances = {}
 }: { 
   preferences: Preferences,
-  simulatedBalances?: { spp: number, yayasan: number }
+  balances?: Record<string, number>
 }) {
   return (
     <>
       <WidgetCard 
         title="Dompet SPP" 
-        amount={`Rp ${simulatedBalances?.spp.toLocaleString('id-ID') || '0'}`} 
+        amount={`Rp ${(balances['SPP'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={Vault} 
         colorType="emerald" 
@@ -32,7 +34,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Dana Zakat" 
-        amount="Rp 0" 
+        amount={`Rp ${(balances['ZAKAT'] || 0).toLocaleString('id-ID')}`} 
         type="Restricted" 
         icon={HandCoins} 
         colorType="accent" 
@@ -40,8 +42,17 @@ export function YayasanWidgets({
         isVisible={preferences.showZakat}
       />
       <WidgetCard 
-        title="Infaq Pesantren/Yayasan" 
-        amount={`Rp ${simulatedBalances?.yayasan.toLocaleString('id-ID') || '0'}`} 
+        title="Dana Wakaf" 
+        amount={`Rp ${(balances['YAYASAN'] || 0).toLocaleString('id-ID')}`} 
+        type="Restricted" 
+        icon={Landmark} 
+        colorType="accent" 
+        subtitle="Dana Abadi Produktif Pesantren"
+        isVisible={preferences.showWakaf !== false}
+      />
+      <WidgetCard 
+        title="Dana Infaq" 
+        amount={`Rp ${(balances['INFAQ'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={HandCoins} 
         colorType="emerald" 
@@ -50,7 +61,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Laba Usaha Koperasi" 
-        amount="Rp 0" 
+        amount={`Rp ${(balances['KOPERASI'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={Store} 
         colorType="emerald" 
@@ -59,7 +70,7 @@ export function YayasanWidgets({
       />
       <WidgetCard 
         title="Laba Usaha Poskestren" 
-        amount="Rp 0" 
+        amount={`Rp ${(balances['POSKESTREN'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={Activity} 
         colorType="emerald" 
@@ -67,8 +78,8 @@ export function YayasanWidgets({
         isVisible={preferences.showPoskestren}
       />
       <WidgetCard 
-        title="Tabungan Wajib Santri" 
-        amount="Rp 0" 
+        title="Tabungan Wajib" 
+        amount={`Rp ${(balances['TABUNGAN_WAJIB'] || 0).toLocaleString('id-ID')}`} 
         type="Restricted" 
         icon={PiggyBank} 
         colorType="accent" 
@@ -76,8 +87,17 @@ export function YayasanWidgets({
         isVisible={preferences.showTabungan}
       />
       <WidgetCard 
+        title="Tabungan Siswa" 
+        amount={`Rp ${(balances['TABUNGAN_SISWA'] || 0).toLocaleString('id-ID')}`} 
+        type="Restricted" 
+        icon={PiggyBank} 
+        colorType="accent" 
+        subtitle="Tabungan Harian/Sukarela Santri"
+        isVisible={preferences.showTabunganSiswa !== false}
+      />
+      <WidgetCard 
         title="Total Uang Saku" 
-        amount="Rp 0" 
+        amount={`Rp ${(balances['UANG_SAKU'] || 0).toLocaleString('id-ID')}`} 
         type="Restricted" 
         icon={Wallet} 
         colorType="accent" 
