@@ -179,8 +179,17 @@ CREATE POLICY "dokumen_update_policy" ON public.dokumen_pengajuan
       public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT')
       AND (unit_id = public.get_user_unit(auth.uid()) OR jenjang_id = public.get_user_jenjang(auth.uid()))
     )
-    -- Pembuat dokumen hanya dapat mengubah isi jika statusnya masih berwujud 'DRAFT'
-    OR (pembuat_id = auth.uid() AND status = 'DRAFT')
+    -- Pembuat dokumen hanya dapat mengubah isi jika status saat ini masih berwujud 'DRAFT' atau 'REVISI'
+    OR (pembuat_id = auth.uid() AND status IN ('DRAFT', 'REVISI'))
+  )
+  WITH CHECK (
+    -- Setelah diubah, pembuat boleh mengubah status dokumen miliknya ke status baru (misal DRAF -> MENUNGGU_VERIFIKASI)
+    public.get_user_role(auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
+    OR (
+      public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT')
+      AND (unit_id = public.get_user_unit(auth.uid()) OR jenjang_id = public.get_user_jenjang(auth.uid()))
+    )
+    OR (pembuat_id = auth.uid())
   );
 
 
@@ -213,14 +222,14 @@ CREATE POLICY "item_manage_policy" ON public.item_pengajuan
   USING (
     dokumen_id IN (
       SELECT id FROM public.dokumen_pengajuan 
-      WHERE pembuat_id = auth.uid() AND status = 'DRAFT'
+      WHERE pembuat_id = auth.uid() AND status IN ('DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI')
     )
     OR public.get_user_role(auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
   )
   WITH CHECK (
     dokumen_id IN (
       SELECT id FROM public.dokumen_pengajuan 
-      WHERE pembuat_id = auth.uid() AND status = 'DRAFT'
+      WHERE pembuat_id = auth.uid() AND status IN ('DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI')
     )
     OR public.get_user_role(auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
   );
