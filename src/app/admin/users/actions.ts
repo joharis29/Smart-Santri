@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/utils/supabase/admin';
+import { createClient } from '@/utils/supabase/server';
 
 export async function registerUserByAdmin(userData: {
   email: string;
@@ -204,11 +205,13 @@ export async function toggleUserStatusByAdmin(userId: string, currentIsActive: b
 
 export async function switchActiveProfile(payload: { role: string; unitName: string }) {
   try {
-    const supabaseAdmin = createAdminClient();
+    const supabase = await createClient();
     
     // 1. Get authenticated user
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('Anda tidak terautentikasi.');
+
+    const supabaseAdmin = createAdminClient();
 
     // 2. Fetch Unit ID from DB
     let selectedUnitId: string | null = null;
