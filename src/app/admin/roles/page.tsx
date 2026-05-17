@@ -12,15 +12,127 @@ type RoleData = {
 };
 
 // --- INITIAL DATA ---
-const INITIAL_ROLES: RoleData[] = [];
+const INITIAL_ROLES: RoleData[] = [
+  {
+    id: 1,
+    name: 'Administrator Pusat (Yayasan)',
+    description: 'Memiliki akses tak terbatas untuk mengonfigurasi seluruh aspek sistem, manajemen pengguna, pengaturan hak akses peran (RBAC), serta pemantauan audit trail logs.',
+    level: 'Sistem',
+    permissions: [
+      'Manajemen Pengguna',
+      'Manajemen Peran',
+      'Program (Referensi Kegiatan)',
+      'Laporan (Buku Besar)',
+      'Input Pendapatan',
+      'Buat Pengajuan (RKA)',
+      'Buat Realisasi Anggaran (LPJ)',
+      'Draft Saya (Personal)',
+      'Rekap Draft (Bendahara)',
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Pengajuan (Edit/Approve)',
+      'Riwayat Dokumen (Read-Only)',
+      'Riwayat Dokumen (Edit/Approve)',
+      'View-Only Sumber Dana Dasbor',
+      'View-Only Aktivitas Real-time',
+      'Action Aktivitas Real-time'
+    ]
+  },
+  {
+    id: 2,
+    name: 'Bendahara Pusat (Yayasan)',
+    description: 'Bertanggung jawab atas verifikasi akhir, persetujuan pengajuan anggaran RKA/LPJ seluruh unit, pengelolaan buku besar keuangan pesantren, dan monitoring sumber dana.',
+    level: 'Kritis',
+    permissions: [
+      'Program (Referensi Kegiatan)',
+      'Laporan (Buku Besar)',
+      'Input Pendapatan',
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Pengajuan (Edit/Approve)',
+      'Riwayat Dokumen (Read-Only)',
+      'Riwayat Dokumen (Edit/Approve)',
+      'View-Only Sumber Dana Dasbor',
+      'View-Only Aktivitas Real-time',
+      'Action Aktivitas Real-time'
+    ]
+  },
+  {
+    id: 3,
+    name: 'Pimpinan Pesantren',
+    description: 'Memantau kondisi keuangan pesantren secara real-time, membaca laporan buku besar keuangan, riwayat pengajuan, dan dokumen secara read-only tanpa hak manipulasi data.',
+    level: 'Eksekutif',
+    permissions: [
+      'Laporan (Buku Besar)',
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Dokumen (Read-Only)',
+      'View-Only Sumber Dana Dasbor',
+      'View-Only Aktivitas Real-time'
+    ]
+  },
+  {
+    id: 4,
+    name: 'Bendahara Jenjang/Unit',
+    description: 'Mengelola anggaran unit (RKA/LPJ), mencatat transaksi pendapatan internal unit, membuat pengajuan dana, serta merekap draf pengajuan staf unit.',
+    level: 'Menengah',
+    permissions: [
+      'Program (Referensi Kegiatan)',
+      'Input Pendapatan',
+      'Buat Pengajuan (RKA)',
+      'Buat Realisasi Anggaran (LPJ)',
+      'Draft Saya (Personal)',
+      'Rekap Draft (Bendahara)',
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Dokumen (Read-Only)',
+      'View-Only Sumber Dana Dasbor',
+      'View-Only Aktivitas Real-time',
+      'Action Aktivitas Real-time'
+    ]
+  },
+  {
+    id: 5,
+    name: 'Kepala Jenjang/Unit',
+    description: 'Menyetujui secara internal pengajuan anggaran (RKA/LPJ) di tingkat unit kerja, memantau sumber dana unit, dan memantau audit aktivitas unit secara real-time.',
+    level: 'Menengah',
+    permissions: [
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Dokumen (Read-Only)',
+      'View-Only Sumber Dana Dasbor',
+      'View-Only Aktivitas Real-time',
+      'Action Aktivitas Real-time'
+    ]
+  },
+  {
+    id: 6,
+    name: 'Staf Jenjang/Unit',
+    description: 'Menyusun draf pengajuan anggaran kegiatan (RKA) dan realisasi anggaran (LPJ) milik pribadi pada unit kerjanya masing-masing.',
+    level: 'Dasar',
+    permissions: [
+      'Buat Pengajuan (RKA)',
+      'Buat Realisasi Anggaran (LPJ)',
+      'Draft Saya (Personal)',
+      'Riwayat Pengajuan (Read-Only)',
+      'Riwayat Dokumen (Read-Only)',
+      'View-Only Aktivitas Real-time'
+    ]
+  }
+];
 
 const INITIAL_PERMISSIONS_MASTER = [
-  'Kelola Pengguna', 'Kelola Role', 'Konfigurasi Sistem', 'Akses Semua Laporan',
-  'View Rincian Pengeluaran', 'Pantau Status RKA', 'View Saldo', 'View Bukti Nota',
-  'Approve/Reject RKA', 'Cairkan Dana Bertahap', 'Buka/Tutup Periode RKA', 'Ubah Status Kegiatan',
-  'Verifikasi Internal', 'Approve RKA Unit', 'Tolak RKA Unit',
-  'Create RKA', 'Import RKA/RKT', 'Lapor Realisasi', 'Multi-Upload Nota', 'Cetak Invoice',
-  'Input Realisasi Harian', 'Upload Nota', 'Ajukan Reimbursement'
+  'Manajemen Pengguna',
+  'Manajemen Peran',
+  'Program (Referensi Kegiatan)',
+  'Laporan (Buku Besar)',
+  'Input Pendapatan',
+  'Buat Pengajuan (RKA)',
+  'Buat Realisasi Anggaran (LPJ)',
+  'Draft Saya (Personal)',
+  'Rekap Draft (Bendahara)',
+  'Riwayat Pengajuan (Read-Only)',
+  'Riwayat Pengajuan (Edit/Approve)',
+  'Riwayat Dokumen (Read-Only)',
+  'Riwayat Dokumen (Edit/Approve)',
+  'View-Only Sumber Dana Dasbor',
+  'View-Only Aktivitas Real-time',
+  'Action Aktivitas Real-time'
 ];
 
 export default function RoleManagementPage() {
