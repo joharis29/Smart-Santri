@@ -310,7 +310,7 @@ export default function AdminDashboardPage() {
 
           // Strict RBAC Enforcement: If NOT a center/super-user role, lock them strictly to their database-assigned unit!
           if (!isCenterRole) {
-            const dbUnitName = profile.unit?.name || 'Pusat (Yayasan)';
+            const dbUnitName = (Array.isArray(profile.unit) ? profile.unit[0]?.name : (profile.unit as any)?.name) || 'Pusat (Yayasan)';
             if (finalUnit !== dbUnitName) {
               finalUnit = dbUnitName;
               localStorage.setItem('activeUnit', dbUnitName);
