@@ -177,6 +177,77 @@ const RKA_PROGRAMS = [
 ]
 
 
+
+const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
+  'Pusat (Yayasan)': [
+    'Dana SPP',
+    'Dana Zakat',
+    'Dana Wakaf',
+    'Dana Infaq',
+    'Laba Usaha Koperasi',
+    'Laba Usaha Poskestren',
+    'Tabungan Wajib',
+    'Tabungan Siswa',
+    'Uang Saku'
+  ],
+  'TK': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'SDIT 1': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'SDIT 2': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'MTs': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'MA': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'Diniyah': [
+    'Dana Pesantren/Yayasan',
+    'Subsidi Pesantren',
+    'Infaq Siswa'
+  ],
+  'Asrama Putra': [
+    'Dana Pesantren/Yayasan',
+    'Kas Internal',
+    'Uang Saku'
+  ],
+  'Asrama Putri': [
+    'Dana Pesantren/Yayasan',
+    'Kas Internal',
+    'Uang Saku'
+  ],
+  'THQ': [
+    'Dana Pesantren/Yayasan',
+    'Uang Saku',
+    'Tabungan Siswa'
+  ],
+  'Dapur Asrama Putra': [
+    'Kas Internal'
+  ],
+  'Dapur Asrama Putri': [
+    'Kas Internal'
+  ]
+};
+
 const ALL_UNITS = [
   'Pusat (Yayasan)',
   'TK',
@@ -419,6 +490,12 @@ function BuatPengajuanContent() {
     let normalizedUnit = unit;
     if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
     return BIDANG_BY_UNIT[normalizedUnit] || BIDANG_BY_UNIT[unit] || ['Umum'];
+  }, [unit])
+
+  const availableSources = useMemo(() => {
+    let normalizedUnit = unit;
+    if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+    return FUNDING_SOURCES_BY_UNIT[normalizedUnit] || FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan'];
   }, [unit])
 
   // Reset bidang if it is no longer valid for the selected unit
@@ -2084,9 +2161,9 @@ function BuatPengajuanContent() {
                             className="w-full px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
                           >
                             <option value="">Pilih Sumber...</option>
-                            <option value="Dana BOS">Dana BOS</option>
-                            <option value="Dana Yayasan">Dana Yayasan</option>
-                            <option value="Dana Wakaf">Dana Wakaf</option>
+                            {availableSources.map(src => (
+                              <option key={src} value={src}>{src}</option>
+                            ))}
                           </select>
                         </div>
                         <div className="w-24 relative">
