@@ -508,6 +508,9 @@ export default function AdminDashboardPage() {
     if (status === 'MENUNGGU CAIR') {
       return userRole === 'BENDAHARA_PUSAT';
     }
+    if (status === 'CAIR') {
+      return userRole === 'BENDAHARA_UNIT' || userRole === 'BENDAHARA_PUSAT';
+    }
     return false;
   })() : false;
 
@@ -517,6 +520,7 @@ export default function AdminDashboardPage() {
     if (status === 'MENUNGGU KEPALA') return 'Kepala Unit/Jenjang';
     if (status === 'MENUNGGU PUSAT') return 'Bendahara Pusat';
     if (status === 'MENUNGGU CAIR') return 'Bendahara Pusat';
+    if (status === 'CAIR') return 'Bendahara Unit/Pusat';
     return 'Pusat';
   })() : '';
 
