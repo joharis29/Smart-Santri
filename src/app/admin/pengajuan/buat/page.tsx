@@ -379,8 +379,12 @@ function BuatPengajuanContent() {
   const searchParams = useSearchParams()
   const editId = searchParams.get('id')
 
-  // --- States ---
-  const [unit, setUnit] = useState('SDIT 1')
+  const [unit, setUnit] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeUnit') || 'SDIT 1'
+    }
+    return 'SDIT 1'
+  })
   const [bidang, setBidang] = useState('')
   const [bulan, setBulan] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
@@ -460,8 +464,15 @@ function BuatPengajuanContent() {
           setAssignedUnit(unitName)
 
           const isCenterUser = ['ADMINISTRATOR', 'PIMPINAN', 'BENDAHARA_PUSAT'].includes(roleName)
-          if (!isCenterUser && unitName && !editId) {
-            setUnit(unitName)
+          if (!editId) {
+            if (!isCenterUser && unitName) {
+              setUnit(unitName)
+            } else {
+              const savedActiveUnit = localStorage.getItem('activeUnit')
+              if (savedActiveUnit) {
+                setUnit(savedActiveUnit)
+              }
+            }
           }
         }
       } catch (err) {
@@ -1400,7 +1411,11 @@ function BuatPengajuanContent() {
 
   const handleReset = () => {
     if (window.confirm("Apakah Anda yakin ingin menghapus semua data input? Seluruh baris dan metadata akan dikosongkan.")) {
-      setUnit('SDIT 1')
+      const isCenterUser = ['ADMINISTRATOR', 'PIMPINAN', 'BENDAHARA_PUSAT'].includes(userRole)
+      const defaultUnit = !isCenterUser && assignedUnit 
+        ? assignedUnit 
+        : (localStorage.getItem('activeUnit') || 'SDIT 1')
+      setUnit(defaultUnit)
       setBidang('')
       setBulan('')
       setTahunAjaran('')
