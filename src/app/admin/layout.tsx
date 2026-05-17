@@ -275,7 +275,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     ? 'hover:bg-emerald-800/40 cursor-pointer border border-transparent hover:border-emerald-700/30' 
                                     : ''
                             }`}
-                            title={(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) ? "Klik untuk ganti peran/unit" : undefined}
+                            title={`Pengguna: ${userProfile ? userProfile.name : ''}. Klik untuk ganti peran/unit.`}
                         >
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0 text-white font-bold text-xs shadow-inner">
@@ -291,7 +291,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         )}
                                     </p>
                                     <p className="text-xs font-bold text-white truncate">
-                                        {userProfile ? userProfile.name : 'Memuat...'}
+                                        {activeUnit}
                                     </p>
                                 </div>
                             </div>
