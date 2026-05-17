@@ -396,9 +396,6 @@ export default function UserManagementPage() {
                           
                           {activeDropdownId === user.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-10 py-2 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right text-left">
-                              <button onClick={() => handleDropdownAction('Lihat Detail', user)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
-                                <Info className="w-4 h-4" /> Lihat Detail
-                              </button>
                               <button onClick={() => handleDropdownAction('Reset Password', user)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
                                 <KeyRound className="w-4 h-4" /> Reset Password
                               </button>
