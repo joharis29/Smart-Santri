@@ -23,12 +23,20 @@ import {
     Banknote
 } from 'lucide-react';
 
+const UNITS = [
+    'Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 
+    'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri'
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [expensesOpen, setExpensesOpen] = useState(false);
     const [incomeOpen, setIncomeOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<{ name: string; role: string } | null>(null);
+    const [actualRole, setActualRole] = useState<string>('');
+    const [activeRole, setActiveRole] = useState<string>('');
+    const [activeUnit, setActiveUnit] = useState<string>('Pusat (Yayasan)');
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -39,11 +47,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
-                    .select('full_name, role')
+                    .select('full_name, role, unit_id')
                     .eq('id', user.id)
                     .single();
 
                 if (profileError || !profile) return;
+
+                setActualRole(profile.role);
+
+                // Load simulated role and unit from localStorage, or fallback to real database profile
+                const savedRole = localStorage.getItem('activeRole') || profile.role;
+                const savedUnit = localStorage.getItem('activeUnit') || 'Pusat (Yayasan)';
+                
+                setActiveRole(savedRole);
+                setActiveUnit(savedUnit);
+
+                // Pre-populate if not set
+                if (!localStorage.getItem('activeRole')) localStorage.setItem('activeRole', profile.role);
+                if (!localStorage.getItem('activeUnit')) localStorage.setItem('activeUnit', savedUnit);
 
                 const mapRoleToDisplay = (roleDb: string) => {
                     switch (roleDb) {
@@ -62,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 setUserProfile({
                     name: profile.full_name,
-                    role: mapRoleToDisplay(profile.role)
+                    role: mapRoleToDisplay(savedRole) // Display the ACTIVE simulated role in the sidebar info card
                 });
             } catch (err) {
                 console.error('Error fetching layout profile:', err);
@@ -228,8 +249,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                     </nav>
 
-                    <div className="p-4 border-t border-emerald-800">
-                        <div className="flex items-center gap-3 mb-4">
+                    <div className="p-4 border-t border-emerald-800 space-y-4">
+                        {/* Selector Peran & Unit Premium untuk Super User / Merangkap */}
+                        {(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT') && (
+                            <div className="space-y-2.5 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/40 text-xs">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Peran Aktif</label>
+                                    <select 
+                                        value={activeRole}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            localStorage.setItem('activeRole', val);
+                                            setActiveRole(val);
+                                            window.location.reload();
+                                        }}
+                                        className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                    >
+                                        <option value="ADMINISTRATOR">👑 Administrator</option>
+                                        <option value="BENDAHARA_PUSAT">💰 Bendahara Pusat</option>
+                                        <option value="BENDAHARA_UNIT">💵 Bendahara Unit</option>
+                                        <option value="KEPALA_UNIT">👤 Kepala Unit</option>
+                                        <option value="STAFF">📝 Staf Unit</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Unit Kerja Aktif</label>
+                                    <select 
+                                        value={activeUnit}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            localStorage.setItem('activeUnit', val);
+                                            setActiveUnit(val);
+                                            window.location.reload();
+                                        }}
+                                        className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                    >
+                                        {UNITS.map(u => (
+                                            <option key={u} value={u}>{u}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0 text-white font-bold text-xs">
                                 {userProfile ? userProfile.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                             </div>

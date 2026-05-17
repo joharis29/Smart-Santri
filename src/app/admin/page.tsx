@@ -301,6 +301,13 @@ export default function AdminDashboardPage() {
           .single();
 
         if (profile) {
+          const savedRole = localStorage.getItem('activeRole');
+          const savedUnit = localStorage.getItem('activeUnit');
+
+          if (savedUnit) {
+            setActiveUnit(savedUnit);
+          }
+
           const mapProfileRoleToDashboard = (dbRole: string) => {
             switch (dbRole) {
               case 'ADMINISTRATOR':
@@ -317,7 +324,12 @@ export default function AdminDashboardPage() {
                 return 'STAFF';
             }
           };
-          setUserRole(mapProfileRoleToDashboard(profile.role));
+
+          if (savedRole) {
+            setUserRole(mapProfileRoleToDashboard(savedRole));
+          } else {
+            setUserRole(mapProfileRoleToDashboard(profile.role));
+          }
         }
       } catch (err) {
         console.error('Error fetching dashboard user role:', err);
@@ -435,7 +447,12 @@ export default function AdminDashboardPage() {
               <select 
                 className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
                 value={activeUnit}
-                onChange={(e) => setActiveUnit(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setActiveUnit(val);
+                  localStorage.setItem('activeUnit', val);
+                  window.location.reload();
+                }}
               >
                 {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
@@ -454,7 +471,12 @@ export default function AdminDashboardPage() {
                 ].map((item) => (
                     <button 
                         key={item.role} 
-                        onClick={() => setUserRole(item.role as any)} 
+                        onClick={() => {
+                          const val = item.role;
+                          setUserRole(val as any);
+                          localStorage.setItem('activeRole', val);
+                          window.location.reload();
+                        }} 
                         className={`px-2 py-1 rounded text-[9px] font-black tracking-tighter uppercase transition-all ${ 
                             userRole === item.role 
                             ? 'bg-white text-emerald-700 shadow-sm' 
