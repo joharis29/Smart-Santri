@@ -9,7 +9,7 @@
 
 -- 1. Buat Fungsi Sinkronisasi PL/pgSQL
 CREATE OR REPLACE FUNCTION public.sync_pendapatan_to_dompet()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER SECURITY DEFINER AS $$
 DECLARE
   v_unit_id UUID;
   v_jenjang_id UUID;
