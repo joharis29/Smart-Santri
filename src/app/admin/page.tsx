@@ -51,6 +51,7 @@ export default function AdminDashboardPage() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const processingReviewRef = useRef(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   
@@ -114,8 +115,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleReviewAction = async (action: 'APPROVE' | 'REJECT', overrideNote?: string) => {
-    if (!selectedTrxForReview || isVerifying) return;
+    if (!selectedTrxForReview || isVerifying || processingReviewRef.current) return;
     
+    processingReviewRef.current = true;
     setIsVerifying(true);
     try {
         const finalNote = overrideNote || reviewNote;
@@ -134,7 +136,7 @@ export default function AdminDashboardPage() {
                 calculatedNextStatus = selectedTrxForReview.type === 'RKA' ? 'SUDAH_DITERIMA' : 'SELESAI';
             }
         } else {
-            calculatedNextStatus = 'REVISI';
+            calculatedNextStatus = 'DRAFT';
         }
 
         // PERSIST TO DATABASE
@@ -180,7 +182,7 @@ export default function AdminDashboardPage() {
               else if (calculatedNextStatus === 'MENUNGGU_PUSAT') statusColor = 'bg-orange-100 text-orange-700';
               else if (calculatedNextStatus === 'MENUNGGU_CAIR') statusColor = 'bg-blue-100 text-blue-700';
               else if (calculatedNextStatus === 'CAIR') statusColor = 'bg-emerald-100 text-emerald-700';
-              else if (calculatedNextStatus === 'REVISI') statusColor = 'bg-rose-100 text-rose-700';
+              else if (calculatedNextStatus === 'REVISI' || calculatedNextStatus === 'DRAFT') statusColor = 'bg-rose-100 text-rose-700';
 
               return { ...t, status: statusDisplay, rawStatus: calculatedNextStatus, statusColor: statusColor, note: finalNote };
           }
@@ -194,6 +196,7 @@ export default function AdminDashboardPage() {
         console.error("Error in handleReviewAction:", e);
     } finally {
         setIsVerifying(false);
+        processingReviewRef.current = false;
     }
   };
 
