@@ -249,12 +249,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                         <Users className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
-                                        <span className="truncate">Manajemen User</span>
+                                        <span className="truncate">Manajemen Pengguna</span>
                                     </Link>
                                     <Link href="/admin/roles" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                         <ShieldAlert className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
-                                        <span className="truncate">Manajemen Role</span>
+                                        <span className="truncate">Manajemen Peran</span>
                                     </Link>
                                     <Link href="/admin/pengaturan/rka-referensi" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>

@@ -201,13 +201,13 @@ export default function RoleManagementPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Role & Akses</h1>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Peran & Akses</h1>
           <p className="text-sm text-slate-500 font-medium mt-1">Atur wewenang dan batasan akses (RBAC) untuk setiap peran di sistem.</p>
         </div>
         <button 
           onClick={handleOpenAddModal}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm shadow-emerald-200 transition-all text-sm shrink-0">
-          <Plus className="w-4 h-4" /> Tambah Role Baru
+          <Plus className="w-4 h-4" /> Tambah Peran Baru
         </button>
       </div>
 
