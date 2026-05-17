@@ -143,7 +143,11 @@ export default function AdminDashboardPage() {
         // PERSIST TO DATABASE
         let res;
         if (action === 'APPROVE') {
-            res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus);
+            let metode: string | undefined = undefined;
+            if (finalNote && finalNote.startsWith('Dicairkan melalui ')) {
+                metode = finalNote.replace('Dicairkan melalui ', ''); // 'Transfer' or 'Cash'
+            }
+            res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus, metode);
         } else {
             res = await revisiPengajuan(selectedTrxForReview.id, finalNote);
         }

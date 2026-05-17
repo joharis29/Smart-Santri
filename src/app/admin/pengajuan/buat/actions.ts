@@ -283,7 +283,7 @@ Target Status: DRAFT`
 
   return { success: true }
 }
-export async function verifikasiPengajuan(id: string, nextStatus?: string) {
+export async function verifikasiPengajuan(id: string, nextStatus?: string, metodePencairan?: string) {
   const supabase = await createClient()
   
   // FETCH USER INFO
@@ -301,11 +301,17 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string) {
   // FETCH DOCUMENT INFO
   const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
 
+  const updatePayload: any = {
+    status: nextStatus || 'MENUNGGU_KEPALA'
+  }
+
+  if (metodePencairan) {
+    updatePayload.metode_pencairan = metodePencairan
+  }
+
   const { data, error } = await supabase
     .from('dokumen_pengajuan')
-    .update({ 
-      status: nextStatus || 'MENUNGGU_KEPALA'
-    })
+    .update(updatePayload)
     .eq('id', id)
     .select()
 

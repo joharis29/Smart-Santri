@@ -18,6 +18,7 @@ export default function RiwayatPengajuanPage() {
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
     const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+    const [selectedMetode, setSelectedMetode] = useState<string[]>([]);
 
     // Handle outside click for filter
     useEffect(() => {
@@ -83,6 +84,7 @@ export default function RiwayatPengajuanPage() {
                             kegiatan: items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Dana',
                             sumber: items[0]?.sumber_dana || 'Dana Yayasan',
                             nominal: total,
+                            metode_pencairan: doc.metode_pencairan || '-',
                         };
                     });
                     setRiwayatItems(mapped);
@@ -128,6 +130,9 @@ export default function RiwayatPengajuanPage() {
             const tMonth = parts.length === 3 ? `${parts[1]} ${parts[2]}` : item.tanggal;
             if (!selectedMonths.includes(tMonth)) return false;
         }
+
+        // Filter by Metode Pencairan
+        if (selectedMetode.length > 0 && !selectedMetode.includes(item.metode_pencairan)) return false;
         
         return true;
     });
@@ -170,12 +175,12 @@ export default function RiwayatPengajuanPage() {
                         <div className="relative" ref={filterRef}>
                             <button 
                               onClick={() => setIsFilterOpen(!isFilterOpen)}
-                              className={`flex-1 lg:flex-none flex items-center justify-center gap-2 border border-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm ${selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-white hover:bg-slate-50 text-slate-600'}`}
+                              className={`flex-1 lg:flex-none flex items-center justify-center gap-2 border border-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm ${selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-white hover:bg-slate-50 text-slate-600'}`}
                             >
                                 <Filter className="w-4 h-4" /> Filter
-                                {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0) && (
+                                {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0) && (
                                     <span className="text-[10px] font-bold bg-emerald-600 text-white w-4 h-4 flex items-center justify-center rounded-full leading-none ml-1">
-                                        {selectedUnits.length + selectedSumber.length + selectedMonths.length}
+                                        {selectedUnits.length + selectedSumber.length + selectedMonths.length + selectedMetode.length}
                                     </span>
                                 )}
                             </button>
@@ -184,9 +189,9 @@ export default function RiwayatPengajuanPage() {
                               <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-4 animate-in fade-in slide-in-from-top-2">
                                   <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Filter Data</h4>
-                                    {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0) && (
+                                    {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0) && (
                                       <button 
-                                        onClick={() => { setSelectedUnits([]); setSelectedSumber([]); setSelectedMonths([]); }}
+                                        onClick={() => { setSelectedUnits([]); setSelectedSumber([]); setSelectedMonths([]); setSelectedMetode([]); }}
                                         className="text-[10px] text-rose-500 font-bold hover:underline"
                                       >
                                         Reset Semua
@@ -257,6 +262,27 @@ export default function RiwayatPengajuanPage() {
                                         ))}
                                       </div>
                                     </div>
+
+                                    {/* Metode Filter */}
+                                    <div>
+                                      <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Berdasarkan Metode</p>
+                                      <div className="space-y-2">
+                                        {['Transfer', 'Cash'].map(metode => (
+                                          <label key={metode} className="flex items-center gap-2 cursor-pointer group">
+                                            <input 
+                                              type="checkbox" 
+                                              className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                                              checked={selectedMetode.includes(metode)}
+                                              onChange={(e) => {
+                                                if (e.target.checked) setSelectedMetode([...selectedMetode, metode]);
+                                                else setSelectedMetode(selectedMetode.filter(m => m !== metode));
+                                              }}
+                                            />
+                                            <span className="text-xs font-medium text-slate-700 group-hover:text-emerald-700">{metode}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    </div>
                                   </div>
                               </div>
                             )}
@@ -279,6 +305,7 @@ export default function RiwayatPengajuanPage() {
                                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Unit / Bidang</th>
                                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest w-1/4">Program / Kegiatan</th>
                                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Sumber Dana</th>
+                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Metode</th>
                                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Nominal</th>
                                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Aksi</th>
                             </tr>
@@ -286,7 +313,7 @@ export default function RiwayatPengajuanPage() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                    <td colSpan={8} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                                             <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Memuat Riwayat Pengajuan...</p>
@@ -295,7 +322,7 @@ export default function RiwayatPengajuanPage() {
                                 </tr>
                             ) : filteredRiwayat.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center">
+                                    <td colSpan={8} className="px-6 py-12 text-center">
                                         <p className="text-slate-500 font-medium text-sm italic">Tidak ada riwayat pengajuan yang cocok dengan filter saat ini.</p>
                                     </td>
                                 </tr>
@@ -312,18 +339,18 @@ export default function RiwayatPengajuanPage() {
                                             <p className="text-xs font-bold text-slate-800">{item.bulan || '-'}</p>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.tahun_ajaran || '-'}</p>
                                         </td>
-
+ 
                                         {/* 3. Unit / Bidang */}
                                         <td className="px-6 py-4 align-middle whitespace-nowrap">
                                             <p className="text-xs font-bold text-emerald-700">{item.unit}</p>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.bidang || '-'}</p>
                                         </td>
-
+ 
                                         {/* 4. Program / Kegiatan */}
                                         <td className="px-6 py-4 align-middle">
                                             <p className="text-xs font-bold text-slate-800 leading-relaxed">{item.kegiatan || item.program}</p>
                                         </td>
-
+ 
                                         {/* 5. Sumber Dana */}
                                         <td className="px-6 py-4 align-middle whitespace-nowrap">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-tighter">
@@ -331,6 +358,23 @@ export default function RiwayatPengajuanPage() {
                                             </span>
                                         </td>
 
+                                        {/* 5.5 Metode Pencairan */}
+                                        <td className="px-6 py-4 align-middle text-center whitespace-nowrap">
+                                            {item.metode_pencairan === 'Transfer' ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-tight">
+                                                    Transfer
+                                                </span>
+                                            ) : item.metode_pencairan === 'Cash' ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100 uppercase tracking-tight">
+                                                    Cash
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
+                                                    -
+                                                </span>
+                                            )}
+                                        </td>
+ 
                                         {/* 6. Nominal */}
                                         <td className="px-6 py-4 align-middle text-xs font-black text-slate-900 text-right whitespace-nowrap">
                                             Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
