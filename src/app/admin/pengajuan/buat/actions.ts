@@ -221,6 +221,21 @@ export async function deletePengajuan(id: string) {
 export async function revisiPengajuan(id: string, catatan: string) {
   const supabase = await createClient()
   
+  // FETCH USER INFO
+  const { data: { user } } = await supabase.auth.getUser()
+  let userProfile: any = null
+  let multiRoleProfiles: any[] = []
+  if (user) {
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    userProfile = p
+    
+    const { data: mr } = await supabase.from('profiles_multi_role').select('*').eq('user_id', user.id)
+    multiRoleProfiles = mr || []
+  }
+
+  // FETCH DOCUMENT INFO
+  const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
+
   const { data, error } = await supabase
     .from('dokumen_pengajuan')
     .update({ 
@@ -232,7 +247,17 @@ export async function revisiPengajuan(id: string, catatan: string) {
 
   if (error) return { error: error.message }
   if (!data || data.length === 0) {
-    return { error: "Pembaruan ditolak oleh sistem keamanan (RLS). Pastikan peran Anda memiliki hak akses update dokumen di unit/jenjang ini." }
+    const diagMsg = `RLS Denied. Diag Info:
+User ID: ${user?.id || 'none'}
+User Role: ${userProfile?.role || 'none'}
+User Unit: ${userProfile?.unit_id || 'none'}
+User Jenjang: ${userProfile?.jenjang_id || 'none'}
+Multi-Roles: ${JSON.stringify(multiRoleProfiles.map(m => ({ role: m.role, unit: m.unit_id })))}
+Doc ID: ${id}
+Doc Unit: ${doc?.unit_id || 'none'}
+Doc Jenjang: ${doc?.jenjang_id || 'none'}
+Target Status: DRAFT`
+    return { error: diagMsg }
   }
 
   return { success: true }
@@ -240,6 +265,21 @@ export async function revisiPengajuan(id: string, catatan: string) {
 export async function verifikasiPengajuan(id: string, nextStatus?: string) {
   const supabase = await createClient()
   
+  // FETCH USER INFO
+  const { data: { user } } = await supabase.auth.getUser()
+  let userProfile: any = null
+  let multiRoleProfiles: any[] = []
+  if (user) {
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    userProfile = p
+    
+    const { data: mr } = await supabase.from('profiles_multi_role').select('*').eq('user_id', user.id)
+    multiRoleProfiles = mr || []
+  }
+
+  // FETCH DOCUMENT INFO
+  const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
+
   const { data, error } = await supabase
     .from('dokumen_pengajuan')
     .update({ 
@@ -250,7 +290,17 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string) {
 
   if (error) return { error: error.message }
   if (!data || data.length === 0) {
-    return { error: "Pembaruan ditolak oleh sistem keamanan (RLS). Pastikan peran Anda memiliki hak akses update dokumen di unit/jenjang ini." }
+    const diagMsg = `RLS Denied. Diag Info:
+User ID: ${user?.id || 'none'}
+User Role: ${userProfile?.role || 'none'}
+User Unit: ${userProfile?.unit_id || 'none'}
+User Jenjang: ${userProfile?.jenjang_id || 'none'}
+Multi-Roles: ${JSON.stringify(multiRoleProfiles.map(m => ({ role: m.role, unit: m.unit_id })))}
+Doc ID: ${id}
+Doc Unit: ${doc?.unit_id || 'none'}
+Doc Jenjang: ${doc?.jenjang_id || 'none'}
+Target Status: ${nextStatus}`
+    return { error: diagMsg }
   }
 
   return { success: true }
