@@ -463,6 +463,18 @@ export default function UserManagementPage() {
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-2">Informasi Akun</h4>
                   
+                  {modalMode === 'add' && (
+                    <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 flex gap-2.5 items-start">
+                      <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-bold text-emerald-800">Petunjuk Registrasi</p>
+                        <p className="text-[10px] text-emerald-700/90 leading-relaxed font-medium">
+                          Staf harus melakukan <strong>registrasi/signup mandiri</strong> terlebih dahulu di halaman depan menggunakan email mereka. Setelah itu, masukkan email tersebut di sini untuk menetapkan peran dan unit kerja mereka secara resmi.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700">Nama Lengkap</label>
                     <div className="relative">
