@@ -71,6 +71,13 @@ export default function UserManagementPage() {
   // Dropdown state
   const [activeDropdownId, setActiveDropdownId] = useState<number | string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Filter states
+  const [filterRole, setFilterRole] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [filterUnit, setFilterUnit] = useState<string>('ALL');
+  const [showFilterPopover, setShowFilterPopover] = useState<boolean>(false);
 
   // Load profiles from Supabase
   const loadProfiles = async () => {
@@ -131,18 +138,60 @@ export default function UserManagementPage() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setActiveDropdownId(null);
       }
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilterPopover(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Filter users
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.unit.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.unit.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = filterRole === 'ALL' || user.role === filterRole;
+    const matchesStatus = filterStatus === 'ALL' || user.status === filterStatus;
+    const matchesUnit = filterUnit === 'ALL' || user.unit === filterUnit;
+
+    return matchesSearch && matchesRole && matchesStatus && matchesUnit;
+  });
+
+  // Export users to CSV
+  const handleExportCSV = () => {
+    if (filteredUsers.length === 0) {
+      alert('Tidak ada data pengguna untuk diekspor!');
+      return;
+    }
+
+    const headers = ['Nama Lengkap', 'Email', 'Peran Utama', 'Unit Aktif', 'Status', 'Tanggal Bergabung'];
+    const rows = filteredUsers.map(user => [
+      user.name,
+      user.email,
+      user.role,
+      user.unit,
+      user.status,
+      user.joinedAt
+    ]);
+
+    const csvContent = "\uFEFF" + [
+      headers.join(','),
+      ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Daftar_Pengguna_Smart_Santri_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Handlers
   const handleOpenAddModal = () => {
@@ -330,12 +379,102 @@ export default function UserManagementPage() {
               className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow"
             />
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors">
-              <Filter className="w-4 h-4" /> Filter
+          <div className="flex gap-2 w-full sm:w-auto relative" ref={filterRef}>
+            <button 
+              onClick={() => setShowFilterPopover(!showFilterPopover)}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border rounded-xl font-bold text-xs transition-all ${
+                filterRole !== 'ALL' || filterStatus !== 'ALL' || filterUnit !== 'ALL'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="w-4 h-4 shrink-0" />
+              <span>Filter</span>
+              {(filterRole !== 'ALL' || filterStatus !== 'ALL' || filterUnit !== 'ALL') && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              )}
             </button>
-            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors">
-              <Download className="w-4 h-4" /> Ekspor
+
+            {/* Premium Floating Filter Popover */}
+            {showFilterPopover && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-40 space-y-3.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <span className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Opsi Filter</span>
+                  {(filterRole !== 'ALL' || filterStatus !== 'ALL' || filterUnit !== 'ALL') && (
+                    <button 
+                      onClick={() => {
+                        setFilterRole('ALL');
+                        setFilterStatus('ALL');
+                        setFilterUnit('ALL');
+                      }}
+                      className="text-[10px] text-rose-500 hover:text-rose-700 font-bold hover:underline"
+                    >
+                      Reset Filter
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Peran */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 block">Saring Berdasarkan Peran</label>
+                  <select 
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-700 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="ALL">Semua Peran</option>
+                    <option value="Administrator">Administrator</option>
+                    <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Pusat</option>
+                    <option value="Bendahara Unit">Bendahara Unit</option>
+                    <option value="Kepala Unit">Kepala Unit</option>
+                    <option value="Staf Unit">Staf Unit</option>
+                    <option value="Staf Bidang">Staf Bidang</option>
+                    <option value="Pimpinan Pesantren">Pimpinan</option>
+                  </select>
+                </div>
+
+                {/* Filter Unit */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 block">Saring Berdasarkan Unit</label>
+                  <select 
+                    value={filterUnit}
+                    onChange={(e) => setFilterUnit(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-700 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="ALL">Semua Unit</option>
+                    <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
+                    <option value="SDIT 1">SDIT 1</option>
+                    <option value="SDIT 2">SDIT 2</option>
+                    <option value="SMPIT">SMPIT</option>
+                    <option value="SMAIT">SMAIT</option>
+                    <option value="MADIN">MADIN</option>
+                    <option value="PONDOK">PONDOK</option>
+                  </select>
+                </div>
+
+                {/* Filter Status */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 block">Saring Berdasarkan Status</label>
+                  <select 
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-700 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="ALL">Semua Status</option>
+                    <option value="Aktif">Aktif</option>
+                    <option value="Nonaktif">Nonaktif</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <button 
+              onClick={handleExportCSV}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors"
+              title="Ekspor daftar ke format CSV"
+            >
+              <Download className="w-4 h-4 shrink-0" />
+              <span>Ekspor</span>
             </button>
           </div>
         </div>
