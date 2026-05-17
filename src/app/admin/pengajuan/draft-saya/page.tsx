@@ -121,7 +121,7 @@ export default function DraftSayaPage() {
                         budget: total,
                         fundingSources: Array.from(sources),
                         items: itemCount,
-                        status: d.status === 'REVISI' ? 'REVISI' : 
+                        status: (d.status === 'REVISI' || d.catatan_revisi) ? 'REVISI' : 
                                 d.status === 'MENUNGGU_VERIFIKASI' ? 'Verifikasi Unit' : 
                                 'Drafting',
                         lastUpdate: d.created_at ? new Date(d.created_at).toLocaleDateString('id-ID') : '-',

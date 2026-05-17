@@ -1471,15 +1471,15 @@ function BuatPengajuanContent() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                    {docStatus === 'REVISI' ? 'Revisi Pengajuan Dana' : 'Buat Pengajuan Dana Baru'}
-                    {docStatus === 'REVISI' && (
+                    {(docStatus === 'REVISI' || catatanRevisi) ? 'Revisi Pengajuan Dana' : 'Buat Pengajuan Dana Baru'}
+                    {(docStatus === 'REVISI' || catatanRevisi) && (
                         <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-md animate-pulse">REVISI</span>
                     )}
                 </h1>
               </div>
             </div>
 
-            {docStatus === 'REVISI' && catatanRevisi && (
+            {catatanRevisi && (
                 <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex gap-3 animate-in slide-in-from-top-2">
                     <div className="bg-rose-500 text-white p-1.5 rounded-lg h-fit">
                         <AlertTriangle className="w-4 h-4" />

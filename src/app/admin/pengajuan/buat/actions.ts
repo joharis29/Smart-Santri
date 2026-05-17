@@ -260,7 +260,7 @@ export async function revisiPengajuan(id: string, catatan: string) {
   const { data, error } = await supabase
     .from('dokumen_pengajuan')
     .update({ 
-      status: 'DRAFT',
+      status: 'REVISI',
       catatan_revisi: catatan
     })
     .eq('id', id)
