@@ -110,18 +110,7 @@ const OPERASIONAL_CATEGORIES = [
   'Lain-lain'
 ]
 
-const DEFAULT_TEMPLATES = {
-  'konsumsi': [
-    { name: 'Nasi Box / Makan Siang', unit: 'box', price: 25000, qty: 0, total: 0 },
-    { name: 'Snack Box / Kue', unit: 'box', price: 10000, qty: 0, total: 0 },
-    { name: 'Air Minum 330ml', unit: 'dus', price: 45000, qty: 0, total: 0 }
-  ],
-  'atk': [
-    { name: 'Kertas A4 80gr', unit: 'rim', price: 55000, qty: 0, total: 0 },
-    { name: 'Pulpen Standard', unit: 'box', price: 24000, qty: 0, total: 0 },
-    { name: 'Map Snelhechter', unit: 'pcs', price: 5000, qty: 0, total: 0 }
-  ]
-}
+const DEFAULT_TEMPLATES: Record<string, RkaDetailItem[]> = {}
 
 const RKA_PROGRAMS = [
   'Optimalisasi Manajemen Pengarsipan/Mengelola surat statis & dinamis',
@@ -1947,10 +1936,6 @@ function BuatPengajuanContent() {
                           className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 min-w-[150px]"
                         >
                           <option value="">Pilih Template...</option>
-                          <optgroup label="Standar Sistem">
-                            <option value="konsumsi">Standar Konsumsi Rapat</option>
-                            <option value="atk">Daftar ATK Kantor</option>
-                          </optgroup>
                           {Object.keys(customTemplates).length > 0 && (
                             <optgroup label="Template Saya">
                               {Object.keys(customTemplates).map(name => (
