@@ -288,6 +288,45 @@ export default function AdminDashboardPage() {
 
   // --- EFFECTS ---
   useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          const mapProfileRoleToDashboard = (dbRole: string) => {
+            switch (dbRole) {
+              case 'ADMINISTRATOR':
+              case 'BENDAHARA_PUSAT':
+              case 'PIMPINAN':
+                return 'BENDAHARA_PUSAT';
+              case 'KEPALA_UNIT':
+              case 'KEPALA_JENJANG':
+                return 'KEPALA_UNIT';
+              case 'BENDAHARA_UNIT':
+              case 'BENDAHARA_JENJANG':
+                return 'BENDAHARA_UNIT';
+              default:
+                return 'STAFF';
+            }
+          };
+          setUserRole(mapProfileRoleToDashboard(profile.role));
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard user role:', err);
+      }
+    };
+    fetchUserRole();
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
         setIsFilterDropdownOpen(false);
