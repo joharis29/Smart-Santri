@@ -174,9 +174,9 @@ CREATE POLICY "dokumen_update_policy" ON public.dokumen_pengajuan
   USING (
     -- Admin & Bendahara Pusat memiliki otoritas penuh edit/approve dokumen apa saja
     public.get_user_role(auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
-    -- Kepala Jenjang/Unit dapat menyetujui/menolak pengajuan khusus dari unit kerjanya sendiri
+    -- Kepala & Bendahara Jenjang/Unit dapat menyetujui/menolak/memproses pengajuan khusus dari unit kerjanya sendiri
     OR (
-      public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT')
+      public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT')
       AND (unit_id = public.get_user_unit(auth.uid()) OR jenjang_id = public.get_user_jenjang(auth.uid()))
     )
     -- Pembuat dokumen hanya dapat mengubah isi jika status saat ini masih berwujud 'DRAFT' atau 'REVISI'
@@ -186,7 +186,7 @@ CREATE POLICY "dokumen_update_policy" ON public.dokumen_pengajuan
     -- Setelah diubah, pembuat boleh mengubah status dokumen miliknya ke status baru (misal DRAF -> MENUNGGU_VERIFIKASI)
     public.get_user_role(auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
     OR (
-      public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT')
+      public.get_user_role(auth.uid()) IN ('KEPALA_JENJANG', 'KEPALA_UNIT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT')
       AND (unit_id = public.get_user_unit(auth.uid()) OR jenjang_id = public.get_user_jenjang(auth.uid()))
     )
     OR (pembuat_id = auth.uid())

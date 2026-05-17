@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
 
         if (action === 'APPROVE') {
             if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
-                calculatedNextStatus = 'MENUNGGU_KEPALA';
+                calculatedNextStatus = 'REKAP_BENDAHARA';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
@@ -178,6 +178,7 @@ export default function AdminDashboardPage() {
               let statusColor = 'bg-slate-100 text-slate-500';
               
               if (calculatedNextStatus === 'MENUNGGU_VERIFIKASI') statusColor = 'bg-sky-100 text-sky-700';
+              else if (calculatedNextStatus === 'REKAP_BENDAHARA') statusColor = 'bg-purple-100 text-purple-700';
               else if (calculatedNextStatus === 'MENUNGGU_KEPALA') statusColor = 'bg-amber-100 text-amber-700';
               else if (calculatedNextStatus === 'MENUNGGU_PUSAT') statusColor = 'bg-orange-100 text-orange-700';
               else if (calculatedNextStatus === 'MENUNGGU_CAIR') statusColor = 'bg-blue-100 text-blue-700';

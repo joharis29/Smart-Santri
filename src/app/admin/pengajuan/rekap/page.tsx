@@ -45,9 +45,9 @@ export default function RekapitulasiDraftPage() {
                 .from('item_pengajuan')
                 .select(`
                     *,
-                    dokumen_pengajuan!inner(id, bidang, periode_bulan, periode_tahun, created_at, catatan_revisi)
+                    dokumen_pengajuan!inner(id, unit, bidang, periode_bulan, periode_tahun, created_at, catatan_revisi)
                 `)
-                .eq('dokumen_pengajuan.status', 'MENUNGGU_KEPALA')
+                .eq('dokumen_pengajuan.status', 'REKAP_BENDAHARA')
                 .order('created_at', { ascending: false });
 
             if (!error && data) {
@@ -59,6 +59,7 @@ export default function RekapitulasiDraftPage() {
                         id: item.id,
                         dokumenId: (item.dokumen_pengajuan as any)?.id,
                         pengaju: 'Staf Unit',
+                        unit: (item.dokumen_pengajuan as any)?.unit || 'Tanpa Unit',
                         bidang: (item.dokumen_pengajuan as any)?.bidang || 'Tanpa Bidang', 
                         kegiatan: item.judul_kegiatan,
                         coa: item.kategori_coa,
@@ -155,6 +156,39 @@ export default function RekapitulasiDraftPage() {
         } else {
             alert("Gagal memproses revisi: " + res.error);
         }
+    };
+
+    const [isForwarding, setIsForwarding] = useState(false);
+
+    const handleForwardToKepala = async () => {
+        const selectedDocIds = Array.from(new Set(
+            filteredItems.filter(i => i.selected).map(i => i.dokumenId)
+        ));
+        
+        if (selectedDocIds.length === 0) {
+            alert("Silakan pilih pengajuan terlebih dahulu.");
+            return;
+        }
+
+        if (!confirm(`Apakah Anda yakin ingin meneruskan ${selectedDocIds.length} pengajuan terpilih ke Kepala Unit/Jenjang?`)) {
+            return;
+        }
+
+        setIsForwarding(true);
+        const { error } = await supabase
+            .from('dokumen_pengajuan')
+            .update({ status: 'MENUNGGU_KEPALA' })
+            .in('id', selectedDocIds);
+
+        if (error) {
+            alert("Gagal meneruskan pengajuan: " + error.message);
+        } else {
+            alert(`Berhasil meneruskan ${selectedDocIds.length} pengajuan ke Kepala Unit.`);
+            // Update local queues to remove forwarded items
+            setRkaQueue(prev => prev.filter(i => !selectedDocIds.includes(i.dokumenId)));
+            setLpjQueue(prev => prev.filter(i => !selectedDocIds.includes(i.dokumenId)));
+        }
+        setIsForwarding(false);
     };
 
     const toggleItemSelection = (id: number) => {
@@ -410,11 +444,12 @@ export default function RekapitulasiDraftPage() {
                         </div>
                     </div>
                     <button 
-                        disabled={totalSelectedItems === 0}
+                        onClick={handleForwardToKepala}
+                        disabled={totalSelectedItems === 0 || isForwarding}
                         className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-10 py-4 rounded-2xl shadow-xl shadow-emerald-100 transition-all flex items-center justify-center gap-2 uppercase tracking-tight active:scale-95"
                     >
                         <Send className="w-4 h-4 fill-white" />
-                        Teruskan ke Kepala Unit
+                        {isForwarding ? 'Memproses...' : 'Teruskan ke Kepala Unit'}
                     </button>
                 </div>
             </div>
