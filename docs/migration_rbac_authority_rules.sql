@@ -21,7 +21,7 @@ ALTER TABLE transaksi_pendapatan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kamus_kegiatan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dokumen_pengajuan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE item_pengajuan ENABLE ROW LEVEL SECURITY;
-ALTER TABLE realisasi_dana ENABLE ROW LEVEL SECURITY;
+-- Catatan: realisasi_dana tidak diaktifkan karena realisasi LPJ disatukan ke dokumen_pengajuan (Header-Detail)
 ALTER TABLE dompet_dana ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_trail_logs ENABLE ROW LEVEL SECURITY;
 
@@ -201,36 +201,10 @@ CREATE POLICY "item_manage_policy" ON item_pengajuan
 -- =========================================================================================
 -- 7. OTORITAS: BUAT REALISASI ANGGARAN (LPJ) & RIWAYAT DOKUMEN REALISASI (READ/EDIT)
 -- =========================================================================================
--- - Pembacaan: Pimpinan/Pusat/Admin membaca semua. Jenjang/Unit membaca miliknya sendiri.
--- - Pembuatan: Bendahara Jenjang/Unit, Staf Jenjang/Unit, dan Admin.
--- - Perubahan/Koreksi: Hanya Admin dan Bendahara Pusat.
-
-DROP POLICY IF EXISTS "Pimpinan and Pusat can read all realisasi" ON realisasi_dana;
-DROP POLICY IF EXISTS "Unit members can read their unit realisasi" ON realisasi_dana;
-DROP POLICY IF EXISTS "Pemohon can insert realisasi" ON realisasi_dana;
-DROP POLICY IF EXISTS "realisasi_read_policy" ON realisasi_dana;
-DROP POLICY IF EXISTS "realisasi_insert_policy" ON realisasi_dana;
-DROP POLICY IF EXISTS "realisasi_update_policy" ON realisasi_dana;
-
-CREATE POLICY "realisasi_read_policy" ON realisasi_dana
-  FOR SELECT TO authenticated
-  USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN')
-    OR pemohon_id IN (SELECT id FROM profiles WHERE unit_id = (SELECT unit_id FROM profiles WHERE id = auth.uid()))
-  );
-
-CREATE POLICY "realisasi_insert_policy" ON realisasi_dana
-  FOR INSERT TO authenticated
-  WITH CHECK (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT', 'STAFF_BIDANG', 'STAFF')
-    AND pemohon_id = auth.uid()
-  );
-
-CREATE POLICY "realisasi_update_policy" ON realisasi_dana
-  FOR UPDATE TO authenticated
-  USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
-  );
+-- Catatan: Modul Realisasi LPJ di Smart Santri menggunakan konsep Header-Detail terpadu
+-- yang bersandar pada tabel dokumen_pengajuan dan item_pengajuan (menggantikan realisasi_dana lama).
+-- Kebijakan keamanannya telah terproteksi secara otomatis melalui poin (5) dan (6) di atas!
+-- =========================================================================================
 
 
 -- =========================================================================================
