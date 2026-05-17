@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { ClipboardCheck, Download, Eye, FileText, Search, Filter, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 
 export default function RiwayatPengajuanPage() {
-    // Real Data (Empty for production)
+    const supabase = createClient();
     const [riwayatItems, setRiwayatItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Filter States
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -26,6 +29,72 @@ export default function RiwayatPengajuanPage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Fetch Completed / Liquidated RKA items from Supabase
+    useEffect(() => {
+        const fetchRiwayat = async () => {
+            setLoading(true);
+            try {
+                // 1. Get current user
+                const { data: authData } = await supabase.auth.getUser();
+                const user = authData?.user;
+                if (!user) {
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Get active role & unit
+                const userRole = localStorage.getItem(`activeRole_${user.id}`);
+                const activeUnit = localStorage.getItem(`activeUnit_${user.id}`) || 'Pusat (Yayasan)';
+
+                // 3. Query dokumen_pengajuan
+                let query = supabase
+                    .from('dokumen_pengajuan')
+                    .select(`
+                        *,
+                        item_pengajuan(*)
+                    `)
+                    .in('status', ['CAIR', 'SUDAH_DITERIMA', 'SELESAI'])
+                    .order('updated_at', { ascending: false });
+
+                // If not Pusat/Admin, filter by active unit
+                if (userRole !== 'BENDAHARA_PUSAT' && userRole !== 'ADMINISTRATOR' && userRole !== 'PIMPINAN') {
+                    query = query.eq('unit', activeUnit);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    console.error("Error fetching riwayat:", error);
+                } else if (data) {
+                    const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    const mapped = data.map(doc => {
+                        const items = doc.item_pengajuan || [];
+                        const total = items.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
+                        return {
+                            id: doc.id,
+                            tanggal_pencairan: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('id-ID') : new Date(doc.created_at).toLocaleDateString('id-ID'),
+                            tanggal: new Date(doc.created_at).toLocaleDateString('id-ID'),
+                            bulan: monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan),
+                            tahun_ajaran: doc.tahun_ajaran || `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}`,
+                            unit: doc.unit || 'SDIT 1',
+                            bidang: doc.bidang || 'Tanpa Bidang',
+                            kegiatan: items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Dana',
+                            sumber: items[0]?.sumber_dana || 'Dana Yayasan',
+                            nominal: total,
+                        };
+                    });
+                    setRiwayatItems(mapped);
+                }
+            } catch (err) {
+                console.error("Error loading riwayat page data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRiwayat();
+    }, []);
+
     // Extract unique filter options dynamically
     const availableUnits = Array.from(new Set(riwayatItems.map(i => i.unit)));
     const availableSumber = Array.from(new Set(riwayatItems.map(i => i.sumber)));
@@ -36,6 +105,15 @@ export default function RiwayatPengajuanPage() {
 
     // Compute filtered items
     const filteredRiwayat = riwayatItems.filter(item => {
+        // Filter by search query
+        if (searchQuery.trim() !== '') {
+            const q = searchQuery.toLowerCase();
+            const kegiatanMatches = (item.kegiatan || '').toLowerCase().includes(q);
+            const unitMatches = (item.unit || '').toLowerCase().includes(q);
+            const bidangMatches = (item.bidang || '').toLowerCase().includes(q);
+            if (!kegiatanMatches && !unitMatches && !bidangMatches) return false;
+        }
+
         // Filter by Unit
         if (selectedUnits.length > 0 && !selectedUnits.includes(item.unit)) return false;
         
@@ -80,6 +158,8 @@ export default function RiwayatPengajuanPage() {
                             type="text" 
                             className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium transition-all" 
                             placeholder="Cari kegiatan, unit, atau pengaju..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     
@@ -202,7 +282,16 @@ export default function RiwayatPengajuanPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredRiwayat.length === 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-3">
+                                            <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Memuat Riwayat Pengajuan...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredRiwayat.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-12 text-center">
                                         <p className="text-slate-500 font-medium text-sm italic">Tidak ada riwayat pengajuan yang cocok dengan filter saat ini.</p>
