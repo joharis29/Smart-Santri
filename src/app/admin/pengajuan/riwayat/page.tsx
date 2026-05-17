@@ -10,6 +10,7 @@ export default function RiwayatPengajuanPage() {
     const [riwayatItems, setRiwayatItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     // Filter States
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -43,7 +44,8 @@ export default function RiwayatPengajuanPage() {
                 }
 
                 // 2. Get active role & unit
-                const userRole = localStorage.getItem(`activeRole_${user.id}`);
+                const role = localStorage.getItem(`activeRole_${user.id}`);
+                setUserRole(role);
                 const activeUnit = localStorage.getItem(`activeUnit_${user.id}`) || 'Pusat (Yayasan)';
 
                 // 3. Query dokumen_pengajuan
@@ -57,7 +59,7 @@ export default function RiwayatPengajuanPage() {
                     .order('updated_at', { ascending: false });
 
                 // If not Pusat/Admin, filter by active unit
-                if (userRole !== 'BENDAHARA_PUSAT' && userRole !== 'ADMINISTRATOR' && userRole !== 'PIMPINAN') {
+                if (role !== 'BENDAHARA_PUSAT' && role !== 'ADMINISTRATOR' && role !== 'PIMPINAN') {
                     query = query.eq('unit', activeUnit);
                 }
 
@@ -343,13 +345,20 @@ export default function RiwayatPengajuanPage() {
                                                 <button className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="Detail Riwayat">
                                                     <Eye className="w-3.5 h-3.5" />
                                                 </button>
-                                                <Link 
-                                                    href={`/admin/realisasi/buat?itemId=${item.id}`}
-                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
-                                                    title="Buat Laporan Realisasi"
-                                                >
-                                                    <ArrowUpRight className="w-3.5 h-3.5" />
-                                                </Link>
+                                                {userRole && [
+                                                    'STAFF_UNIT', 
+                                                    'STAFF_BIDANG', 
+                                                    'BENDAHARA_UNIT', 
+                                                    'BENDAHARA_JENJANG'
+                                                ].includes(userRole) && (
+                                                    <Link 
+                                                        href={`/admin/realisasi/buat?itemId=${item.id}`}
+                                                        className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
+                                                        title="Buat Laporan Realisasi"
+                                                    >
+                                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                                    </Link>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
