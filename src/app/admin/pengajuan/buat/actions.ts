@@ -214,7 +214,7 @@ export async function submitPengajuan(id: string) {
   
   const { error } = await supabase
     .from('dokumen_pengajuan')
-    .update({ status: 'MENUNGGU_KEPALA' })
+    .update({ status: 'MENUNGGU_VERIFIKASI' })
     .eq('id', id)
 
   if (error) return { error: error.message }
