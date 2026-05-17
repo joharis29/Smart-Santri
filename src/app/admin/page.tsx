@@ -29,6 +29,7 @@ import { PendidikanWidgets } from '@/components/dashboard/PendidikanWidgets';
 import { AsramaWidgets } from '@/components/dashboard/AsramaWidgets';
 import { DapurWidgets } from '@/components/dashboard/DapurWidgets';
 import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
+import { switchActiveProfile } from './users/actions';
 import { createClient } from '@/utils/supabase/client';
 
 const UNITS = [
@@ -447,10 +448,12 @@ export default function AdminDashboardPage() {
               <select 
                 className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
                 value={activeUnit}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const val = e.target.value;
                   setActiveUnit(val);
                   localStorage.setItem('activeUnit', val);
+                  const savedRole = localStorage.getItem('activeRole') || 'BENDAHARA_PUSAT';
+                  await switchActiveProfile({ role: savedRole, unitName: val });
                   window.location.reload();
                 }}
               >
@@ -471,10 +474,12 @@ export default function AdminDashboardPage() {
                 ].map((item) => (
                     <button 
                         key={item.role} 
-                        onClick={() => {
+                        onClick={async () => {
                           const val = item.role;
                           setUserRole(val as any);
                           localStorage.setItem('activeRole', val);
+                          const savedUnit = localStorage.getItem('activeUnit') || 'Pusat (Yayasan)';
+                          await switchActiveProfile({ role: val, unitName: savedUnit });
                           window.location.reload();
                         }} 
                         className={`px-2 py-1 rounded text-[9px] font-black tracking-tighter uppercase transition-all ${ 

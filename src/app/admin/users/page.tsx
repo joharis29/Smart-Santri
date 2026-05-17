@@ -13,6 +13,7 @@ type UserData = {
   unit: string;
   status: string;
   joinedAt: string;
+  concurrentRoles?: { role: string; unit: string }[];
 };
 
 // --- INITIAL DATA ---
@@ -76,22 +77,41 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       const supabase = createClient();
-      const { data, error } = await supabase
+      
+      // 1. Fetch main active profiles
+      const { data: profilesData, error } = await supabase
         .from('profiles')
         .select('*, unit:unit_id(name)');
       
       if (error) throw error;
       
-      if (data) {
-        const mappedUsers = data.map((p: any) => ({
-          id: p.id,
-          name: p.full_name,
-          email: p.email || `${p.full_name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
-          role: mapEnumToDropdown(p.role),
-          unit: p.unit?.name || 'Pusat (Yayasan)',
-          status: p.is_active !== false ? 'Aktif' : 'Nonaktif',
-          joinedAt: new Date(p.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-        }));
+      // 2. Fetch all multi-role assignments
+      const { data: multiRolesData } = await supabase
+        .from('profiles_multi_role')
+        .select('*, unit:unit_id(name)');
+      
+      if (profilesData) {
+        const mappedUsers = profilesData.map((p: any) => {
+          const userRoles = multiRolesData 
+            ? multiRolesData.filter((mr: any) => mr.user_id === p.id)
+            : [];
+          
+          const concurrentRoles = userRoles.map((mr: any) => ({
+            role: mapEnumToDropdown(mr.role),
+            unit: mr.unit?.name || 'Pusat (Yayasan)'
+          }));
+
+          return {
+            id: p.id,
+            name: p.full_name,
+            email: p.email || `${p.full_name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
+            role: mapEnumToDropdown(p.role),
+            unit: p.unit?.name || 'Pusat (Yayasan)',
+            status: p.is_active !== false ? 'Aktif' : 'Nonaktif',
+            joinedAt: new Date(p.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+            concurrentRoles: concurrentRoles.length > 0 ? concurrentRoles : [{ role: mapEnumToDropdown(p.role), unit: p.unit?.name || 'Pusat (Yayasan)' }]
+          };
+        });
         setUsers(mappedUsers);
       }
     } catch (err) {
@@ -357,9 +377,24 @@ export default function UserManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">{user.role}</span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">{user.role}</span>
+                        </div>
+                        {user.concurrentRoles && user.concurrentRoles.length > 1 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5 max-w-[200px]">
+                            {user.concurrentRoles.map((cr: any, idx: number) => {
+                              if (cr.role === user.role && cr.unit === user.unit) return null;
+                              const labelShort = cr.role === 'Bendahara Yayasan/Pesantren (Pusat)' ? 'B. Pusat' : cr.role === 'Bendahara Unit' ? 'B. Unit' : cr.role === 'Kepala Unit' ? 'K. Unit' : cr.role === 'Staf Unit' ? 'Staf' : cr.role;
+                              return (
+                                <span key={idx} className="inline-flex items-center px-1 py-0.5 rounded text-[8px] bg-slate-50 text-slate-500 font-bold border border-slate-100 whitespace-nowrap">
+                                  {labelShort} ({cr.unit})
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">

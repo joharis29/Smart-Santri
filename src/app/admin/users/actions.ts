@@ -104,6 +104,19 @@ export async function registerUserByAdmin(userData: {
       throw new Error(`Gagal menyimpan data profil ke database: ${profileError.message}`);
     }
 
+    // 4. Tambahkan/Upsert peran & unit aktif tersebut ke tabel relasi rangkap profiles_multi_role
+    const { error: multiRoleError } = await supabaseAdmin
+      .from('profiles_multi_role')
+      .upsert({
+        user_id: userId,
+        role: mapDropdownToEnum(userData.role),
+        unit_id: selectedUnitId
+      }, { onConflict: 'user_id, role, unit_id' });
+
+    if (multiRoleError) {
+      console.error('Gagal mencatat data multi-role, namun profil utama tetap tersimpan:', multiRoleError);
+    }
+
     return { success: true, userId };
   } catch (err: any) {
     console.error('Error in registerUserByAdmin server action:', err);
@@ -196,5 +209,85 @@ export async function toggleUserStatusByAdmin(userId: string, currentIsActive: b
   } catch (err: any) {
     console.error('Error toggling user status:', err);
     return { success: false, error: err.message || 'Gagal mengubah status pengguna' };
+  }
+}
+
+export async function switchActiveProfile(payload: { role: string; unitName: string }) {
+  try {
+    const supabaseAdmin = createAdminClient();
+    
+    // 1. Get authenticated user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
+    if (authError || !user) throw new Error('Anda tidak terautentikasi.');
+
+    // 2. Fetch Unit ID from DB
+    let selectedUnitId: string | null = null;
+    if (payload.unitName && payload.unitName !== 'Pusat (Yayasan)') {
+      const { data: unitData } = await supabaseAdmin
+        .from('unit')
+        .select('id')
+        .eq('name', payload.unitName)
+        .single();
+      if (unitData) selectedUnitId = unitData.id;
+    }
+
+    // Map role
+    const mapDropdownToEnum = (roleStr: string) => {
+      switch (roleStr) {
+        case 'ADMINISTRATOR': return 'ADMINISTRATOR';
+        case 'BENDAHARA_PUSAT': return 'BENDAHARA_PUSAT';
+        case 'PIMPINAN': return 'PIMPINAN';
+        case 'BENDAHARA_JENJANG': return 'BENDAHARA_JENJANG';
+        case 'KEPALA_JENJANG': return 'KEPALA_JENJANG';
+        case 'KEPALA_UNIT': return 'KEPALA_UNIT';
+        case 'BENDAHARA_UNIT': return 'BENDAHARA_UNIT';
+        case 'STAFF_BIDANG': return 'STAFF_BIDANG';
+        case 'STAFF': return 'STAFF';
+        default: return roleStr;
+      }
+    };
+    const dbRole = mapDropdownToEnum(payload.role);
+
+    // 3. Verify user is allowed to switch to this role/unit
+    // Administrators and Bendahara Pusat can switch to any role/unit in the system!
+    // For other users, they must have a record in profiles_multi_role!
+    const { data: actualProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isSuperUser = actualProfile?.role === 'ADMINISTRATOR' || actualProfile?.role === 'BENDAHARA_PUSAT';
+
+    if (!isSuperUser) {
+      // Check in profiles_multi_role
+      const { data: hasRole, error: mappingError } = await supabaseAdmin
+        .from('profiles_multi_role')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role', dbRole)
+        .eq('unit_id', selectedUnitId)
+        .maybeSingle();
+
+      if (mappingError || !hasRole) {
+        throw new Error('Anda tidak memiliki otorisasi untuk peran dan unit kerja ini.');
+      }
+    }
+
+    // 4. Update profiles table set role & unit_id
+    const { error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        role: dbRole,
+        unit_id: selectedUnitId
+      })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error switching active profile:', err);
+    return { success: false, error: err.message || 'Gagal mengubah peran aktif' };
   }
 }
