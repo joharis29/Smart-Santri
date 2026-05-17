@@ -5,6 +5,7 @@ import LoginForm from './LoginForm'
 export default async function LoginPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = await props.searchParams;
   const errorMsg = searchParams?.error as string | undefined;
+  const verified = searchParams?.verified === 'true';
 
   return (
     <div className="font-sans antialiased bg-primary min-h-screen flex flex-col justify-center relative overflow-hidden">
@@ -34,6 +35,17 @@ export default async function LoginPage(props: { searchParams: Promise<{ [key: s
               <h1 className="text-xl font-bold text-secondary">Member Log In</h1>
               <p className="text-gray-500 text-xs mt-1">Akses Sistem Akuntansi Kas Pesantren</p>
             </div>
+
+            {/* Verified Success Message */}
+            {verified && (
+              <div className="mb-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-emerald-800">Akun Berhasil Terverifikasi!</p>
+                  <p className="text-[11px] text-emerald-700/90 leading-relaxed font-medium">Selamat, email Anda telah terverifikasi secara sah di Supabase. Silakan masukkan email dan kata sandi Anda di bawah untuk masuk ke sistem.</p>
+                </div>
+              </div>
+            )}
 
             {/* Error Message if Login Fails */}
             {errorMsg && (
