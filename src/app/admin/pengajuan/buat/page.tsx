@@ -449,13 +449,21 @@ function BuatPengajuanContent() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('*, role:role_id(name), unit:unit_id(name)')
+          .select('*, unit:unit_id(name)')
           .eq('id', user.id)
           .single()
 
         if (profile) {
-          const roleName = profile.role?.name || ''
+          const activeRoleKey = `activeRole_${user.id}`
+          const activeUnitKey = `activeUnit_${user.id}`
+          
+          const dbRoleName = typeof profile.role === 'string' 
+            ? profile.role 
+            : (profile.role?.name || '')
+            
+          const roleName = localStorage.getItem(activeRoleKey) || dbRoleName
           const unitName = (Array.isArray(profile.unit) ? profile.unit[0]?.name : (profile.unit as any)?.name) || ''
+          
           setUserRole(roleName)
           setAssignedUnit(unitName)
 
@@ -464,7 +472,7 @@ function BuatPengajuanContent() {
             if (!isCenterUser && unitName) {
               setUnit(unitName)
             } else {
-              const savedActiveUnit = localStorage.getItem(`activeUnit_${user.id}`) || localStorage.getItem('activeUnit')
+              const savedActiveUnit = localStorage.getItem(activeUnitKey) || localStorage.getItem('activeUnit')
               if (savedActiveUnit) {
                 setUnit(savedActiveUnit)
               }
@@ -1025,18 +1033,42 @@ function BuatPengajuanContent() {
       const worksheet = workbook.Sheets[sheetName]
       const aoa: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
 
-      // 1. Parse Metadata (Top rows)
-      aoa.forEach(row => {
-        const label = String(row[0] || '').toLowerCase()
-        const value = String(row[2] || '')
-        if (label.includes('unit')) setUnit(value)
-        if (label.includes('bidang')) setBidang(value)
-        if (label.includes('periode')) {
-          const parts = value.split(' ')
-          if (parts[0]) setBulan(parts[0])
-          if (parts[1]) setTahunAjaran(parts[1])
+      // 1. Parse Metadata (Horizontal professional layout on row 2, or vertical fallback)
+      let parsedHorizontal = false
+      const row2 = aoa[1] // Excel Row 2 is index 1 in SheetJS aoa
+      if (row2 && row2.length >= 2) {
+        const cellA = String(row2[0] || '').toLowerCase()
+        if (cellA.includes('unit')) {
+          // Horizontal Layout detected:
+          // A2: "Unit / Jenjang:", B2: unit, D2: "Bidang / Dept:", E2: bidang, G2: "Bulan:", H2: bulan, J2: "Tahun Ajaran:", K2: tahunAjaran
+          const importedUnit = String(row2[1] || '').trim()
+          const importedBidang = String(row2[4] || '').trim()
+          const importedBulan = String(row2[7] || '').trim()
+          const importedTahun = String(row2[10] || '').trim()
+
+          if (importedUnit) setUnit(importedUnit)
+          if (importedBidang && importedBidang !== '-') setBidang(importedBidang)
+          if (importedBulan) setBulan(importedBulan)
+          if (importedTahun) setTahunAjaran(importedTahun)
+          
+          parsedHorizontal = true
         }
-      })
+      }
+
+      if (!parsedHorizontal) {
+        // Vertical Fallback Layout
+        aoa.forEach(row => {
+          const label = String(row[0] || '').toLowerCase()
+          const value = String(row[2] || '').trim()
+          if (label.includes('unit') && value) setUnit(value)
+          if (label.includes('bidang') && value) setBidang(value)
+          if (label.includes('periode') && value) {
+            const parts = value.split(' ')
+            if (parts[0]) setBulan(parts[0])
+            if (parts[1]) setTahunAjaran(parts[1])
+          }
+        })
+      }
 
       // 2. Detect Mode & Start Row
       const isDapurFile = aoa.some(row => String(row[0]).includes('REIMBURSEMENT DAPUR'))
