@@ -140,10 +140,16 @@ export default function AdminDashboardPage() {
         }
 
         // PERSIST TO DATABASE
+        let res;
         if (action === 'APPROVE') {
-            await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus);
+            res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus);
         } else {
-            await revisiPengajuan(selectedTrxForReview.id, finalNote);
+            res = await revisiPengajuan(selectedTrxForReview.id, finalNote);
+        }
+
+        if (res && res.error) {
+            alert("Gagal memproses pengajuan: " + res.error);
+            return;
         }
 
         // UPDATE LOCAL STATE
