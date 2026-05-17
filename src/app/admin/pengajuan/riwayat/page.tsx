@@ -70,22 +70,31 @@ export default function RiwayatPengajuanPage() {
                     console.error("Error fetching riwayat:", error);
                 } else if (data) {
                     const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                    const mapped = data.map(doc => {
+                    const mapped: any[] = [];
+                    data.forEach(doc => {
                         const items = doc.item_pengajuan || [];
-                        const total = items.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
-                        return {
-                            id: doc.id,
-                            tanggal_pencairan: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('id-ID') : new Date(doc.created_at).toLocaleDateString('id-ID'),
-                            tanggal: new Date(doc.created_at).toLocaleDateString('id-ID'),
-                            bulan: monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan),
-                            tahun_ajaran: doc.tahun_ajaran || `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}`,
-                            unit: doc.unit || 'SDIT 1',
-                            bidang: doc.bidang || 'Tanpa Bidang',
-                            kegiatan: items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Dana',
-                            sumber: items[0]?.sumber_dana || 'Dana Yayasan',
-                            nominal: total,
-                            metode_pencairan: doc.metode_pencairan || '-',
-                        };
+                        items.forEach((it: any) => {
+                            mapped.push({
+                                id: doc.id,
+                                itemId: it.id,
+                                tanggal_pencairan: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('id-ID') : new Date(doc.created_at).toLocaleDateString('id-ID'),
+                                tanggal: new Date(doc.created_at).toLocaleDateString('id-ID'),
+                                bulan: monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan),
+                                tahun_ajaran: doc.tahun_ajaran || `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}`,
+                                unit: doc.unit || 'SDIT 1',
+                                bidang: doc.bidang || 'Tanpa Bidang',
+                                kegiatan: it.judul_kegiatan || it.kegiatan || 'Pengajuan Dana',
+                                sumber: (() => {
+                                    const splits = it.rincian_json?.fundingSplits || [];
+                                    const sources = splits
+                                        .filter((s: any) => s.source && s.nominal > 0)
+                                        .map((s: any) => s.source);
+                                    return sources.length > 0 ? sources.join(' / ') : (it.sumber_dana || 'Dana Yayasan');
+                                })(),
+                                nominal: it.nominal || 0,
+                                metode_pencairan: doc.metode_pencairan || '-',
+                            });
+                        });
                     });
                     setRiwayatItems(mapped);
                 }
@@ -328,7 +337,7 @@ export default function RiwayatPengajuanPage() {
                                 </tr>
                             ) : (
                                 filteredRiwayat.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                                    <tr key={item.itemId} className="hover:bg-slate-50/80 transition-colors group">
                                         {/* 1. Tgl Pencairan */}
                                         <td className="px-6 py-4 align-middle text-xs font-bold text-slate-600 whitespace-nowrap">
                                             {item.tanggal_pencairan || item.tanggal}
