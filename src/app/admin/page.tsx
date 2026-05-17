@@ -359,12 +359,50 @@ export default function AdminDashboardPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const fetchLiveBalances = async () => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('dompet_dana')
+        .select('*, unit:unit_id(name)');
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Filter dompet milik unit aktif
+        const activeWallets = data.filter((w: any) => {
+          const uName = (Array.isArray(w.unit) ? w.unit[0]?.name : (w.unit as any)?.name) || 'Pusat (Yayasan)';
+          return uName.trim() === activeUnit.trim();
+        });
+
+        let sppVal = 0;
+        let yayasanVal = 0;
+        let bosVal = 0;
+
+        activeWallets.forEach((w: any) => {
+          if (w.kategori === 'SPP') sppVal = Number(w.saldo);
+          else if (w.kategori === 'YAYASAN' || w.kategori === 'INFAQ') yayasanVal = Number(w.saldo);
+          else if (w.kategori === 'BOS') bosVal = Number(w.saldo);
+        });
+
+        setBalances({
+          spp: sppVal,
+          yayasan: yayasanVal,
+          bos: bosVal
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching live balances:', err);
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
+    fetchLiveBalances();
     if (userRole === 'BENDAHARA_UNIT') {
         fetchVerificationQueue();
     }
-  }, [userRole]);
+  }, [userRole, activeUnit]);
 
   // --- DERIVED DATA ---
   const category = (unit: string) => {
