@@ -41,6 +41,7 @@ import {
 import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
 import { saveDraftItem, batchSavePengajuan, getPengajuanById } from './actions'
+import { createClient } from '@/utils/supabase/client'
 
 interface FundingSplit {
   source: string
@@ -175,6 +176,143 @@ const RKA_PROGRAMS = [
   'Pemeliharaan/Pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)'
 ]
 
+
+const ALL_UNITS = [
+  'Pusat (Yayasan)',
+  'TK',
+  'SDIT 1',
+  'SDIT 2',
+  'MTs',
+  'MA',
+  'Diniyah',
+  'Asrama Putra',
+  'Asrama Putri',
+  'THQ',
+  'Dapur Asrama Putra',
+  'Dapur Asrama Putri'
+];
+
+const BIDANG_BY_UNIT: Record<string, string[]> = {
+  'Pusat (Yayasan)': [
+    'Kesekretariatan',
+    'Pendidikan',
+    'Sumber Daya Insani',
+    'Kesejahteraan Sosial',
+    'Sarana',
+    'Keuangan',
+    'Penelitian Dan Pengembangan'
+  ],
+  'TK': [
+    'Kurikulum',
+    'Sarana',
+    'Humas',
+    'Kesejahteraan',
+    'Tata Usaha (TU)',
+    'Bendahara',
+    'Bimbingan & Konseling (BK)',
+    'Kesantrian',
+    'Mudir'
+  ],
+  'SDIT 1': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesiswaan',
+    'Sarana',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Kesekretariatan'
+  ],
+  'SDIT 2': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesiswaan',
+    'Sarana',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Kesekretariatan'
+  ],
+  'MTs': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesantrian',
+    'Sarana',
+    'Perpustakaan',
+    'Bimbingan & Konseling (BK)',
+    'Kordinator Ekstrakurikuler',
+    'Lembaga Bahasa',
+    'Kordinator Pengembangan Prestasi',
+    'Lab Komputer',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Mudir'
+  ],
+  'MA': [
+    'Kurikulum',
+    'Bimbingan & Konseling (BK)',
+    'Lembaga Pengembangan Bahasa Asing (LPBA)',
+    'Kesantrian',
+    'Humas',
+    'Kordinator Piket',
+    'Pembina RG-UG',
+    'Kordinator Ekstrakurikuler',
+    'Perpustakaan',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Mudir',
+    'Tenaga Administari Madrasah (TAM)',
+    'Operator',
+    'Kordinator Pengembangan Prestasi',
+    'Pendidik & Tenaga Kependidikan (PTK)',
+    'Lab Komputer',
+    'Lab Sains',
+    'Bendahara'
+  ],
+  'Diniyah': [
+    'Kurikulum',
+    'Sarana',
+    'Humas',
+    'Bendahara',
+    'Kesantrian'
+  ],
+  'Asrama Putra': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'Asrama Putri': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'THQ': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'Dapur Asrama Putra': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ],
+  'Dapur Asrama Putri': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ]
+};
+
 function BuatPengajuanContent() {
   const importRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -236,6 +374,59 @@ function BuatPengajuanContent() {
   const [customTemplates, setCustomTemplates] = useState<Record<string, RkaDetailItem[]>>({})
   const [isSavingTemplate, setIsSavingTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
+
+
+  const [userRole, setUserRole] = useState('')
+  const [assignedUnit, setAssignedUnit] = useState('')
+
+  // Load User Profile to handle Role-Based Access Control on Unit & Bidang selections
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*, role:role_id(name), unit:unit_id(name)')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          const roleName = profile.role?.name || ''
+          const unitName = (Array.isArray(profile.unit) ? profile.unit[0]?.name : (profile.unit as any)?.name) || ''
+          setUserRole(roleName)
+          setAssignedUnit(unitName)
+
+          const isCenterUser = ['ADMINISTRATOR', 'PIMPINAN', 'BENDAHARA_PUSAT'].includes(roleName)
+          if (!isCenterUser && unitName && !editId) {
+            setUnit(unitName)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user profile in buat pengajuan:', err)
+      }
+    }
+    fetchUserProfile()
+  }, [editId])
+
+  const isCenter = useMemo(() => {
+    return ['ADMINISTRATOR', 'PIMPINAN', 'BENDAHARA_PUSAT'].includes(userRole)
+  }, [userRole])
+
+  const availableBidangs = useMemo(() => {
+    let normalizedUnit = unit;
+    if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+    return BIDANG_BY_UNIT[normalizedUnit] || BIDANG_BY_UNIT[unit] || ['Umum'];
+  }, [unit])
+
+  // Reset bidang if it is no longer valid for the selected unit
+  useEffect(() => {
+    if (bidang && !availableBidangs.includes(bidang)) {
+      setBidang('')
+    }
+  }, [availableBidangs, bidang])
 
   // Load Edit Data if ID present
   useEffect(() => {
@@ -1199,15 +1390,13 @@ function BuatPengajuanContent() {
                 <select 
                   value={unit} 
                   onChange={(e) => setUnit(e.target.value)}
-                  className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400"
-                  disabled={isDapurMode}
+                  className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 disabled:bg-slate-100 disabled:text-slate-500"
+                  disabled={!isCenter || isDapurMode}
                 >
                   <option value="">Pilih Unit...</option>
-                  <option value="SDIT 1">SDIT 1</option>
-                  <option value="SDIT 2">SDIT 2</option>
-                  <option value="SMPIT">SMPIT</option>
-                  <option value="SMAIT">SMAIT</option>
-                  <option value="Pesantren">Pesantren</option>
+                  {ALL_UNITS.map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-1">
@@ -1220,11 +1409,9 @@ function BuatPengajuanContent() {
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Pilih Bidang...</option>
-                  <option value="KESISWAAN">KESISWAAN</option>
-                  <option value="KURIKULUM">KURIKULUM</option>
-                  <option value="SARPRAS">SARPRAS</option>
-                  <option value="SDM">SDM</option>
-                  <option value="HUMAS">HUMAS</option>
+                  {availableBidangs.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-1">
