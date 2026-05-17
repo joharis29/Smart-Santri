@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin } from './actions';
+import * as XLSX from 'xlsx';
 
 type UserData = {
   id: number | string;
@@ -161,36 +162,45 @@ export default function UserManagementPage() {
     return matchesSearch && matchesRole && matchesStatus && matchesUnit;
   });
 
-  // Export users to CSV
-  const handleExportCSV = () => {
+  // Export users to Excel (.xlsx)
+  const handleExportExcel = () => {
     if (filteredUsers.length === 0) {
       alert('Tidak ada data pengguna untuk diekspor!');
       return;
     }
 
-    const headers = ['Nama Lengkap', 'Email', 'Peran Utama', 'Unit Aktif', 'Status', 'Tanggal Bergabung'];
-    const rows = filteredUsers.map(user => [
-      user.name,
-      user.email,
-      user.role,
-      user.unit,
-      user.status,
-      user.joinedAt
-    ]);
+    // 1. Prepare data with clean Indonesian headers
+    const dataToExport = filteredUsers.map((user, idx) => ({
+      'No': idx + 1,
+      'Nama Lengkap': user.name,
+      'Email Address': user.email,
+      'Peran Aktif': user.role,
+      'Unit Kerja': user.unit,
+      'Status': user.status,
+      'Tanggal Terdaftar': user.joinedAt
+    }));
 
-    const csvContent = "\uFEFF" + [
-      headers.join(','),
-      ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+    // 2. Convert JSON data to sheet
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Daftar_Pengguna_Smart_Santri_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 3. Set column widths automatically for supreme readability
+    const colWidths = [
+      { wch: 6 },   // No
+      { wch: 28 },  // Nama Lengkap
+      { wch: 32 },  // Email Address
+      { wch: 22 },  // Peran Aktif
+      { wch: 22 },  // Unit Kerja
+      { wch: 12 },  // Status
+      { wch: 18 }   // Tanggal Terdaftar
+    ];
+    worksheet['!cols'] = colWidths;
+
+    // 4. Create workbook and append the sheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Staf');
+
+    // 5. Trigger client-side file download
+    XLSX.writeFile(workbook, `Daftar_Staf_Smart_Santri_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Handlers
@@ -469,12 +479,12 @@ export default function UserManagementPage() {
             )}
 
             <button 
-              onClick={handleExportCSV}
+              onClick={handleExportExcel}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors"
-              title="Ekspor daftar ke format CSV"
+              title="Ekspor daftar ke format Excel (.xlsx)"
             >
               <Download className="w-4 h-4 shrink-0" />
-              <span>Ekspor</span>
+              <span>Ekspor Excel</span>
             </button>
           </div>
         </div>
