@@ -411,7 +411,7 @@ function BuatPengajuanContent() {
     if (!unit || !bidang || !bulan || !tahunAjaran) return false;
     
     if (isDapurMode) {
-      return dapurRows.length > 0 && dapurRows.every(r => r.tanggal && r.item && r.nominal > 0);
+      return dapurRows.length > 0 && dapurRows.every(r => r.tanggal && r.item && r.nominal > 0) && attachments.length > 0;
     } else {
       return rows.length > 0 && rows.every(r => 
         r.program && 
@@ -424,7 +424,7 @@ function BuatPengajuanContent() {
         r.nominal > 0
       );
     }
-  }, [unit, bidang, bulan, tahunAjaran, isDapurMode, dapurRows, rows]);
+  }, [unit, bidang, bulan, tahunAjaran, isDapurMode, dapurRows, rows, attachments]);
   
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -1528,7 +1528,6 @@ function BuatPengajuanContent() {
                   value={tahunAjaran} 
                   onChange={(e) => setTahunAjaran(e.target.value)}
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400"
-                  disabled={isDapurMode}
                 >
                   <option value="">Pilih Tahun...</option>
                   <option value="2024/2025" disabled>2024/2025 (Lampau)</option>
@@ -1837,6 +1836,58 @@ function BuatPengajuanContent() {
             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Pengajuan</span>
             <span className="text-xl font-black text-emerald-700 tracking-tighter italic">Rp {totalPengajuan.toLocaleString('id-ID')}</span>
           </div>
+
+          {isDapurMode && (
+            <div className="pt-4 border-t border-slate-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Bukti Nota / Lampiran <span className="text-rose-600">*</span>
+                </label>
+                <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-full">{attachments.length} File</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="flex flex-col items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 border-dashed rounded-2xl transition-all group"
+                >
+                  <CameraIcon className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Ambil Foto</span>
+                </button>
+                <label className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-2xl cursor-pointer transition-all group">
+                  <Upload className="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Upload File</span>
+                  <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                </label>
+              </div>
+
+              {attachments.length > 0 && (
+                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                  {attachments.map((att, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-100 group">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-emerald-600 shrink-0">
+                          <FileIcon className="w-4 h-4" />
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="text-[10px] font-bold text-slate-700 truncate">{att.name}</p>
+                          <p className="text-[8px] text-slate-400">{(att.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => removeAttachment(idx)}
+                        className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3 items-end">
