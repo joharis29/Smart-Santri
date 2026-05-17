@@ -39,6 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [activeRole, setActiveRole] = useState<string>('');
     const [activeUnit, setActiveUnit] = useState<string>('Pusat (Yayasan)');
     const [assignedRoles, setAssignedRoles] = useState<{ role: string; unit_name: string }[]>([]);
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -265,103 +266,128 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                     </nav>
 
-                    <div className="p-4 border-t border-emerald-800 space-y-4">
-                        {/* Selector Peran & Unit untuk Regular User dengan Rangkap Jabatan */}
-                        {!(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT') && assignedRoles.length > 1 && (
-                            <div className="space-y-1.5 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/40 text-xs">
-                                <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Pindah Peran & Unit Aktif</label>
-                                <select 
-                                    value={`${activeRole}:${activeUnit}`}
-                                    onChange={async (e) => {
-                                        const [newRole, newUnit] = e.target.value.split(':');
-                                        const res = await switchActiveProfile({ role: newRole, unitName: newUnit });
-                                        if (res.success) {
-                                            localStorage.setItem('activeRole', newRole);
-                                            localStorage.setItem('activeUnit', newUnit);
-                                            window.location.reload();
-                                        } else {
-                                            alert(res.error || 'Gagal mengubah unit aktif');
-                                        }
-                                    }}
-                                    className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-405 cursor-pointer"
-                                >
-                                    {assignedRoles.map((r, idx) => {
-                                        const roleDisplay = r.role === 'BENDAHARA_UNIT' ? 'Bendahara Unit' : r.role === 'KEPALA_UNIT' ? 'Kepala Unit' : r.role === 'BENDAHARA_PUSAT' ? 'Bendahara Pusat' : r.role;
-                                        return (
-                                            <option key={idx} value={`${r.role}:${r.unit_name}`}>
-                                                {roleDisplay} - {r.unit_name}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                            </div>
-                        )}
-
-                        {/* Selector Peran & Unit Premium untuk Super User / Merangkap */}
-                        {(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT') && (
-                            <div className="space-y-2.5 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/40 text-xs">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Peran Aktif (Super)</label>
-                                    <select 
-                                        value={activeRole}
-                                        onChange={async (e) => {
-                                            const val = e.target.value;
-                                            const res = await switchActiveProfile({ role: val, unitName: activeUnit });
-                                            if (res.success) {
-                                                localStorage.setItem('activeRole', val);
-                                                setActiveRole(val);
-                                                window.location.reload();
-                                            } else {
-                                                alert(res.error || 'Gagal mengubah peran aktif');
-                                            }
-                                        }}
-                                        className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
-                                    >
-                                        <option value="ADMINISTRATOR">👑 Administrator</option>
-                                        <option value="BENDAHARA_PUSAT">💰 Bendahara Pusat</option>
-                                        <option value="BENDAHARA_UNIT">💵 Bendahara Unit</option>
-                                        <option value="KEPALA_UNIT">👤 Kepala Unit</option>
-                                        <option value="STAFF">📝 Staf Unit</option>
-                                    </select>
+                    <div className="p-4 border-t border-emerald-800 space-y-3">
+                        {/* Interactive User Info Card / Switch Trigger */}
+                        <div 
+                            onClick={() => (actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) && setProfileMenuOpen(!profileMenuOpen)}
+                            className={`flex items-center justify-between p-2 rounded-xl transition-all ${
+                                (actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) 
+                                    ? 'hover:bg-emerald-800/40 cursor-pointer border border-transparent hover:border-emerald-700/30' 
+                                    : ''
+                            }`}
+                            title={(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) ? "Klik untuk ganti peran/unit" : undefined}
+                        >
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0 text-white font-bold text-xs shadow-inner">
+                                    {userProfile ? userProfile.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Unit Kerja Aktif</label>
-                                    <select 
-                                        value={activeUnit}
-                                        onChange={async (e) => {
-                                            const val = e.target.value;
-                                            const res = await switchActiveProfile({ role: activeRole, unitName: val });
-                                            if (res.success) {
-                                                localStorage.setItem('activeUnit', val);
-                                                setActiveUnit(val);
-                                                window.location.reload();
-                                            } else {
-                                                alert(res.error || 'Gagal mengubah unit aktif');
-                                            }
-                                        }}
-                                        className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
-                                    >
-                                        {UNITS.map(u => (
-                                            <option key={u} value={u}>{u}</option>
-                                        ))}
-                                    </select>
+                                <div className="min-w-0">
+                                    <p className="text-[9px] text-emerald-300 font-extrabold uppercase tracking-wider truncate flex items-center gap-1">
+                                        {userProfile ? userProfile.role : 'Aktif Sebagai'}
+                                        {(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) && (
+                                            <span className="inline-block px-1 py-0.5 rounded-[4px] bg-emerald-500/25 text-[7px] text-emerald-300 font-black tracking-widest uppercase">
+                                                Multi
+                                            </span>
+                                        )}
+                                    </p>
+                                    <p className="text-xs font-bold text-white truncate">
+                                        {userProfile ? userProfile.name : 'Memuat...'}
+                                    </p>
                                 </div>
                             </div>
-                        )}
-
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0 text-white font-bold text-xs">
-                                {userProfile ? userProfile.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[9px] text-emerald-300 font-extrabold uppercase tracking-wider truncate">
-                                    {userProfile ? userProfile.role : 'Aktif Sebagai'}
-                                </p>
-                                <p className="text-xs font-bold text-white truncate">
-                                    {userProfile ? userProfile.name : 'Memuat...'}
-                                </p>
-                            </div>
+                            {(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) && (
+                                <ChevronDown className={`w-3.5 h-3.5 text-emerald-400 transition-transform duration-300 shrink-0 ${profileMenuOpen ? 'rotate-180' : ''}`} />
+                            )}
                         </div>
+
+                        {/* Inline Expandable Switcher Panel */}
+                        {profileMenuOpen && (
+                            <div className="bg-emerald-950/60 p-3 rounded-xl border border-emerald-800/60 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                {/* Selector Peran & Unit untuk Regular User dengan Rangkap Jabatan */}
+                                {!(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT') && assignedRoles.length > 1 && (
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Pindah Peran & Unit</label>
+                                        <select 
+                                            value={`${activeRole}:${activeUnit}`}
+                                            onChange={async (e) => {
+                                                const [newRole, newUnit] = e.target.value.split(':');
+                                                const res = await switchActiveProfile({ role: newRole, unitName: newUnit });
+                                                if (res.success) {
+                                                    localStorage.setItem('activeRole', newRole);
+                                                    localStorage.setItem('activeUnit', newUnit);
+                                                    window.location.reload();
+                                                } else {
+                                                    alert(res.error || 'Gagal mengubah unit aktif');
+                                                }
+                                            }}
+                                            className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer text-xs"
+                                        >
+                                            {assignedRoles.map((r, idx) => {
+                                                const roleDisplay = r.role === 'BENDAHARA_UNIT' ? 'Bendahara Unit' : r.role === 'KEPALA_UNIT' ? 'Kepala Unit' : r.role === 'BENDAHARA_PUSAT' ? 'Bendahara Pusat' : r.role;
+                                                return (
+                                                    <option key={idx} value={`${r.role}:${r.unit_name}`}>
+                                                        {roleDisplay} - {r.unit_name}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Selector Peran & Unit Premium untuk Super User / Merangkap */}
+                                {(actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT') && (
+                                    <div className="space-y-2.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Peran Aktif (Super)</label>
+                                            <select 
+                                                value={activeRole}
+                                                onChange={async (e) => {
+                                                    const val = e.target.value;
+                                                    const res = await switchActiveProfile({ role: val, unitName: activeUnit });
+                                                    if (res.success) {
+                                                        localStorage.setItem('activeRole', val);
+                                                        setActiveRole(val);
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert(res.error || 'Gagal mengubah peran aktif');
+                                                    }
+                                                }}
+                                                className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer text-xs"
+                                            >
+                                                <option value="ADMINISTRATOR">👑 Administrator</option>
+                                                <option value="BENDAHARA_PUSAT">💰 Bendahara Pusat</option>
+                                                <option value="BENDAHARA_UNIT">💵 Bendahara Unit</option>
+                                                <option value="KEPALA_UNIT">👤 Kepala Unit</option>
+                                                <option value="STAFF">📝 Staf Unit</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Unit Kerja Aktif</label>
+                                            <select 
+                                                value={activeUnit}
+                                                onChange={async (e) => {
+                                                    const val = e.target.value;
+                                                    const res = await switchActiveProfile({ role: activeRole, unitName: val });
+                                                    if (res.success) {
+                                                        localStorage.setItem('activeUnit', val);
+                                                        setActiveUnit(val);
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert(res.error || 'Gagal mengubah unit aktif');
+                                                    }
+                                                }}
+                                                className="w-full bg-emerald-900 border border-emerald-800 rounded-lg py-1 px-1.5 text-white font-bold focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer text-xs"
+                                            >
+                                                {UNITS.map(u => (
+                                                    <option key={u} value={u}>{u}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <button 
                             onClick={handleLogout}
                             className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-all font-bold text-xs"
