@@ -26,16 +26,6 @@ export async function registerUserByAdmin(userData: {
     if (existingUser) {
       // Jika akun sudah ada di Auth, gunakan ID yang sudah ada
       userId = existingUser.id;
-
-      // Reset password jika admin menginput password baru
-      if (userData.password) {
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          password: userData.password
-        });
-        if (updateError) {
-          throw new Error(`Gagal memperbarui kata sandi akun yang sudah terdaftar: ${updateError.message}`);
-        }
-      }
     } else {
       // Jika email belum ada di Auth, buat akun baru (auto confirms email)
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
