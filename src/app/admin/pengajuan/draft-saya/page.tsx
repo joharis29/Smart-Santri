@@ -56,6 +56,16 @@ export default function DraftSayaPage() {
         const fetchDrafts = async () => {
             setLoading(true);
             console.log("Fetching drafts from Supabase...");
+            
+            // 1. Get current authenticated user
+            const { data: authData } = await supabase.auth.getUser();
+            const user = authData?.user;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
+            // 2. Fetch drafts filtered by user's pembuat_id
             const { data, error } = await supabase
                 .from('dokumen_pengajuan')
                 .select(`
@@ -69,6 +79,7 @@ export default function DraftSayaPage() {
                     catatan_revisi,
                     item_pengajuan(judul_kegiatan, nominal, rincian_json)
                 `)
+                .eq('pembuat_id', user.id)
                 .in('status', ['DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI'])
                 .order('created_at', { ascending: false });
 
