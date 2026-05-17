@@ -29,6 +29,44 @@ const UNITS = [
     'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri'
 ];
 
+function hasMenuAccess(role: string, path: string): boolean {
+    if (!role) return true; // Default fallback to avoid layout break while loading
+    const cleanRole = role.toUpperCase();
+    
+    // Admin has access to everything
+    if (cleanRole === 'ADMINISTRATOR') return true;
+
+    switch (path) {
+        case '/admin/users': // Manajemen Pengguna
+        case '/admin/roles': // Manajemen Peran
+            return cleanRole === 'ADMINISTRATOR';
+
+        case '/admin/pengaturan/rka-referensi': // Program
+            return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
+
+        case '/admin/laporan/buku-besar': // Laporan (Buku Besar)
+            return ['BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
+
+        case '/admin/pendapatan/buat': // Input Pendapatan
+            return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
+
+        case '/admin/pengajuan/buat': // Buat Pengajuan
+        case '/admin/realisasi/buat': // Buat LPJ
+        case '/admin/pengajuan/draft-saya': // Draft Saya
+            return ['BENDAHARA_JENJANG', 'BENDAHARA_UNIT', 'STAFF', 'STAFF_BIDANG'].includes(cleanRole);
+
+        case '/admin/pengajuan/rekap': // Rekap Draft (Bendahara)
+            return ['BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
+
+        case '/admin/pengajuan/riwayat': // Riwayat Pengajuan
+        case '/admin/realisasi/riwayat': // Riwayat Dokumen
+            return ['BENDAHARA_PUSAT', 'PIMPINAN', 'KEPALA_JENJANG', 'KEPALA_UNIT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT', 'STAFF', 'STAFF_BIDANG'].includes(cleanRole);
+
+        default:
+            return true;
+    }
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -107,8 +145,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }
         };
 
+        const interval = setInterval(() => {
+            const savedRole = localStorage.getItem('activeRole');
+            const savedUnit = localStorage.getItem('activeUnit');
+            if (savedRole && savedRole !== activeRole) {
+                setActiveRole(savedRole);
+            }
+            if (savedUnit && savedUnit !== activeUnit) {
+                setActiveUnit(savedUnit);
+            }
+        }, 500);
+
         fetchProfile();
-    }, []);
+        return () => clearInterval(interval);
+    }, [activeRole, activeUnit]);
 
     const handleLogout = async () => {
         try {
@@ -154,116 +204,149 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </Link>
 
                         {/* Menu Pengeluaran (Dropdown) */}
-                        <div className="pt-1">
-                            <button 
-                                onClick={() => setExpensesOpen(!expensesOpen)}
-                                className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Banknote className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                                    <span className="font-semibold truncate">Pengeluaran</span>
-                                </div>
-                                {expensesOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
-                            </button>
-                            
-                            {expensesOpen && (
-                                <div className="mt-1 space-y-1 px-3">
-                                    <Link href="/admin/pengajuan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Buat Pengajuan</span>
-                                    </Link>
-                                    <Link href="/admin/realisasi/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Buat Realisasi Anggaran</span>
-                                    </Link>
-                                    <Link href="/admin/pengajuan/draft-saya" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <PlusCircle className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Draft Saya (Personal)</span>
-                                    </Link>
-                                    <Link href="/admin/pengajuan/rekap" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <CheckSquare className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Rekap Draft (Bendahara)</span>
-                                    </Link>
-                                    <Link href="/admin/pengajuan/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Riwayat Pengajuan</span>
-                                    </Link>
-                                    <Link href="/admin/realisasi/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Riwayat Dokumen</span>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        {(hasMenuAccess(activeRole, '/admin/pengajuan/buat') ||
+                          hasMenuAccess(activeRole, '/admin/realisasi/buat') ||
+                          hasMenuAccess(activeRole, '/admin/pengajuan/draft-saya') ||
+                          hasMenuAccess(activeRole, '/admin/pengajuan/rekap') ||
+                          hasMenuAccess(activeRole, '/admin/pengajuan/riwayat') ||
+                          hasMenuAccess(activeRole, '/admin/realisasi/riwayat')) && (
+                            <div className="pt-1">
+                                <button 
+                                    onClick={() => setExpensesOpen(!expensesOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Banknote className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                        <span className="font-semibold truncate">Pengeluaran</span>
+                                    </div>
+                                    {expensesOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                                </button>
+                                
+                                {expensesOpen && (
+                                    <div className="mt-1 space-y-1 px-3">
+                                        {hasMenuAccess(activeRole, '/admin/pengajuan/buat') && (
+                                            <Link href="/admin/pengajuan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Buat Pengajuan</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/realisasi/buat') && (
+                                            <Link href="/admin/realisasi/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Buat Realisasi Anggaran</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengajuan/draft-saya') && (
+                                            <Link href="/admin/pengajuan/draft-saya" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <PlusCircle className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Draft Saya (Personal)</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengajuan/rekap') && (
+                                            <Link href="/admin/pengajuan/rekap" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <CheckSquare className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Rekap Draft (Bendahara)</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengajuan/riwayat') && (
+                                            <Link href="/admin/pengajuan/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <ClipboardCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Riwayat Pengajuan</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/realisasi/riwayat') && (
+                                            <Link href="/admin/realisasi/riwayat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Riwayat Dokumen</span>
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Menu Pemasukan (Dropdown) */}
-                        <div className="pt-1">
-                            <button 
-                                onClick={() => setIncomeOpen(!incomeOpen)}
-                                className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <PlusCircle className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                                    <span className="font-semibold truncate">Pemasukan</span>
-                                </div>
-                                {incomeOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
-                            </button>
-                            
-                            {incomeOpen && (
-                                <div className="mt-1 space-y-1 px-3">
-                                    <Link href="/admin/pendapatan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                                        <span>Input Pendapatan</span>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        {hasMenuAccess(activeRole, '/admin/pendapatan/buat') && (
+                            <div className="pt-1">
+                                <button 
+                                    onClick={() => setIncomeOpen(!incomeOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <PlusCircle className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                        <span className="font-semibold truncate">Pemasukan</span>
+                                    </div>
+                                    {incomeOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                                </button>
+                                
+                                {incomeOpen && (
+                                    <div className="mt-1 space-y-1 px-3">
+                                        <Link href="/admin/pendapatan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                            <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                            <span>Input Pendapatan</span>
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                        <Link href="/admin/laporan/buku-besar" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <BarChart3 className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                            <span className="truncate">Laporan (Buku Besar)</span>
-                        </Link>
+                        {hasMenuAccess(activeRole, '/admin/laporan/buku-besar') && (
+                            <Link href="/admin/laporan/buku-besar" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
+                                <BarChart3 className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                <span className="truncate">Laporan (Buku Besar)</span>
+                            </Link>
+                        )}
                         
                         {/* Pengaturan Menu */}
-                        <div className="pt-2">
-                            <button 
-                                onClick={() => setSettingsOpen(!settingsOpen)}
-                                className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Settings className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
-                                    <span className="font-semibold truncate">Pengaturan</span>
-                                </div>
-                                {settingsOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
-                            </button>
-                            
-                            {settingsOpen && (
-                                <div className="mt-1 space-y-1 px-3">
-                                    <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <Users className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
-                                        <span className="truncate">Manajemen Pengguna</span>
-                                    </Link>
-                                    <Link href="/admin/roles" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <ShieldAlert className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
-                                        <span className="truncate">Manajemen Peran</span>
-                                    </Link>
-                                    <Link href="/admin/pengaturan/rka-referensi" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
-                                        <FileText className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
-                                        <span className="truncate">Program</span>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        {(hasMenuAccess(activeRole, '/admin/users') ||
+                          hasMenuAccess(activeRole, '/admin/roles') ||
+                          hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi')) && (
+                            <div className="pt-2">
+                                <button 
+                                    onClick={() => setSettingsOpen(!settingsOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Settings className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                        <span className="font-semibold truncate">Pengaturan</span>
+                                    </div>
+                                    {settingsOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                                </button>
+                                
+                                {settingsOpen && (
+                                    <div className="mt-1 space-y-1 px-3">
+                                        {hasMenuAccess(activeRole, '/admin/users') && (
+                                            <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <Users className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Manajemen Pengguna</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/roles') && (
+                                            <Link href="/admin/roles" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <ShieldAlert className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Manajemen Peran</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi') && (
+                                            <Link href="/admin/pengaturan/rka-referensi" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <FileText className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Program</span>
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </nav>
 
                     <div className="p-4 border-t border-emerald-800 space-y-3">
