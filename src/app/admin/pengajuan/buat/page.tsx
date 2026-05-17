@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   PlusCircle,
@@ -175,7 +175,7 @@ const RKA_PROGRAMS = [
   'Pemeliharaan/Pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)'
 ]
 
-export default function BuatPengajuanPage() {
+function BuatPengajuanContent() {
   const importRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1962,5 +1962,20 @@ export default function BuatPengajuanPage() {
       </div>
 
     </div>
+  )
+}
+
+export default function BuatPengajuanPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-semibold text-slate-500">Memuat halaman pengajuan...</p>
+        </div>
+      </div>
+    }>
+      <BuatPengajuanContent />
+    </Suspense>
   )
 }
