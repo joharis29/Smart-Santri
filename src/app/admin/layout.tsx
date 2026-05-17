@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 import {
     ShieldCheck,
     LayoutGrid,
@@ -27,6 +28,59 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [expensesOpen, setExpensesOpen] = useState(false);
     const [incomeOpen, setIncomeOpen] = useState(false);
+    const [userProfile, setUserProfile] = useState<{ name: string; role: string } | null>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const supabase = createClient();
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                if (authError || !user) return;
+
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('full_name, role')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profileError || !profile) return;
+
+                const mapRoleToDisplay = (roleDb: string) => {
+                    switch (roleDb) {
+                        case 'ADMINISTRATOR': return 'Administrator';
+                        case 'BENDAHARA_PUSAT': return 'Bendahara Pusat';
+                        case 'PIMPINAN': return 'Pimpinan Pesantren';
+                        case 'BENDAHARA_JENJANG': return 'Bendahara Jenjang';
+                        case 'KEPALA_JENJANG': return 'Kepala Jenjang';
+                        case 'KEPALA_UNIT': return 'Kepala Unit';
+                        case 'BENDAHARA_UNIT': return 'Bendahara Unit';
+                        case 'STAFF_BIDANG': return 'Staf Bidang';
+                        case 'STAFF': return 'Staf Unit';
+                        default: return 'Staf';
+                    }
+                };
+
+                setUserProfile({
+                    name: profile.full_name,
+                    role: mapRoleToDisplay(profile.role)
+                });
+            } catch (err) {
+                console.error('Error fetching layout profile:', err);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = '/login';
+        } catch (err) {
+            console.error('Error during sign out:', err);
+        }
+    };
 
     return (
         <div className="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen">
@@ -176,15 +230,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     <div className="p-4 border-t border-emerald-800">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0">
-                                <User className="w-4 h-4" />
+                            <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center border border-emerald-600 shrink-0 text-white font-bold text-xs">
+                                {userProfile ? userProfile.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[10px] text-emerald-300 font-medium">Aktif Sebagai</p>
-                                <p className="text-xs font-bold text-white truncate">Bendahara / Staf</p>
+                                <p className="text-[9px] text-emerald-300 font-extrabold uppercase tracking-wider truncate">
+                                    {userProfile ? userProfile.role : 'Aktif Sebagai'}
+                                </p>
+                                <p className="text-xs font-bold text-white truncate">
+                                    {userProfile ? userProfile.name : 'Memuat...'}
+                                </p>
                             </div>
                         </div>
-                        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-all font-bold text-xs">
+                        <button 
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-all font-bold text-xs"
+                        >
                             <LogOut className="w-4 h-4" />
                             Keluar Sistem
                         </button>
