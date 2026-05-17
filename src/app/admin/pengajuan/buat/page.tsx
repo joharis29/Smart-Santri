@@ -188,26 +188,22 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
   'SDIT 1': [
     'Dana BOS',
     'Dana Pesantren/Yayasan',
-    'Tabungan Siswa',
-    'Iuran Non-Wajib'
+    'Tabungan Siswa'
   ],
   'SDIT 2': [
     'Dana BOS',
     'Dana Pesantren/Yayasan',
-    'Tabungan Siswa',
-    'Iuran Non-Wajib'
+    'Tabungan Siswa'
   ],
   'MTs': [
     'Dana BOS',
     'Dana Pesantren/Yayasan',
-    'Tabungan Siswa',
-    'Iuran Non-Wajib'
+    'Tabungan Siswa'
   ],
   'MA': [
     'Dana BOS',
     'Dana Pesantren/Yayasan',
-    'Tabungan Siswa',
-    'Iuran Non-Wajib'
+    'Tabungan Siswa'
   ],
   'Diniyah': [
     'Dana Pesantren/Yayasan',
