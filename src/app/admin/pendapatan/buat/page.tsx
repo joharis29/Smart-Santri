@@ -288,12 +288,17 @@ export default function InputPendapatanPage() {
 
         try {
             const supabase = createClient();
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('transaksi_pendapatan')
                 .delete()
-                .eq('id', txId);
+                .eq('id', txId)
+                .select();
 
             if (error) throw error;
+
+            if (!data || data.length === 0) {
+                throw new Error('Transaksi tidak terhapus di database. Ini biasanya terjadi karena kebijakan RLS (Row-Level Security) untuk operasi DELETE belum diaktifkan di Supabase Anda.');
+            }
 
             // Remove locally
             setRecentTransactions(recentTransactions.filter(tx => tx.id !== txId));
