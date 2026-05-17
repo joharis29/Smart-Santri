@@ -22,31 +22,108 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { createClient } from '@/utils/supabase/client';
+import { submitPengajuan, deletePengajuan } from '../buat/actions';
+
 interface Draft {
-    id: string;
+    id: string;      // Display ID (Truncated)
+    realId: string;  // Original UUID
     type: string;
-    name: string;
-    unit: string;
+    name: string;    // Program Name
+    bidang: string;
     period: string;
     budget?: number;
-    realisasi?: number;
+    fundingSources: string[];
     items: number;
     status: string;
     lastUpdate: string;
     note?: string;
 }
 
-// Real Data Containers (Empty for production)
-const MOCK_RKA_DRAFTS: Draft[] = [];
-const MOCK_LPJ_DRAFTS: Draft[] = [];
-
 export default function DraftSayaPage() {
+    const supabase = createClient();
+    const [drafts, setDrafts] = useState<Draft[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ'>('RKA');
     const [searchQuery, setSearchQuery] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [filterUnit, setFilterUnit] = useState('');
+    const [filterBidang, setFilterBidang] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const filterRef = useRef<HTMLDivElement>(null);
+
+    // Fetch real data from Supabase
+    useEffect(() => {
+        const fetchDrafts = async () => {
+            setLoading(true);
+            console.log("Fetching drafts from Supabase...");
+            const { data, error } = await supabase
+                .from('dokumen_pengajuan')
+                .select(`
+                    id, 
+                    unit,
+                    bidang,
+                    periode_bulan, 
+                    periode_tahun, 
+                    status, 
+                    created_at,
+                    catatan_revisi,
+                    item_pengajuan(judul_kegiatan, nominal, rincian_json)
+                `)
+                .in('status', ['DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI'])
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Supabase Error:", error);
+                alert("Gagal mengambil data: " + error.message);
+            } else if (data) {
+                console.log("Data received:", data);
+                const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                
+                const mapped: Draft[] = data.map(d => {
+                    const items = Array.isArray(d.item_pengajuan) ? d.item_pengajuan : [];
+                    const total = items.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
+                    const itemCount = items.length;
+                    
+                    const monthName = monthNames[Number(d.periode_bulan)] || d.periode_bulan;
+                    
+                    // Extract Program Name
+                    const firstName = items[0]?.judul_kegiatan || (d.status === 'REVISI' ? 'Revisi Pengajuan' : 'Draft Pengajuan');
+                    const displayName = itemCount > 1 ? `${firstName} (+${itemCount - 1})` : firstName;
+
+                    // Extract unique funding sources
+                    const sources = new Set<string>();
+                    items.forEach((it: any) => {
+                        const rincian = it.rincian_json || {};
+                        const splits = rincian.fundingSplits || [];
+                        splits.forEach((s: any) => {
+                            if (s.source && s.nominal > 0) sources.add(s.source);
+                        });
+                    });
+
+                    return {
+                        id: String(d.id).slice(0, 8).toUpperCase(),
+                        realId: d.id,
+                        type: 'RKA', 
+                        name: displayName,
+                        bidang: d.bidang || 'Tanpa Bidang', 
+                        period: `${monthName} ${d.periode_tahun}`,
+                        budget: total,
+                        fundingSources: Array.from(sources),
+                        items: itemCount,
+                        status: d.status === 'REVISI' ? 'REVISI' : 
+                                d.status === 'MENUNGGU_VERIFIKASI' ? 'Verifikasi Unit' : 
+                                'Drafting',
+                        lastUpdate: d.created_at ? new Date(d.created_at).toLocaleDateString('id-ID') : '-',
+                        note: d.catatan_revisi
+                    };
+                });
+                setDrafts(mapped);
+            }
+            setLoading(false);
+        };
+
+        fetchDrafts();
+    }, []);
 
     // Close filter when clicking outside
     useEffect(() => {
@@ -59,28 +136,45 @@ export default function DraftSayaPage() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleEdit = (id: string, type: string) => {
-        const path = type === 'RKA' ? `/admin/pengajuan/buat?id=${id}` : `/admin/realisasi/buat?id=${id}`;
+    const handleEdit = (realId: string, type: string) => {
+        const path = type === 'RKA' ? `/admin/pengajuan/buat?id=${realId}` : `/admin/realisasi/buat?id=${realId}`;
         window.location.href = path;
     };
 
-    const handleKirim = (id: string) => {
-        if (confirm('Kirim draf ini ke Bendahara Unit untuk diperiksa?')) {
-            alert(`Berhasil dikirim ke Bendahara!`);
-            window.location.href = '/admin/pengajuan/rekap';
+    const handleKirim = async (realId: string) => {
+        if (!confirm('Kirim draf ini ke Bendahara sekarang?')) return;
+        
+        const res = await submitPengajuan(realId);
+        if (res.success) {
+            alert('Draf berhasil dikirim!');
+            setDrafts(prev => prev.filter(d => d.realId !== realId));
+        } else {
+            alert('Gagal mengirim draf: ' + res.error);
+        }
+    };
+
+    const handleDelete = async (realId: string) => {
+        if (!confirm('Hapus draf ini secara permanen?')) return;
+        
+        const res = await deletePengajuan(realId);
+        if (res.success) {
+            alert('Draf berhasil dihapus.');
+            setDrafts(prev => prev.filter(d => d.realId !== realId));
+        } else {
+            alert('Gagal menghapus draf: ' + res.error);
         }
     };
 
     const currentDrafts = useMemo(() => {
-        const base = activeTab === 'RKA' ? MOCK_RKA_DRAFTS : MOCK_LPJ_DRAFTS;
-        return base.filter((draft: Draft) => {
+        return drafts.filter((draft: Draft) => {
+            if (draft.type !== activeTab) return false;
             const matchesSearch = draft.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                 draft.id.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesUnit = filterUnit === '' || draft.unit === filterUnit;
+            const matchesBidang = filterBidang === '' || draft.bidang === filterBidang;
             const matchesStatus = filterStatus === '' || draft.status === filterStatus;
-            return matchesSearch && matchesUnit && matchesStatus;
+            return matchesSearch && matchesBidang && matchesStatus;
         });
-    }, [activeTab, searchQuery, filterUnit, filterStatus]);
+    }, [activeTab, searchQuery, filterBidang, filterStatus, drafts]);
 
     return (
         <div className="p-3 md:p-4 space-y-3">
@@ -115,14 +209,18 @@ export default function DraftSayaPage() {
                         className={`flex-1 lg:flex-none px-5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'RKA' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         <FileText className="w-3.5 h-3.5" /> RKA
-                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">{MOCK_RKA_DRAFTS.length}</span>
+                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">
+                            {drafts.filter(d => d.type === 'RKA').length}
+                        </span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('LPJ')}
                         className={`flex-1 lg:flex-none px-5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'LPJ' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         <ClipboardCheck className="w-3.5 h-3.5" /> LPJ
-                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">{MOCK_LPJ_DRAFTS.length}</span>
+                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">
+                            {drafts.filter(d => d.type === 'LPJ').length}
+                        </span>
                     </button>
                 </div>
 
@@ -141,7 +239,7 @@ export default function DraftSayaPage() {
                     <div className="relative" ref={filterRef}>
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`p-2 rounded-xl border transition-all shadow-sm ${isFilterOpen || filterUnit || filterStatus ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                            className={`p-2 rounded-xl border transition-all shadow-sm ${isFilterOpen || filterBidang || filterStatus ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
                             <Filter className="w-4 h-4" />
                         </button>
@@ -151,9 +249,9 @@ export default function DraftSayaPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                                         <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Filter Lanjutan</h3>
-                                        {(filterUnit || filterStatus) && (
+                                        {(filterBidang || filterStatus) && (
                                             <button 
-                                                onClick={() => { setFilterUnit(''); setFilterStatus(''); }}
+                                                onClick={() => { setFilterBidang(''); setFilterStatus(''); }}
                                                 className="text-[9px] font-bold text-rose-500 hover:underline"
                                             >
                                                 Reset
@@ -163,17 +261,18 @@ export default function DraftSayaPage() {
                                     
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                                            <Building2 className="w-3 h-3" /> Filter Unit
+                                            <Building2 className="w-3 h-3" /> Filter Bidang
                                         </label>
                                         <select 
-                                            value={filterUnit}
-                                            onChange={(e) => setFilterUnit(e.target.value)}
+                                            value={filterBidang}
+                                            onChange={(e) => setFilterBidang(e.target.value)}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
                                         >
-                                            <option value="">Semua Unit</option>
-                                            <option value="SDIT 1">SDIT 1</option>
-                                            <option value="SDIT 2">SDIT 2</option>
-                                            <option value="MA">MA</option>
+                                            <option value="">Semua Bidang</option>
+                                            <option value="Kurikulum">Kurikulum</option>
+                                            <option value="Kesiswaan">Kesiswaan</option>
+                                            <option value="Sarpras">Sarpras</option>
+                                            <option value="Humas">Humas</option>
                                         </select>
                                     </div>
 
@@ -211,8 +310,9 @@ export default function DraftSayaPage() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Info Draf</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Unit & Periode</th>
+                                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Program/ Kegiatan</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Bulan & Periode</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sumber Dana</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Nominal</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Opsi</th>
@@ -232,33 +332,58 @@ export default function DraftSayaPage() {
                                         <tr className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${draft.type === 'RKA' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
-                                                        {draft.type === 'RKA' ? <FileText className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
+                                                    <div className={`p-2 rounded-lg ${draft.status === 'REVISI' ? 'bg-rose-50' : 'bg-orange-50'}`}>
+                                                        <FileText className={`w-4 h-4 ${draft.status === 'REVISI' ? 'text-rose-500' : 'text-orange-500'}`} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-black text-slate-800 leading-tight mb-0.5">{draft.name}</p>
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{draft.id} • {draft.lastUpdate}</p>
+                                                        <div className="text-sm font-semibold text-slate-700">{draft.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono uppercase tracking-tight">{draft.id} • {draft.lastUpdate}</div>
                                                     </div>
                                                 </div>
+                                                {draft.status === 'REVISI' && draft.note && (
+                                                    <div className="mt-2 ml-10 p-2 bg-rose-50 border border-rose-100 rounded-lg">
+                                                        <div className="flex items-start gap-1.5">
+                                                            <AlertCircle className="w-3 h-3 text-rose-500 mt-0.5" />
+                                                            <p className="text-[10px] font-bold text-rose-600 leading-tight">
+                                                                CATATAN BENDAHARA: <span className="font-medium text-rose-500 italic">"{draft.note}"</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <p className="text-[11px] font-black text-slate-700 leading-tight mb-0.5">{draft.unit}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{draft.period}</p>
+                                                <p className="text-[11px] font-black text-slate-700 leading-tight mb-0.5">{draft.period}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">{draft.bidang}</p>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex flex-wrap justify-center gap-1">
+                                                    {(draft.fundingSources?.length ?? 0) > 0 ? (
+                                                        draft.fundingSources?.map(s => (
+                                                            <span key={s} className="bg-emerald-50 text-emerald-600 text-[8px] font-black px-1.5 py-0.5 rounded-md border border-emerald-100 uppercase">{s}</span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-[9px] text-slate-300 italic">-</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <p className="text-xs font-black text-slate-800 italic tracking-tighter leading-tight mb-0.5">Rp {(draft.type === 'RKA' ? (draft as any).budget : (draft as any).realisasi).toLocaleString('id-ID')}</p>
-                                                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest leading-none">{draft.items} Items</p>
+                                                <p className="text-xs font-black text-slate-800 italic">Rp {draft.budget?.toLocaleString('id-ID')}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{draft.items} Items</p>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${draft.status === 'Revisi' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
-                                                    {draft.status === 'Revisi' ? 'BUTUH REVISI' : 'DRAFTING'}
+                                                <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${
+                                                    draft.status === 'REVISI' 
+                                                    ? 'bg-rose-100 text-rose-600' 
+                                                    : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                    {draft.status}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-1">
-                                                    <button onClick={() => handleEdit(draft.id, draft.type)} className="p-1.5 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Edit"><FileEdit className="w-3.5 h-3.5" /></button>
-                                                    <button onClick={() => handleKirim(draft.id)} className="p-1.5 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Kirim ke Bendahara"><Send className="w-3.5 h-3.5" /></button>
-                                                    <button className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => handleEdit(draft.realId, draft.type)} className="p-1.5 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Edit"><FileEdit className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => handleKirim(draft.realId)} className="p-1.5 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Kirim ke Bendahara"><Send className="w-3.5 h-3.5" /></button>
+                                                    <button onClick={() => handleDelete(draft.realId)} className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
                                                 </div>
                                             </td>
                                         </tr>

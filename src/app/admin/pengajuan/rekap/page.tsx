@@ -15,23 +15,84 @@ import {
     Search,
     AlertCircle,
     User,
-    ArrowUpRight
+    ArrowUpRight,
+    X
 } from 'lucide-react';
 
-// Real Data Containers (Empty for production)
-const MOCK_RKA_QUEUE: any[] = [];
-const MOCK_LPJ_QUEUE: any[] = [];
+import { createClient } from '@/utils/supabase/client';
+
+import { revisiPengajuan } from '../buat/actions';
 
 export default function RekapitulasiDraftPage() {
+    const supabase = createClient();
     const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ'>('RKA');
-    const [rkaQueue, setRkaQueue] = useState(MOCK_RKA_QUEUE);
-    const [lpjQueue, setLpjQueue] = useState(MOCK_LPJ_QUEUE);
+    const [rkaQueue, setRkaQueue] = useState<any[]>([]);
+    const [lpjQueue, setLpjQueue] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
     const [selectedUnit, setSelectedUnit] = useState<string[]>([]);
+
+    // Fetch real data from Supabase
+    useEffect(() => {
+        const fetchRekap = async () => {
+            setLoading(true);
+            // Fetch items joined with their document status
+            const { data, error } = await supabase
+                .from('item_pengajuan')
+                .select(`
+                    *,
+                    dokumen_pengajuan!inner(id, bidang, periode_bulan, periode_tahun, created_at, catatan_revisi)
+                `)
+                .eq('dokumen_pengajuan.status', 'MENUNGGU_KEPALA')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                const rka: any[] = [];
+                const lpj: any[] = [];
+
+                data.forEach(item => {
+                    const mapped = {
+                        id: item.id,
+                        dokumenId: (item.dokumen_pengajuan as any)?.id,
+                        pengaju: 'Staf Unit',
+                        bidang: (item.dokumen_pengajuan as any)?.bidang || 'Tanpa Bidang', 
+                        kegiatan: item.judul_kegiatan,
+                        coa: item.kategori_coa,
+                        sumber: (() => {
+                            const splits = item.rincian_json?.fundingSplits || [];
+                            const sources = splits
+                                .filter((s: any) => s.source && s.nominal > 0)
+                                .map((s: any) => s.source);
+                            return sources.length > 0 ? sources.join(' / ') : (item.sumber_dana || 'Dana BOS');
+                        })(),
+                        nominal: item.nominal,
+                        isRevisi: !!(item.dokumen_pengajuan as any)?.catatan_revisi,
+                        lastNote: (item.dokumen_pengajuan as any)?.catatan_revisi,
+                        rincian: item.rincian_json,
+                        pic: item.pic || '-',
+                        tempat: item.tempat || '-',
+                        waktu: item.waktu || '-',
+                        sasaran: item.sasaran || '-',
+                        selected: false,
+                        type: 'RKA' // Default
+                    };
+
+                    if (mapped.type === 'RKA') rka.push(mapped);
+                    else lpj.push(mapped);
+                });
+
+                setRkaQueue(rka);
+                setLpjQueue(lpj);
+            }
+            setLoading(false);
+        };
+
+        fetchRekap();
+    }, []);
 
     // Close filter when clicking outside
     useEffect(() => {
@@ -65,16 +126,35 @@ export default function RekapitulasiDraftPage() {
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [catatanRevisi, setCatatanRevisi] = useState('');
 
+    // Detail Modal Logic
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedDetail, setSelectedDetail] = useState<any>(null);
+
+    const handleOpenDetail = (item: any) => {
+        setSelectedDetail(item);
+        setIsDetailModalOpen(true);
+    };
+
     const handleReject = (item: any) => {
         setSelectedItem(item);
         setCatatanRevisi('');
         setIsRejectModalOpen(true);
     };
 
-    const confirmReject = () => {
-        setActiveQueue(prev => prev.filter(i => i.id !== selectedItem.id));
-        setIsRejectModalOpen(false);
-        alert(`Dokumen "${selectedItem.kegiatan}" telah dikembalikan ke staf untuk revisi.`);
+    const confirmReject = async () => {
+        if (!selectedItem.dokumenId) {
+            alert("ID Dokumen tidak ditemukan.");
+            return;
+        }
+
+        const res = await revisiPengajuan(selectedItem.dokumenId, catatanRevisi);
+        if (res.success) {
+            setActiveQueue(prev => prev.filter(i => i.id !== selectedItem.id));
+            setIsRejectModalOpen(false);
+            alert(`Dokumen "${selectedItem.kegiatan}" telah dikembalikan ke staf untuk revisi.`);
+        } else {
+            alert("Gagal memproses revisi: " + res.error);
+        }
     };
 
     const toggleItemSelection = (id: number) => {
@@ -227,11 +307,11 @@ export default function RekapitulasiDraftPage() {
                                         className="rounded text-emerald-600 w-4 h-4 cursor-pointer" 
                                     />
                                 </th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Pengaju & Unit</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Kegiatan (Detail Program)</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">PENGAJU & BIDANG</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Program/Kegiatan</th>
                                 <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sumber Dana</th>
                                 <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Nominal</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Otorisasi</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Opsi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -264,12 +344,26 @@ export default function RekapitulasiDraftPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-black text-slate-800 leading-none mb-1">{item.pengaju}</p>
-                                                    <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest leading-none">{item.unit}</p>
+                                                    <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest leading-none">{item.bidang}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 align-middle">
-                                            <p className="text-xs font-black text-slate-700 mb-1">{item.kegiatan}</p>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="text-xs font-black text-slate-700">{item.kegiatan}</p>
+                                                {item.isRevisi ? (
+                                                    <span 
+                                                        className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black rounded uppercase cursor-help"
+                                                        title={`HASIL REVISI: ${item.lastNote}`}
+                                                    >
+                                                        Revisi
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-1.5 py-0.5 bg-sky-100 text-sky-700 text-[8px] font-black rounded uppercase">
+                                                        Baru
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[9px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">{item.coa}</span>
                                                 <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Info className="w-2.5 h-2.5" /> ID: {item.id}</span>
@@ -286,13 +380,10 @@ export default function RekapitulasiDraftPage() {
                                         <td className="px-4 py-4 align-middle text-center whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-2">
                                                 <button 
-                                                    onClick={() => handleReject(item)}
-                                                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" 
-                                                    title="Tolak & Beri Catatan Revisi"
+                                                    onClick={() => handleOpenDetail(item)}
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" 
+                                                    title="Review Detail"
                                                 >
-                                                    <XCircle className="w-4.5 h-4.5" />
-                                                </button>
-                                                <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Review Detail">
                                                     <ArrowUpRight className="w-4.5 h-4.5" />
                                                 </button>
                                             </div>
@@ -368,6 +459,99 @@ export default function RekapitulasiDraftPage() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Detail Review Modal */}
+            {isDetailModalOpen && selectedDetail && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-emerald-50 p-6 flex items-center justify-between border-b border-emerald-100">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
+                                    <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-emerald-900 uppercase italic leading-tight">{selectedDetail.kegiatan}</h3>
+                                    <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-widest">ID: {selectedDetail.id}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsDetailModalOpen(false)} className="p-2 hover:bg-emerald-100 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-emerald-600" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                            {/* Metadata Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Operasional</p>
+                                    <p className="text-xs font-black text-slate-800">{selectedDetail.coa}</p>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">PIC / Penanggung Jawab</p>
+                                    <p className="text-xs font-black text-slate-800">{selectedDetail.pic}</p>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Waktu & Tempat</p>
+                                    <p className="text-xs font-black text-slate-800">{selectedDetail.waktu} @ {selectedDetail.tempat}</p>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sasaran Strategis</p>
+                                    <p className="text-xs font-black text-slate-800">{selectedDetail.sasaran}</p>
+                                </div>
+                            </div>
+
+                            {/* Rincian Items Table */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rincian Anggaran (Breakdown)</label>
+                                <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                                    <table className="w-full border-collapse">
+                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-[9px] font-black text-slate-500 uppercase">Item</th>
+                                                <th className="px-4 py-2 text-center text-[9px] font-black text-slate-500 uppercase">Qty</th>
+                                                <th className="px-4 py-2 text-right text-[9px] font-black text-slate-500 uppercase">Harga</th>
+                                                <th className="px-4 py-2 text-right text-[9px] font-black text-slate-500 uppercase">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 bg-white">
+                                            {selectedDetail.rincian?.items?.map((it: any, idx: number) => (
+                                                <tr key={idx}>
+                                                    <td className="px-4 py-2.5 text-[11px] font-bold text-slate-700">{it.name}</td>
+                                                    <td className="px-4 py-2.5 text-[11px] font-bold text-slate-600 text-center">{it.qty} {it.unit}</td>
+                                                    <td className="px-4 py-2.5 text-[11px] font-bold text-slate-600 text-right">Rp {it.price.toLocaleString('id-ID')}</td>
+                                                    <td className="px-4 py-2.5 text-[11px] font-black text-slate-800 text-right">Rp {it.total.toLocaleString('id-ID')}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-slate-50 border-t border-slate-100">
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-3 text-right text-[10px] font-black text-slate-500 uppercase">Total Nominal</td>
+                                                <td className="px-4 py-3 text-right text-sm font-black text-emerald-700 italic tracking-tighter">
+                                                    Rp {selectedDetail.nominal.toLocaleString('id-ID')}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Funding Split */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alokasi Sumber Dana</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {selectedDetail.rincian?.fundingSplits?.filter((s: any) => s.source && s.nominal > 0).map((s: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center p-3 bg-amber-50 rounded-xl border border-amber-100">
+                                            <span className="text-[10px] font-black text-amber-800 uppercase">{s.source}</span>
+                                            <span className="text-xs font-black text-amber-900">Rp {s.nominal.toLocaleString('id-ID')} ({s.percent}%)</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             )}

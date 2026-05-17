@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin } from './actions';
 
 type UserData = {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   role: string;
@@ -13,39 +15,95 @@ type UserData = {
   joinedAt: string;
 };
 
-// --- INITIAL DUMMY DATA ---
-const INITIAL_USERS: UserData[] = [
-  { id: 1, name: 'Ahmad Fauzi', email: 'ahmad.fauzi@smartsantri.com', role: 'Administrator', unit: 'Pusat (Yayasan)', status: 'Aktif', joinedAt: '01 Jan 2026' },
-  { id: 2, name: 'Siti Aminah', email: 'siti.aminah@smartsantri.com', role: 'Bendahara Yayasan/Pesantren (Pusat)', unit: 'Pusat (Yayasan)', status: 'Aktif', joinedAt: '15 Jan 2026' },
-  { id: 3, name: 'K.H. Abdullah', email: 'pimpinan@smartsantri.com', role: 'Pimpinan Pesantren', unit: 'Pusat (Yayasan)', status: 'Aktif', joinedAt: '10 Jan 2026' },
-  { id: 4, name: 'Budi Santoso', email: 'budi.s@smartsantri.com', role: 'Bendahara Jenjang', unit: 'Pendidikan', status: 'Aktif', joinedAt: '20 Jan 2026' },
-  { id: 5, name: 'Ust. Rahman', email: 'rahman.kepala@smartsantri.com', role: 'Kepala Jenjang', unit: 'Pendidikan', status: 'Aktif', joinedAt: '22 Jan 2026' },
-  { id: 6, name: 'Ustadzah Halimah', email: 'halimah@smartsantri.com', role: 'Kepala Unit', unit: 'SDIT 1', status: 'Aktif', joinedAt: '05 Feb 2026' },
-  { id: 7, name: 'Dian Sastro', email: 'dian.sastro@smartsantri.com', role: 'Bendahara Unit', unit: 'SDIT 1', status: 'Aktif', joinedAt: '05 Feb 2026' },
-  { id: 8, name: 'Hasan Basri', email: 'hasan.b@smartsantri.com', role: 'Staf Bidang', unit: 'Asrama Putra', status: 'Nonaktif', joinedAt: '12 Feb 2026' },
-  { id: 9, name: 'Nurul Hidayah', email: 'nurul.h@smartsantri.com', role: 'Staf Unit', unit: 'Dapur Asrama Putri', status: 'Aktif', joinedAt: '18 Feb 2026' },
-];
+// --- INITIAL DATA ---
+const INITIAL_USERS: UserData[] = [];
+
+// Enum mapping utilities
+const mapDropdownToEnum = (roleStr: string) => {
+  switch (roleStr) {
+    case 'Administrator': return 'ADMINISTRATOR';
+    case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+    case 'Pimpinan Pesantren': return 'PIMPINAN';
+    case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
+    case 'Kepala Jenjang': return 'KEPALA_JENJANG';
+    case 'Kepala Unit': return 'KEPALA_UNIT';
+    case 'Bendahara Unit': return 'BENDAHARA_UNIT';
+    case 'Staf Bidang': return 'STAFF_BIDANG';
+    case 'Staf Unit': return 'STAFF';
+    default: return 'STAFF';
+  }
+};
+
+const mapEnumToDropdown = (roleEnum: string) => {
+  switch (roleEnum) {
+    case 'ADMINISTRATOR': return 'Administrator';
+    case 'BENDAHARA_PUSAT': return 'Bendahara Yayasan/Pesantren (Pusat)';
+    case 'PIMPINAN': return 'Pimpinan Pesantren';
+    case 'BENDAHARA_JENJANG': return 'Bendahara Jenjang';
+    case 'KEPALA_JENJANG': return 'Kepala Jenjang';
+    case 'KEPALA_UNIT': return 'Kepala Unit';
+    case 'BENDAHARA_UNIT': return 'Bendahara Unit';
+    case 'STAFF_BIDANG': return 'Staf Bidang';
+    case 'STAFF': return 'Staf Unit';
+    default: return 'Staf Unit';
+  }
+};
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<UserData[]>(INITIAL_USERS);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | string | null>(null);
   
   // Form states
-  const [formData, setFormData] = useState({ name: '', email: '', role: '', unit: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '' });
   
   // Delete Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   
   // Dropdown state
-  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+  const [activeDropdownId, setActiveDropdownId] = useState<number | string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load profiles from Supabase
+  const loadProfiles = async () => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, unit:unit_id(name)');
+      
+      if (error) throw error;
+      
+      if (data) {
+        const mappedUsers = data.map((p: any) => ({
+          id: p.id,
+          name: p.full_name,
+          email: p.email || `${p.full_name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
+          role: mapEnumToDropdown(p.role),
+          unit: p.unit?.name || 'Pusat (Yayasan)',
+          status: p.is_active !== false ? 'Aktif' : 'Nonaktif',
+          joinedAt: new Date(p.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+        }));
+        setUsers(mappedUsers);
+      }
+    } catch (err) {
+      console.error('Error fetching profiles:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfiles();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -69,7 +127,7 @@ export default function UserManagementPage() {
   // Handlers
   const handleOpenAddModal = () => {
     setModalMode('add');
-    setFormData({ name: '', email: '', role: '', unit: '' });
+    setFormData({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '' });
     setSelectedUserId(null);
     setShowPassword(false);
     setIsModalOpen(true);
@@ -77,7 +135,7 @@ export default function UserManagementPage() {
 
   const handleOpenEditModal = (user: UserData) => {
     setModalMode('edit');
-    setFormData({ name: user.name, email: user.email, role: user.role, unit: user.unit });
+    setFormData({ name: user.name, email: user.email, role: user.role, unit: user.unit, password: '' });
     setSelectedUserId(user.id);
     setShowPassword(false);
     setIsModalOpen(true);
@@ -88,38 +146,125 @@ export default function UserManagementPage() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (userToDelete) {
-      setUsers(users.filter(u => u.id !== userToDelete.id));
+      try {
+        const res = await deleteUserByAdmin(userToDelete.id as string);
+        if (!res.success) throw new Error(res.error);
+        setUsers(users.filter(u => u.id !== userToDelete.id));
+        alert('Pengguna berhasil dihapus dari sistem!');
+      } catch (err: any) {
+        console.error('Error deleting profile:', err);
+        alert(`Gagal menghapus pengguna: ${err.message || err}`);
+      }
     }
     setIsDeleteModalOpen(false);
     setUserToDelete(null);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (modalMode === 'add') {
-      const newUser: UserData = {
-        id: Date.now(),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        unit: formData.unit,
-        status: 'Aktif',
-        joinedAt: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-      };
-      setUsers([newUser, ...users]);
-      alert(`Berhasil: Pengguna baru ${formData.name} berhasil ditambahkan! (Simulasi Dummy)`);
-    } else {
-      setUsers(users.map(u => u.id === selectedUserId ? { ...u, ...formData } : u));
-      alert(`Berhasil: Data ${formData.name} berhasil diperbarui! (Simulasi Dummy)`);
+    try {
+      const supabase = createClient();
+      
+      let selectedUnitId: string | null = null;
+      if (formData.unit) {
+        const { data: unitData } = await supabase
+          .from('unit')
+          .select('id')
+          .eq('name', formData.unit)
+          .single();
+        if (unitData) selectedUnitId = unitData.id;
+      }
+
+      if (modalMode === 'add') {
+        const res = await registerUserByAdmin({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          unit: formData.unit,
+          password: formData.password
+        });
+
+        if (!res.success) throw new Error(res.error);
+        const newId = res.userId!;
+
+        const newUser: UserData = {
+          id: newId,
+          name: formData.name,
+          email: formData.email || `${formData.name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
+          role: formData.role,
+          unit: formData.unit,
+          status: 'Aktif',
+          joinedAt: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+        };
+        setUsers([newUser, ...users]);
+        alert(`Berhasil: Akun login & profil untuk ${formData.name} berhasil dibuat!`);
+      } else {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: formData.name,
+            email: formData.email,
+            role: mapDropdownToEnum(formData.role),
+            unit_id: selectedUnitId
+          })
+          .eq('id', selectedUserId);
+
+        if (error) throw error;
+
+        setUsers(users.map(u => u.id === selectedUserId ? { ...u, ...formData } : u));
+        alert(`Berhasil: Data ${formData.name} berhasil diperbarui!`);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      alert(`Gagal menyimpan: ${err.message || err}`);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDropdownAction = (action: string, userName: string) => {
-    alert(`Aksi "${action}" dieksekusi untuk pengguna: ${userName} (Simulasi Dummy)`);
+  const handleDropdownAction = async (action: string, user: UserData) => {
     setActiveDropdownId(null);
+    
+    if (action === 'Lihat Detail') {
+      alert(`Detail Pengguna:\n\nNama: ${user.name}\nEmail: ${user.email}\nPeran: ${user.role}\nUnit: ${user.unit}\nStatus: ${user.status}\nBergabung: ${user.joinedAt}`);
+    } else if (action === 'Reset Password') {
+      const newPassword = prompt(`Masukkan kata sandi baru untuk ${user.name}:`, 'SmartSantri123!');
+      if (newPassword === null) return; // Batal
+      if (newPassword.trim().length < 6) {
+        alert('Kata sandi minimal harus 6 karakter demi keamanan!');
+        return;
+      }
+      
+      try {
+        const res = await resetUserPasswordByAdmin(user.id as string, newPassword);
+        if (!res.success) throw new Error(res.error);
+        alert(`Berhasil: Kata sandi untuk ${user.name} berhasil diperbarui!`);
+      } catch (err: any) {
+        console.error('Error resetting password:', err);
+        alert(`Gagal mereset kata sandi: ${err.message || err}`);
+      }
+    } else if (action === 'Nonaktifkan Akun' || action === 'Aktifkan Akun') {
+      const isActivating = action === 'Aktifkan Akun';
+      const confirmMsg = isActivating 
+        ? `Apakah Anda yakin ingin mengaktifkan kembali akun ${user.name}?` 
+        : `Apakah Anda yakin ingin menonaktifkan akun ${user.name}? Nonaktifkan akun akan mencegah pengguna ini untuk login ke sistem.`;
+      
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const currentIsActive = user.status === 'Aktif';
+        const res = await toggleUserStatusByAdmin(user.id as string, currentIsActive);
+        if (!res.success) throw new Error(res.error);
+        
+        // Update local state
+        setUsers(users.map(u => u.id === user.id ? { ...u, status: res.newIsActive ? 'Aktif' : 'Nonaktif' } : u));
+        alert(`Berhasil: Status akun ${user.name} sekarang adalah ${res.newIsActive ? 'Aktif' : 'Nonaktif'}!`);
+      } catch (err: any) {
+        console.error('Error toggling user status:', err);
+        alert(`Gagal mengubah status akun: ${err.message || err}`);
+      }
+    }
   };
 
   return (
@@ -251,14 +396,14 @@ export default function UserManagementPage() {
                           
                           {activeDropdownId === user.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-10 py-2 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right text-left">
-                              <button onClick={() => handleDropdownAction('Lihat Detail', user.name)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
+                              <button onClick={() => handleDropdownAction('Lihat Detail', user)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
                                 <Info className="w-4 h-4" /> Lihat Detail
                               </button>
-                              <button onClick={() => handleDropdownAction('Reset Password', user.name)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
+                              <button onClick={() => handleDropdownAction('Reset Password', user)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors">
                                 <KeyRound className="w-4 h-4" /> Reset Password
                               </button>
                               <div className="h-px bg-slate-100 my-1"></div>
-                              <button onClick={() => handleDropdownAction(user.status === 'Aktif' ? 'Nonaktifkan Akun' : 'Aktifkan Akun', user.name)} className={`w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold hover:bg-rose-50 transition-colors ${user.status === 'Aktif' ? 'text-rose-600' : 'text-emerald-600 hover:bg-emerald-50'}`}>
+                              <button onClick={() => handleDropdownAction(user.status === 'Aktif' ? 'Nonaktifkan Akun' : 'Aktifkan Akun', user)} className={`w-full flex items-center gap-3 px-4 py-2 text-xs font-semibold hover:bg-rose-50 transition-colors ${user.status === 'Aktif' ? 'text-rose-600' : 'text-emerald-600 hover:bg-emerald-50'}`}>
                                 {user.status === 'Aktif' ? <Ban className="w-4 h-4" /> : <Shield className="w-4 h-4" />} 
                                 {user.status === 'Aktif' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}
                               </button>
@@ -364,7 +509,9 @@ export default function UserManagementPage() {
                         </div>
                         <input 
                           type={showPassword ? "text" : "password"} 
-                          required 
+                          required={modalMode === 'add'} 
+                          value={formData.password}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
                           placeholder="Masukkan kata sandi awal" 
                           className="w-full pl-9 pr-10 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
                         />

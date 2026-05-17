@@ -40,10 +40,9 @@ export async function updateSession(request: NextRequest) {
 
   // Redirect users who aren't authenticated to the login page
   if (!user && isProtectedRoute) {
-    // TEMPORARY BYPASS FOR DEMO: Allow access to /admin without login
-    // const url = request.nextUrl.clone()
-    // url.pathname = '/login'
-    // return NextResponse.redirect(url)
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from the login page

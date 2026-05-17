@@ -11,51 +11,8 @@ type RoleData = {
   permissions: string[];
 };
 
-// --- INITIAL DUMMY DATA ---
-const INITIAL_ROLES: RoleData[] = [
-  { 
-    id: 1, 
-    name: 'Administrator', 
-    description: 'Akses penuh ke seluruh sistem, pengaturan pengguna, dan konfigurasi master data pesantren.', 
-    level: 'Sistem', 
-    permissions: ['Kelola Pengguna', 'Kelola Role', 'Konfigurasi Sistem', 'Akses Semua Laporan'] 
-  },
-  { 
-    id: 2, 
-    name: 'Pimpinan Pesantren', 
-    description: 'Akses pengawasan (*read-only*) untuk memantau status RKA, melihat laporan realisasi, dan evaluasi dompet dana.', 
-    level: 'Eksekutif', 
-    permissions: ['View Rincian Pengeluaran', 'Pantau Status RKA', 'View Saldo', 'View Bukti Nota'] 
-  },
-  { 
-    id: 3, 
-    name: 'Bendahara Pesantren (Pusat)', 
-    description: 'Pusat kendali keuangan yayasan. Menyetujui RKA, mencairkan dana, dan memantau mutasi seluruh unit.', 
-    level: 'Kritis', 
-    permissions: ['Approve/Reject RKA', 'Cairkan Dana Bertahap', 'Buka/Tutup Periode RKA', 'Ubah Status Kegiatan'] 
-  },
-  { 
-    id: 4, 
-    name: 'Kepala Jenjang / Unit', 
-    description: 'Otorisasi tingkat pertama. Bertanggung jawab memverifikasi RKA dari staf/bendahara unit sebelum ke Pusat.', 
-    level: 'Menengah', 
-    permissions: ['Verifikasi Internal', 'Approve RKA Unit', 'Tolak RKA Unit'] 
-  },
-  { 
-    id: 5, 
-    name: 'Bendahara Jenjang / Unit', 
-    description: 'Pelaksana harian akuntansi unit. Bertugas membuat RKA tahunan/bulanan dan melaporkan realisasi belanja.', 
-    level: 'Menengah', 
-    permissions: ['Create RKA', 'Import RKA/RKT', 'Lapor Realisasi', 'Multi-Upload Nota', 'Cetak Invoice'] 
-  },
-  { 
-    id: 6, 
-    name: 'Staf Dapur / Bidang', 
-    description: 'Pelaksana lapangan yang menginput laporan harian (reimbursement) dan pengajuan operasional rutin.', 
-    level: 'Dasar', 
-    permissions: ['Input Realisasi Harian', 'Upload Nota', 'Ajukan Reimbursement'] 
-  },
-];
+// --- INITIAL DATA ---
+const INITIAL_ROLES: RoleData[] = [];
 
 const INITIAL_PERMISSIONS_MASTER = [
   'Kelola Pengguna', 'Kelola Role', 'Konfigurasi Sistem', 'Akses Semua Laporan',
@@ -165,7 +122,7 @@ export default function RoleManagementPage() {
         permissions: formData.permissions.length > 0 ? formData.permissions : ['Akses Standar']
       };
       setRoles([newRole, ...roles]);
-      alert(`Berhasil: Role baru "${formData.name}" berhasil dibuat! (Simulasi Dummy)`);
+      alert(`Berhasil: Role baru "${formData.name}" berhasil dibuat!`);
     } else {
       setRoles(roles.map(r => r.id === selectedRoleId ? { 
         ...r, 
@@ -174,13 +131,13 @@ export default function RoleManagementPage() {
         level: formData.level, 
         permissions: formData.permissions 
       } : r));
-      alert(`Berhasil: Hak akses untuk "${formData.name}" berhasil diperbarui! (Simulasi Dummy)`);
+      alert(`Berhasil: Hak akses untuk "${formData.name}" berhasil diperbarui!`);
     }
     setIsModalOpen(false);
   };
 
   const handleOptionsDropdownAction = (action: string, roleName: string) => {
-    alert(`Aksi "${action}" dieksekusi untuk role: ${roleName} (Simulasi Dummy)`);
+    alert(`Aksi "${action}" dieksekusi untuk role: ${roleName}`);
     setActiveDropdownId(null);
   };
 

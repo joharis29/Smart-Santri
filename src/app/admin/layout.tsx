@@ -26,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [expensesOpen, setExpensesOpen] = useState(false);
+    const [incomeOpen, setIncomeOpen] = useState(false);
 
     return (
         <div className="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen">
@@ -104,6 +105,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                         <History className="w-3.5 h-3.5 opacity-70 shrink-0" />
                                         <span>Riwayat Dokumen</span>
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Menu Pemasukan (Dropdown) */}
+                        <div className="pt-1">
+                            <button 
+                                onClick={() => setIncomeOpen(!incomeOpen)}
+                                className="w-full flex items-center justify-between px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <PlusCircle className="w-4 h-4 opacity-70 group-hover:opacity-100 shrink-0" />
+                                    <span className="font-semibold truncate">Pemasukan</span>
+                                </div>
+                                {incomeOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                            </button>
+                            
+                            {incomeOpen && (
+                                <div className="mt-1 space-y-1 px-3">
+                                    <Link href="/admin/pendapatan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                        <FileText className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                        <span>Input Pendapatan</span>
                                     </Link>
                                 </div>
                             )}

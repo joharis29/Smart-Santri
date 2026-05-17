@@ -21,7 +21,11 @@ interface RiwayatDokumen {
     tanggal: string;
     pengaju: string;
     unit: string;
+    bidang?: string;
+    bulan?: string;
+    tahun_ajaran?: string;
     kegiatan: string;
+    program?: string;
     sumber: string;
     nominal: number;
     status: 'SELESAI';
@@ -221,13 +225,14 @@ export default function RiwayatDokumenPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Tgl Selesai</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Pengaju & Unit</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Kegiatan (ID Dokumen)</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Sumber Dana</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Tgl Laporan Diterima</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Bulan / T.A</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Unit / Bidang</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Program / Kegiatan</th>
+                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Sumber Dana</th>
                                 <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Nominal</th>
                                 <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Aksi</th>
                             </tr>
@@ -235,7 +240,7 @@ export default function RiwayatDokumenPage() {
                         <tbody className="divide-y divide-slate-100">
                             {filteredRiwayat.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center space-y-3">
+                                    <td colSpan={7} className="px-6 py-20 text-center space-y-3">
                                         <div className="flex justify-center">
                                             <div className="bg-slate-50 p-4 rounded-full">
                                                 <History className="w-12 h-12 text-slate-200" />
@@ -247,28 +252,47 @@ export default function RiwayatDokumenPage() {
                             ) : (
                                 filteredRiwayat.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-4 align-middle text-[11px] font-black text-slate-500 whitespace-nowrap tracking-tighter uppercase">{item.tanggal}</td>
-                                        <td className="px-4 py-4 align-middle whitespace-nowrap">
-                                            <p className="text-xs font-black text-slate-800 leading-none mb-1">{item.pengaju}</p>
-                                            <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest leading-none">{item.unit}</p>
+                                        {/* 1. Tanggal Laporan Diterima */}
+                                        <td className="px-6 py-4 align-middle text-[11px] font-black text-slate-500 whitespace-nowrap tracking-tighter uppercase">
+                                            {item.tanggal}
                                         </td>
+                                        
+                                        {/* 2. Bulan / T.A */}
+                                        <td className="px-4 py-4 align-middle whitespace-nowrap">
+                                            <p className="text-xs font-black text-slate-800 leading-none mb-1">{item.bulan || '-'}</p>
+                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">{item.tahun_ajaran || '-'}</p>
+                                        </td>
+
+                                        {/* 3. Unit / Bidang */}
+                                        <td className="px-4 py-4 align-middle whitespace-nowrap">
+                                            <p className="text-xs font-black text-emerald-700 leading-none mb-1">{item.unit}</p>
+                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">{item.bidang || '-'}</p>
+                                        </td>
+
+                                        {/* 4. Program / Kegiatan */}
                                         <td className="px-4 py-4 align-middle">
-                                            <p className="text-xs font-black text-slate-700 leading-tight mb-1">{item.kegiatan}</p>
+                                            <p className="text-xs font-black text-slate-700 leading-tight mb-1">{item.kegiatan || item.program}</p>
                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{item.id}</p>
                                         </td>
-                                        <td className="px-4 py-4 align-middle text-center">
+
+                                        {/* 5. Sumber Dana */}
+                                        <td className="px-4 py-4 align-middle whitespace-nowrap">
                                             <span className="inline-flex px-3 py-1 bg-slate-100 text-slate-600 text-[9px] font-black rounded-lg border border-slate-200 uppercase tracking-tighter">
                                                 {item.sumber}
                                             </span>
                                         </td>
+
+                                        {/* 6. Nominal */}
                                         <td className="px-4 py-4 align-middle text-right whitespace-nowrap">
                                             <div className="flex flex-col items-end">
-                                                <p className="text-xs font-black text-slate-800 italic tracking-tighter">Rp {item.nominal.toLocaleString('id-ID')}</p>
+                                                <p className="text-xs font-black text-slate-800 italic tracking-tighter">Rp {Number(item.nominal || 0).toLocaleString('id-ID')}</p>
                                                 <span className="flex items-center gap-1 text-[8px] font-black text-emerald-600 uppercase tracking-widest">
                                                     <CheckCircle2 className="w-2.5 h-2.5" /> SELESAI
                                                 </span>
                                             </div>
                                         </td>
+
+                                        {/* 7. Aksi */}
                                         <td className="px-4 py-4 align-middle text-center whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Lihat LPJ">

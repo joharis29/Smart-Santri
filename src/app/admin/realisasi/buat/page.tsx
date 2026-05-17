@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import { 
     ClipboardCheck, 
     Search, 
     ArrowRight, 
     Calculator, 
     FileText, 
+    Calendar,
+    Layers,
+    GraduationCap,
     Camera as CameraIcon, 
     Upload, 
     X, 
@@ -26,31 +29,79 @@ import {
     PlusCircle,
     RotateCcw,
     File as FileIcon,
-    Image as ImageIcon
+    Image as ImageIcon,
+    FileSpreadsheet,
+    Download as DownloadIcon,
+    Edit3,
+    Save,
+    Banknote
 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
-const APPROVED_ITEMS = [
-    { 
-        id: 'ITM-001', 
-        docId: 'RKA-2025-05-01',
-        name: 'Beli Sapu dan Alat Pel', 
-        unit: 'SDIT 1', 
-        program: 'Pemeliharaan Gedung',
-        budget: 150000, 
-        source: 'Kas Operasional',
-        isRestricted: false
-    },
-    { 
-        id: 'ITM-002', 
-        docId: 'RKA-2025-05-01',
-        name: 'Konsumsi Rapat Wali Murid', 
-        unit: 'SDIT 1', 
-        program: 'Kesiswaan',
-        budget: 500000, 
-        source: 'Dana BOS',
-        isRestricted: true,
-        allowedBackupSources: ['Yayasan', 'Zakat']
-    }
+const OPERASIONAL_CATEGORIES = [
+  'Konsumsi',
+  'ATK & Fotocopy',
+  'Honor / Insentif',
+  'Transportasi',
+  'Sewa Sarana',
+  'Perlengkapan',
+  'Pemeliharaan',
+  'Lain-lain'
+];
+
+const RKA_PROGRAMS = [
+  'Optimalisasi Manajemen Pengarsipan/Mengelola surat statis & dinamis',
+  'Optimalisasi Manajemen Pengarsipan/Mutasi santri',
+  'Optimalisasi Manajemen Pengarsipan/Arsip proposal/laporan',
+  'Optimalisasi Manajemen Pengarsipan/Backup dokumen Naqieb',
+  'Optimalisasi ATK & Sarpras/Pengadaan ATK',
+  'Optimalisasi ATK & Sarpras/Sarpras kantor',
+  'Optimalisasi ATK & Sarpras/Pemeliharaan sarpras',
+  'Optimalisasi ATK & Sarpras/Inventarisasi aset',
+  'Optimalisasi ATK & Sarpras/Seragam pengurus',
+  'Manajemen Buku Admin/Pengadaan, pengisian rutin, dan evaluasi kelengkapan buku administrasi',
+  'Database Santri/Update data semesteran & digitalisasi database santri',
+  'Layanan & Komunikasi/WAG Ortu',
+  'Layanan & Komunikasi/Booklet profil',
+  'Layanan & Komunikasi/Buku santri',
+  'Layanan & Komunikasi/Penyambutan santri baru',
+  'Layanan & Komunikasi/Optimasi IG asrama',
+  'Koordinasi Rapat/Rapat pekanan',
+  'Koordinasi Rapat/Rapat terbatas',
+  'Koordinasi Rapat/Rapat Naqieb',
+  'Koordinasi Rapat/Rapat Kerja (Raker)',
+  'Sistem Keuangan/Penyusunan RAB',
+  'Sistem Keuangan/Pencairan dana',
+  'Sistem Keuangan/Pencatatan BKU',
+  'Sistem Keuangan/Pelaporan realisasi',
+  'Manajemen Aset/Penitipan uang santri',
+  'Manajemen Aset/Pengadaan sarpras kebutuhan santri',
+  'Kegiatan Pendidikan/KISS (Kajian Senin Subuh)',
+  'Kegiatan Pendidikan/Halaqah Masa',
+  'Kegiatan Pendidikan/Bimbel sore',
+  'Kegiatan Pendidikan/Rapot Asrama Bulanan',
+  'Penegakan Disiplin/Operasi rambut/kerapihan',
+  'Penegakan Disiplin/Sidak kamar',
+  'Penegakan Disiplin/Pembinaan santri',
+  'Penegakan Disiplin/Reward & punishment',
+  'Minat Bakat/Muhadharah (Pidato)',
+  'Minat Bakat/Olahraga pekanan',
+  'Minat Bakat/Seni Bela Diri',
+  'Program Tahfidz/Setoran hafalan harian',
+  'Program Tahfidz/Tasmi\'',
+  'Program Tahfidz/Munaqasyah',
+  'Program Tahfidz/Wisuda Tahfidz',
+  'Pembiasaan Ibadah/Shalat berjamaah 5 waktu',
+  'Pembiasaan Ibadah/Tahajjud bersama',
+  'Pembiasaan Ibadah/Puasa Sunnah',
+  'Lingkungan & Kesehatan/Roan (Kerja bakti)',
+  'Lingkungan & Kesehatan/Pengelolaan sampah',
+  'Lingkungan & Kesehatan/Layanan Poskestren',
+  'Lingkungan & Kesehatan/Sosialisasi PHBS',
+  'Pemeliharaan/Perbaikan sarana rusak',
+  'Pemeliharaan/Pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)'
 ];
 
 const FUND_SOURCES = ['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS'];
@@ -61,39 +112,134 @@ interface SubsidiSource {
     percent: number;
 }
 
-interface LPJItem {
+interface LPJRow {
     id: string;
-    name: string;
-    unit: string;
-    price: number;
-    qty: number;
-    total: number;
+    program: string;
+    operasional: string;
+    jumlah: string;
+    waktu: string;
+    tempat: string;
+    pic: string;
+    sasaran: string;
+    nominal: number;
+    details: {
+        items: Array<{ name: string; unit: string; price: number; qty: number; total: number; }>;
+        fundingSplits: Array<{ source: string; percent: number; nominal: number; }>;
+    };
+    isFilled: boolean;
 }
 
 export default function BuatRealisasiPage() {
-    const [selectedItemId, setSelectedItemId] = useState('');
+    const [approvedRkas, setApprovedRkas] = useState<any[]>([]);
+    const [selectedRkaId, setSelectedRkaId] = useState('');
+    const [selectedRkaData, setSelectedRkaData] = useState<any>(null);
+    const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+    const [attachments, setAttachments] = useState<Array<{ file: File; customName: string }>>([]);
+    const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([]);
+    const importRef = useRef<HTMLInputElement>(null);
+    const [unit, setUnit] = useState('');
+    const [bidang, setBidang] = useState('');
+    const [bulan, setBulan] = useState('');
+    const [tahunAjaran, setTahunAjaran] = useState('');
+    
+    const [lpjRows, setLpjRows] = useState<LPJRow[]>([
+        { 
+            id: '1', 
+            program: '', 
+            operasional: '', 
+            jumlah: '', 
+            waktu: '', 
+            tempat: '', 
+            pic: '', 
+            sasaran: '', 
+            nominal: 0, 
+            details: { 
+                items: [{ name: '', unit: '', price: 0, qty: 0, total: 0 }], 
+                fundingSplits: [{ source: '', percent: 0, nominal: 0 }] 
+            }, 
+            isFilled: false 
+        }
+    ]);
+
     const [narasi, setNarasi] = useState('');
     const [subsidiSources, setSubsidiSources] = useState<SubsidiSource[]>([]);
-    const [items, setItems] = useState<LPJItem[]>([
-        { id: '1', name: '', unit: '', price: 0, qty: 0, total: 0 }
-    ]);
-    const [attachments, setAttachments] = useState<File[]>([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
-    
-    const activeItem = useMemo(() => 
-        APPROVED_ITEMS.find(item => item.id === selectedItemId), 
-    [selectedItemId]);
 
-    const realisasiNominal = useMemo(() => 
-        items.reduce((acc, curr) => acc + curr.total, 0),
-    [items]);
+    // FETCH APPROVED RKAs
+    useEffect(() => {
+        const fetchApproved = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, item_pengajuan(*)')
+                .in('status', ['CAIR', 'SUDAH_DITERIMA', 'SELESAI'])
+                .eq('type', 'RKA')
+                .order('created_at', { ascending: false });
+            
+            if (data) setApprovedRkas(data);
+        };
+        fetchApproved();
+    }, []);
+
+    // SYNC SELECTED RKA
+    useEffect(() => {
+        if (selectedRkaId) {
+            const rka = approvedRkas.find(r => r.id === selectedRkaId);
+            if (rka) {
+                setSelectedRkaData(rka);
+                setUnit(rka.unit_id || '');
+                setBidang(rka.bidang || '');
+                setBulan(rka.bulan || '');
+                setTahunAjaran(rka.tahun_ajaran || '');
+            }
+        } else {
+            setSelectedRkaData(null);
+        }
+    }, [selectedRkaId, approvedRkas]);
+    
+    const budgetTotal = useMemo(() => {
+        if (!selectedRkaData) return 0;
+        return Number(selectedRkaData.nominal || 0);
+    }, [selectedRkaData]);
+
+    const realisasiTotal = useMemo(() => 
+        lpjRows.reduce((acc, curr) => acc + curr.nominal, 0),
+    [lpjRows]);
 
     const selisih = useMemo(() => {
-        if (!activeItem) return 0;
-        return realisasiNominal - activeItem.budget;
-    }, [activeItem, realisasiNominal]);
+        if (!selectedRkaData) return 0;
+        return realisasiTotal - budgetTotal;
+    }, [selectedRkaData, realisasiTotal, budgetTotal]);
+
+    const rkaFundingAggregated = useMemo(() => {
+        if (!selectedRkaData) return [];
+        const splits: Record<string, number> = {};
+        selectedRkaData.item_pengajuan?.forEach((it: any) => {
+            try {
+                const details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {});
+                const itemSplits = details.fundingSplits || (Array.isArray(details) ? [] : []);
+                itemSplits.forEach((s: any) => {
+                    const source = s.source || 'Lainnya';
+                    splits[source] = (splits[source] || 0) + Number(s.nominal || 0);
+                });
+            } catch(e) {}
+        });
+        return Object.entries(splits).map(([source, nominal]) => ({ source, nominal }));
+    }, [selectedRkaData]);
+
+    const lpjFundingAggregated = useMemo(() => {
+        const splits: Record<string, number> = {};
+        lpjRows.forEach(row => {
+            row.details.fundingSplits.forEach(s => {
+                if (s.source && s.nominal > 0) {
+                    splits[s.source] = (splits[s.source] || 0) + s.nominal;
+                }
+            });
+        });
+        return Object.entries(splits).map(([source, nominal]) => ({ source, nominal }));
+    }, [lpjRows]);
 
     const totalSubsidi = useMemo(() => 
         subsidiSources.reduce((acc, curr) => acc + curr.amount, 0), 
@@ -104,7 +250,119 @@ export default function BuatRealisasiPage() {
         return Math.max(0, selisih - totalSubsidi);
     }, [selisih, totalSubsidi]);
 
-    // --- Sync Logic ---
+    // --- Row Logic ---
+    const updateLpjRow = (id: string, field: keyof LPJRow, value: any) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === id) return { ...row, [field]: value, isFilled: true };
+            return row;
+        }));
+    };
+
+    const updateLpjItem = (rowId: string, itemIdx: number, field: string, value: any) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                const newItems = [...row.details.items];
+                newItems[itemIdx] = { ...newItems[itemIdx], [field]: value };
+                
+                // Recalculate total for this item
+                if (field === 'price' || field === 'qty') {
+                    newItems[itemIdx].total = Number(newItems[itemIdx].price) * Number(newItems[itemIdx].qty);
+                }
+
+                // Recalculate main row nominal
+                const newNominal = newItems.reduce((acc, it) => acc + it.total, 0);
+
+                // Sync funding splits with new nominal
+                const newSplits = row.details.fundingSplits.map(s => ({
+                    ...s,
+                    nominal: (s.percent / 100) * newNominal
+                }));
+
+                return { 
+                    ...row, 
+                    nominal: newNominal,
+                    details: { ...row.details, items: newItems, fundingSplits: newSplits } 
+                };
+            }
+            return row;
+        }));
+    };
+
+    const addLpjRow = () => {
+        const newId = (lpjRows.length + 1).toString();
+        setLpjRows([...lpjRows, { 
+            id: newId, 
+            program: '', 
+            operasional: '', 
+            jumlah: '', 
+            waktu: '', 
+            tempat: '', 
+            pic: '', 
+            sasaran: '', 
+            nominal: 0, 
+            details: { 
+                items: [{ name: '', unit: '', price: 0, qty: 0, total: 0 }], 
+                fundingSplits: [{ source: '', percent: 0, nominal: 0 }] 
+            }, 
+            isFilled: false 
+        }]);
+    };
+
+    const deleteLpjRow = (id: string) => {
+        // Reset data instead of deleting row, as only one program is allowed
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === id) {
+                return {
+                    ...row,
+                    program: '',
+                    operasional: '',
+                    jumlah: '1x',
+                    waktu: '',
+                    tempat: '',
+                    pic: '',
+                    sasaran: '',
+                    nominal: 0,
+                    details: {
+                        items: [{ name: '', unit: 'Pcs', price: 0, qty: 0, total: 0 }],
+                        fundingSplits: [{ source: 'Yayasan', percent: 100, nominal: 0 }]
+                    }
+                };
+            }
+            return row;
+        }));
+    };
+
+    const addItemDetail = (rowId: string) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                return {
+                    ...row,
+                    details: {
+                        ...row.details,
+                        items: [...row.details.items, { name: '', unit: '', price: 0, qty: 0, total: 0 }]
+                    }
+                };
+            }
+            return row;
+        }));
+    };
+
+    const removeItemDetail = (rowId: string, itemIdx: number) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                if (row.details.items.length === 1) return row;
+                const newItems = row.details.items.filter((_, idx) => idx !== itemIdx);
+                const newNominal = newItems.reduce((acc, it) => acc + it.total, 0);
+                return {
+                    ...row,
+                    nominal: newNominal,
+                    details: { ...row.details, items: newItems }
+                };
+            }
+            return row;
+        }));
+    };
+
     const updateSubsidi = (index: number, field: 'amount' | 'percent' | 'source', value: any) => {
         const news = [...subsidiSources];
         const item = { ...news[index] };
@@ -113,11 +371,9 @@ export default function BuatRealisasiPage() {
             item.source = value;
         } else if (field === 'amount') {
             item.amount = Number(value);
-            // Hitung Persen berdasarkan Nominal (dari Total Selisih)
             item.percent = selisih > 0 ? (item.amount / selisih) * 100 : 0;
         } else if (field === 'percent') {
             item.percent = Number(value);
-            // Hitung Nominal berdasarkan Persen (dari Total Selisih)
             item.amount = selisih > 0 ? (item.percent / 100) * selisih : 0;
         }
 
@@ -125,27 +381,235 @@ export default function BuatRealisasiPage() {
         setSubsidiSources(news);
     };
 
-    const updateItem = (id: string, field: keyof LPJItem, value: any) => {
-        setItems(prev => prev.map(item => {
-            if (item.id === id) {
-                const updated = { ...item, [field]: value };
-                if (field === 'price' || field === 'qty') {
-                    updated.total = Number(updated.price) * Number(updated.qty);
-                }
-                return updated;
+    const addLpjFundingSplit = (rowId: string) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                return {
+                    ...row,
+                    details: {
+                        ...row.details,
+                        fundingSplits: [...row.details.fundingSplits, { source: '', percent: 0, nominal: 0 }]
+                    }
+                };
             }
-            return item;
+            return row;
         }));
     };
 
-    const addItem = () => {
-        const newId = (items.length + 1).toString();
-        setItems([...items, { id: newId, name: '', unit: '', price: 0, qty: 0, total: 0 }]);
+    const removeLpjFundingSplit = (rowId: string, splitIdx: number) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                if (row.details.fundingSplits.length === 1) return row;
+                return {
+                    ...row,
+                    details: {
+                        ...row.details,
+                        fundingSplits: row.details.fundingSplits.filter((_, i) => i !== splitIdx)
+                    }
+                };
+            }
+            return row;
+        }));
     };
 
-    const deleteItem = (id: string) => {
-        if (items.length === 1) return;
-        setItems(items.filter(item => item.id !== id));
+    const updateLpjFundingSplit = (rowId: string, splitIdx: number, field: string, value: any) => {
+        setLpjRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                const newSplits = [...row.details.fundingSplits];
+                const split = { ...newSplits[splitIdx], [field]: value };
+                
+                if (field === 'percent') {
+                    split.percent = Number(value);
+                    split.nominal = (Number(value) / 100) * row.nominal;
+                } else if (field === 'nominal') {
+                    split.nominal = Number(value);
+                    split.percent = row.nominal > 0 ? (Number(value) / row.nominal) * 100 : 0;
+                }
+                
+                newSplits[splitIdx] = split;
+                return {
+                    ...row,
+                    details: { ...row.details, fundingSplits: newSplits }
+                };
+            }
+            return row;
+        }));
+    };
+
+    const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const aoa: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            // Detect Start Row
+            const startRowIdx = aoa.findIndex(row => String(row[0]) === 'No' || String(row[1]) === 'Program/ Kegiatan');
+            if (startRowIdx === -1) {
+                alert("Format file tidak dikenali. Pastikan menggunakan template yang sesuai.");
+                return;
+            }
+
+            const dataRows = aoa.slice(startRowIdx + 1);
+            const newLpjRows: LPJRow[] = [];
+            let currentParent: LPJRow | null = null;
+
+            const cleanNumber = (val: any) => {
+                if (val === undefined || val === null || val === '') return 0;
+                if (typeof val === 'number') return val;
+                const cleaned = String(val).replace(/Rp/g, '').replace(/\./g, '').replace(/,/g, '.').trim();
+                return Number(cleaned) || 0;
+            };
+
+            const headerRow = aoa[startRowIdx];
+            const getIdx = (keywords: string[]) => {
+                return headerRow.findIndex(h => {
+                    const header = String(h || '').toLowerCase();
+                    return keywords.some(k => header.includes(k.toLowerCase()));
+                });
+            };
+
+            // Column mapping based on headers
+            const colMap = {
+                program: getIdx(['program', 'kegiatan']),
+                operasional: getIdx(['deskripsi', 'operasional', 'bidang']),
+                jumlah: getIdx(['jumlah kegiatan', 'qty kegiatan']),
+                waktu: getIdx(['waktu', 'tanggal']),
+                tempat: getIdx(['tempat', 'lokasi']),
+                pic: getIdx(['pic', 'penanggung']),
+                sasaran: getIdx(['sasaran', 'target']),
+                nominal: getIdx(['realisasi', 'total', 'nominal', 'anggaran']),
+                // Detail items
+                unit: getIdx(['satuan', 'unit']),
+                price: getIdx(['harga', 'price']),
+                qty: getIdx(['qty', 'kuantitas']),
+            };
+
+            dataRows.forEach((row) => {
+                const no = row[0];
+                const desc = String(row[1] || '').trim();
+
+                if (no && !isNaN(Number(no))) {
+                    // Main Row
+                    const mainRow: LPJRow = {
+                        id: (newLpjRows.length + 1).toString(),
+                        program: desc,
+                        operasional: colMap.operasional !== -1 ? String(row[colMap.operasional] || '') : '',
+                        jumlah: colMap.jumlah !== -1 ? String(row[colMap.jumlah] || '1x') : '1x',
+                        waktu: colMap.waktu !== -1 ? String(row[colMap.waktu] || '') : '',
+                        tempat: colMap.tempat !== -1 ? String(row[colMap.tempat] || '') : '',
+                        pic: colMap.pic !== -1 ? String(row[colMap.pic] || '') : '',
+                        sasaran: colMap.sasaran !== -1 ? String(row[colMap.sasaran] || '') : '',
+                        nominal: colMap.nominal !== -1 ? cleanNumber(row[colMap.nominal]) : 0,
+                        details: {
+                            items: [],
+                            fundingSplits: [] 
+                        },
+                        isFilled: true
+                    };
+                    // --- Detect Funding Splits ---
+                    let splits: Array<{ source: string; percent: number; nominal: number; }> = [];
+                    
+                    // 1. Try to find in columns first (as before)
+                    FUND_SOURCES.forEach(source => {
+                        const sIdx = headerRow.findIndex(h => {
+                            const header = String(h || '').toLowerCase();
+                            return header.includes(source.toLowerCase()) || 
+                                   (source === 'Yayasan' && header.includes('dana yayasan')) ||
+                                   (source === 'Dana BOS' && header.includes('bos'));
+                        });
+                        if (sIdx !== -1) {
+                            const val = cleanNumber(row[sIdx]);
+                            if (val > 0) splits.push({ source, nominal: val, percent: 0 });
+                        }
+                    });
+
+                    // 2. If no columns found, try a very flexible search for the summary section
+                    if (splits.length === 0) {
+                        const summaryStartIdx = aoa.findIndex(r => 
+                            r.some(cell => {
+                                const val = String(cell || '').toUpperCase();
+                                return val.includes('RINGKASAN') && val.includes('SUMBER DANA');
+                            })
+                        );
+
+                        if (summaryStartIdx !== -1) {
+                            const summaryRows = aoa.slice(summaryStartIdx + 1);
+                            summaryRows.forEach(sRow => {
+                                // Find which cell contains a fund source name
+                                let matchedSource: string | null = null;
+                                let sourceCellIdx = -1;
+                                
+                                sRow.forEach((cell, idx) => {
+                                    const cellVal = String(cell || '').toLowerCase();
+                                    // Check if it's one of our sources
+                                    const found = FUND_SOURCES.find(fs => cellVal.includes(fs.toLowerCase()));
+                                    if (found && !cellVal.includes('total')) { // Avoid 'Total Keseluruhan'
+                                        matchedSource = found;
+                                        sourceCellIdx = idx;
+                                    }
+                                });
+
+                                if (matchedSource && sourceCellIdx !== -1) {
+                                    // Look for the nominal in the row. In the screenshot it's at index 7 (Column H)
+                                    // But we search all cells after the source name
+                                    let sNominal = 0;
+                                    for (let i = sourceCellIdx + 1; i < sRow.length; i++) {
+                                        const val = cleanNumber(sRow[i]);
+                                        if (val > 0) {
+                                            sNominal = val;
+                                            break;
+                                        }
+                                    }
+
+                                    if (sNominal > 0) {
+                                        splits.push({ source: matchedSource, nominal: sNominal, percent: 0 });
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // Calculate percentages and finalize
+                    const finalNominal = mainRow.nominal > 0 ? mainRow.nominal : splits.reduce((acc, s) => acc + s.nominal, 0);
+                    if (mainRow.nominal === 0) mainRow.nominal = finalNominal;
+
+                    splits = splits.map(s => ({
+                        ...s,
+                        percent: finalNominal > 0 ? (s.nominal / finalNominal) * 100 : 0
+                    }));
+
+                    mainRow.details.fundingSplits = splits.length > 0 ? splits : [{ source: 'Yayasan', percent: 100, nominal: mainRow.nominal }];
+                    
+                    newLpjRows.push(mainRow);
+                    currentParent = mainRow;
+                } else if (desc.includes('•') && currentParent) {
+                    // Detail Item
+                    const itemName = desc.replace(/•/g, '').trim();
+                    const itemTotal = colMap.nominal !== -1 ? cleanNumber(row[colMap.nominal]) : 0;
+                    currentParent.details.items.push({
+                        name: itemName,
+                        unit: colMap.unit !== -1 ? String(row[colMap.unit] || 'Pcs') : 'Pcs',
+                        price: colMap.price !== -1 ? cleanNumber(row[colMap.price]) : 0,
+                        qty: colMap.qty !== -1 ? cleanNumber(row[colMap.qty]) : 0,
+                        total: itemTotal
+                    });
+                }
+            });
+
+            if (newLpjRows.length > 0) {
+                // Limit to only one row as requested
+                setLpjRows([newLpjRows[0]]);
+                alert("Data berhasil di-import! (Hanya 1 Program/Kegiatan pertama yang diambil)");
+            }
+            if (importRef.current) importRef.current.value = ''; // Reset input
+        };
+        reader.readAsArrayBuffer(file);
     };
 
     // --- Camera Logic ---
@@ -179,10 +643,13 @@ export default function BuatRealisasiPage() {
                 ctx.drawImage(videoRef.current, 0, 0);
                 canvas.toBlob((blob) => {
                     if (blob) {
-                        const file = new File([blob], `lpj-nota-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                        setAttachments(prev => [...prev, file].slice(0, 50));
-                        setIsCameraOpen(false);
-                        stopCamera();
+                        const name = window.prompt("Masukkan nama untuk foto ini (misal: Nota Makan):", "Nota Baru");
+                        if (name) {
+                            const file = new File([blob], `lpj-nota-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                            setAttachments(prev => [...prev, { file, customName: name }].slice(0, 50));
+                            setIsCameraOpen(false);
+                            stopCamera();
+                        }
                     }
                 }, 'image/jpeg', 0.8);
             }
@@ -201,402 +668,1359 @@ export default function BuatRealisasiPage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const newFiles = Array.from(e.target.files);
-            setAttachments(prev => [...prev, ...newFiles].slice(0, 50));
+            
+            // Filter only images
+            const imageFiles = newFiles.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length < newFiles.length) {
+                alert("Hanya file gambar yang diperbolehkan (JPG, PNG, dll.). File lainnya akan diabaikan.");
+            }
+
+            if (imageFiles.length > 0) {
+                const labeledFiles: Array<{ file: File; customName: string }> = [];
+                for (const f of imageFiles) {
+                    const name = window.prompt(`Masukkan nama untuk file "${f.name}":`, f.name.split('.')[0]);
+                    if (name) {
+                        labeledFiles.push({ file: f, customName: name });
+                    }
+                }
+
+                if (labeledFiles.length > 0) {
+                    setAttachments(prev => [...prev, ...labeledFiles].slice(0, 50));
+                    
+                    // Create previews for images
+                    const newPreviews = labeledFiles.map(obj => URL.createObjectURL(obj.file));
+                    setAttachmentPreviews(prev => [...prev, ...newPreviews].slice(0, 50));
+                }
+            }
         }
     };
 
     const removeAttachment = (index: number) => {
         setAttachments(prev => prev.filter((_, i) => i !== index));
+        setAttachmentPreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleExportExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Laporan Realisasi');
+
+        // Helper for borders
+        const thinBorder: Partial<ExcelJS.Borders> = {
+            top: { style: 'thin' as ExcelJS.BorderStyle },
+            left: { style: 'thin' as ExcelJS.BorderStyle },
+            bottom: { style: 'thin' as ExcelJS.BorderStyle },
+            right: { style: 'thin' as ExcelJS.BorderStyle }
+        };
+
+        const thickBorder: Partial<ExcelJS.Borders> = {
+            top: { style: 'thick' as ExcelJS.BorderStyle },
+            left: { style: 'thick' as ExcelJS.BorderStyle },
+            bottom: { style: 'thick' as ExcelJS.BorderStyle },
+            right: { style: 'thick' as ExcelJS.BorderStyle }
+        };
+
+        // Column Config
+        worksheet.columns = [
+            { key: 'A', width: 5 },   // No
+            { key: 'B', width: 35 },  // Program
+            { key: 'C', width: 15 },  // Operasional
+            { key: 'D', width: 12 },  // Jml
+            { key: 'E', width: 12 },  // Waktu
+            { key: 'F', width: 12 },  // Tempat
+            { key: 'G', width: 15 },  // PIC
+            { key: 'H', width: 15 },  // Sasaran
+            { key: 'I', width: 18 },  // Total
+            { key: 'J', width: 3 },   // Spacer
+            { key: 'K', width: 30 },  // Sidebar Column
+            { key: 'L', width: 10 }   // Extra
+        ];
+
+        // 1. Title
+        worksheet.mergeCells('A1:I1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'Laporan Realisasi Anggaran';
+        titleCell.font = { bold: true, size: 14 };
+
+        // 2. Metadata Row
+        worksheet.getRow(2).values = ['Unit :', '', 'Bidang :', '', 'Bulan :', '', 'Tahun Ajaran :'];
+        worksheet.getCell('B2').value = unit || '-';
+        worksheet.getCell('D2').value = bidang || '-';
+        worksheet.getCell('F2').value = bulan || '-';
+        worksheet.getCell('H2').value = tahunAjaran || '-';
+        worksheet.getRow(2).font = { bold: true, size: 10 };
+        
+        // Right align labels
+        [1, 3, 5, 7].forEach(col => {
+            worksheet.getCell(2, col).alignment = { horizontal: 'right' };
+        });
+
+        let currentRow = 4;
+
+        // --- SECTION 1: RKA ---
+        const rkaStartRow = currentRow;
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const rkaTitle = worksheet.getCell(`A${currentRow}`);
+        rkaTitle.value = 'Tabel Rencana Kegiatan & Anggaran (RKA)';
+        rkaTitle.font = { bold: true };
+        currentRow++;
+
+        const rkaHeaderRow = worksheet.getRow(currentRow);
+        rkaHeaderRow.values = ['No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Rencana Anggaran'];
+        currentRow++;
+
+        // RKA Data
+        const rkaData = selectedRkaData?.data?.[0];
+        const rkaMainRow = worksheet.getRow(currentRow);
+        rkaMainRow.values = [1, rkaData?.program || '-', rkaData?.operasional || '-', rkaData?.jumlah || '-', rkaData?.waktu || '-', rkaData?.tempat || '-', rkaData?.pic || '-', rkaData?.sasaran || '-', Number(rkaData?.nominal || 0)];
+        rkaMainRow.getCell(9).numFmt = '"Rp "#,##0';
+        currentRow++;
+
+        // RKA Rincian Title
+        const rkaRincianLabelRow = worksheet.getRow(currentRow);
+        rkaRincianLabelRow.getCell(2).value = 'Rincian Detail & Budgeting:';
+        rkaRincianLabelRow.getCell(2).font = { italic: true, size: 9 };
+        currentRow++;
+
+        const rkaSubHeader = worksheet.getRow(currentRow);
+        rkaSubHeader.values = ['No', 'Nama Item / Spesifikasi', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)'];
+        currentRow++;
+
+        (rkaData?.details?.items || []).forEach((item: any, i: number) => {
+            const row = worksheet.getRow(currentRow);
+            row.values = [i + 1, item.name, item.unit, Number(item.price), Number(item.qty), Number(item.total)];
+            [4, 6].forEach(c => row.getCell(c).numFmt = '"Rp "#,##0');
+            currentRow++;
+        });
+
+        // RKA Footer
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Alokasi Sumber Dana';
+        currentRow++;
+
+        (rkaData?.details?.fundingSplits || []).forEach((split: any) => {
+            worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+            worksheet.getCell(`G${currentRow}`).value = `${split.source} (${split.percent}%)`;
+            worksheet.getCell(`I${currentRow}`).value = Number(split.nominal);
+            worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+            currentRow++;
+        });
+        
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Total Pengajuan';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = Number(rkaData?.nominal || 0);
+        worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+        worksheet.getCell(`I${currentRow}`).font = { bold: true };
+        currentRow++;
+
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Jenis Pencairan';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = selectedRkaData?.metode_pembayaran || 'CASH';
+        worksheet.getCell(`I${currentRow}`).font = { italic: true };
+        const rkaEndRow = currentRow;
+
+        // Apply Borders & Bold Headers
+        for (let r = rkaStartRow; r <= rkaEndRow; r++) {
+            for (let c = 1; c <= 9; c++) {
+                const cell = worksheet.getCell(r, c);
+                cell.border = thinBorder;
+                
+                // Bold Headers
+                if (r === rkaStartRow || r === rkaStartRow + 1 || r === rkaStartRow + 4) {
+                    cell.font = { bold: true, size: r === rkaStartRow ? 10 : 9 };
+                }
+                
+                if (r === rkaStartRow || r === rkaStartRow + 1) cell.alignment = { horizontal: 'center' };
+            }
+        }
+        // Bold RKA Summary Titles
+        for (let r = rkaEndRow - (rkaData?.details?.fundingSplits?.length || 0) - 1; r <= rkaEndRow; r++) {
+            worksheet.getCell(r, 7).font = { bold: true };
+        }
+
+        currentRow += 2;
+
+        // --- SECTION 2: LPJ ---
+        const lpjStartRow = currentRow;
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const lpjTitle = worksheet.getCell(`A${currentRow}`);
+        lpjTitle.value = 'Tabel Realisasi Anggaran';
+        lpjTitle.font = { bold: true };
+        currentRow++;
+
+        const lpjHeaderRow = worksheet.getRow(currentRow);
+        lpjHeaderRow.values = ['No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Total Realisasi'];
+        currentRow++;
+
+        const lpjData = lpjRows[0];
+        const lpjMainRow = worksheet.getRow(currentRow);
+        lpjMainRow.values = [1, lpjData.program, lpjData.operasional, lpjData.jumlah, lpjData.waktu, lpjData.tempat, lpjData.pic, lpjData.sasaran, Number(lpjData.nominal)];
+        lpjMainRow.getCell(9).numFmt = '"Rp "#,##0';
+        currentRow++;
+
+        const lpjRincianLabelRow = worksheet.getRow(currentRow);
+        lpjRincianLabelRow.getCell(2).value = 'Rincian Detail Realisasi:';
+        lpjRincianLabelRow.getCell(2).font = { italic: true, size: 9 };
+        currentRow++;
+
+        const lpjSubHeader = worksheet.getRow(currentRow);
+        lpjSubHeader.values = ['No', 'Nama Item / Spesifikasi', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)'];
+        currentRow++;
+
+        lpjData.details.items.forEach((item, i) => {
+            const row = worksheet.getRow(currentRow);
+            row.values = [i + 1, item.name, item.unit, Number(item.price), Number(item.qty), Number(item.total)];
+            [4, 6].forEach(c => row.getCell(c).numFmt = '"Rp "#,##0');
+            currentRow++;
+        });
+
+        // LPJ Footer
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Alokasi Sumber Dana';
+        currentRow++;
+
+        (lpjData.details.fundingSplits || []).forEach((split) => {
+            worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+            worksheet.getCell(`G${currentRow}`).value = `${split.source} (${split.percent}%)`;
+            worksheet.getCell(`I${currentRow}`).value = Number(split.nominal);
+            worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+            currentRow++;
+        });
+        
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Total Realisasi';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = Number(lpjData.nominal);
+        worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+        worksheet.getCell(`I${currentRow}`).font = { bold: true };
+        const lpjEndRow = currentRow;
+
+        // Apply Borders & Bold Headers to LPJ Section
+        for (let r = lpjStartRow; r <= lpjEndRow; r++) {
+            for (let c = 1; c <= 9; c++) {
+                const cell = worksheet.getCell(r, c);
+                cell.border = thinBorder;
+                
+                // Bold Headers
+                if (r === lpjStartRow || r === lpjStartRow + 1 || r === lpjStartRow + 4) {
+                    cell.font = { bold: true, size: r === lpjStartRow ? 10 : 9 };
+                }
+
+                if (r === lpjStartRow || r === lpjStartRow + 1) cell.alignment = { horizontal: 'center' };
+            }
+        }
+        // Bold LPJ Summary Titles
+        for (let r = lpjEndRow - (lpjData.details.fundingSplits?.length || 0) - 1; r <= lpjEndRow; r++) {
+            worksheet.getCell(r, 7).font = { bold: true };
+        }
+
+        // RIGHT SIDEBAR: Selisih & Catatan
+        worksheet.mergeCells(`K${lpjStartRow}:L${lpjStartRow+1}`);
+        const selisihBox = worksheet.getCell(`K${lpjStartRow}`);
+        selisihBox.value = `Selisih\nRp ${(Number(rkaData?.nominal || 0) - Number(lpjData.nominal)).toLocaleString()}`;
+        selisihBox.font = { bold: true };
+        selisihBox.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        selisihBox.border = thickBorder;
+
+        worksheet.mergeCells(`K${lpjStartRow+3}:L${lpjEndRow}`);
+        const catatanBox = worksheet.getCell(`K${lpjStartRow+3}`);
+        catatanBox.value = `Catatan:\n${narasi || '-'}`;
+        catatanBox.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+        catatanBox.border = thickBorder;
+
+        // Apply Font "Times New Roman" Globally
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                if (!cell.font) cell.font = {};
+                cell.font.name = 'Times New Roman';
+            });
+        });
+
+        // SECTION: Bukti Nota / Kuitansi (Moved to Bottom)
+        if (attachments.length > 0) {
+            currentRow += 3;
+            worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+            const buktiHeader = worksheet.getCell(`A${currentRow}`);
+            buktiHeader.value = 'BUKTI NOTA / KUITANSI';
+            buktiHeader.font = { bold: true, size: 12 };
+            buktiHeader.alignment = { horizontal: 'center' };
+            buktiHeader.border = thickBorder;
+            currentRow++;
+
+            const buktiStartRow = currentRow;
+            let imgCol = 1;
+            let imgRow = currentRow;
+
+            for (const att of attachments) {
+                const { file, customName } = att;
+                if (file.type.startsWith('image/')) {
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const imageId = workbook.addImage({
+                            buffer: buffer,
+                            extension: file.name.split('.').pop() as any || 'png',
+                        });
+                        
+                        // Add Image First
+                        worksheet.addImage(imageId, {
+                            tl: { col: imgCol - 0.9, row: imgRow },
+                            ext: { width: 250, height: 250 }
+                        });
+
+                        // Add Label BELOW image (approx row offset for 250px)
+                        const labelRow = imgRow + 13;
+                        worksheet.getCell(labelRow, imgCol).value = customName;
+                        worksheet.getCell(labelRow, imgCol).font = { bold: true, size: 10, name: 'Times New Roman' };
+                        worksheet.getCell(labelRow, imgCol).alignment = { horizontal: 'center' };
+                        
+                        imgCol += 4;
+                        if (imgCol > 8) {
+                            imgCol = 1;
+                            imgRow += 16; 
+                        }
+                    } catch (e) {
+                        console.error('Failed to add image to excel', e);
+                    }
+                }
+            }
+            // Ensure enough rows for images to be visible
+            const finalImgRow = imgCol === 1 ? imgRow : imgRow + 16;
+            for(let r=buktiStartRow; r<=finalImgRow; r++) {
+                worksheet.getRow(r).height = 20; // Ensure row existence
+            }
+            currentRow = finalImgRow + 2;
+        } else {
+            currentRow += 2;
+        }
+
+        // SECTION: Otorisasi & Tanda Tangan
+        currentRow += 1;
+        const signRow = currentRow;
+        
+        // Bendahara Unit
+        worksheet.mergeCells(`B${signRow}:C${signRow}`);
+        worksheet.getCell(`B${signRow}`).value = 'Bendahara Unit,';
+        worksheet.getCell(`B${signRow}`).font = { name: 'Times New Roman', bold: true };
+        worksheet.getCell(`B${signRow}`).alignment = { horizontal: 'center' };
+
+        // Kepala Unit
+        worksheet.mergeCells(`E${signRow}:F${signRow}`);
+        worksheet.getCell(`E${signRow}`).value = 'Kepala Unit,';
+        worksheet.getCell(`E${signRow}`).font = { name: 'Times New Roman', bold: true };
+        worksheet.getCell(`E${signRow}`).alignment = { horizontal: 'center' };
+
+        // Bendahara Pusat
+        worksheet.mergeCells(`H${signRow}:I${signRow}`);
+        worksheet.getCell(`H${signRow}`).value = 'Bendahara Pusat,';
+        worksheet.getCell(`H${signRow}`).font = { name: 'Times New Roman', bold: true };
+        worksheet.getCell(`H${signRow}`).alignment = { horizontal: 'center' };
+
+        // Signature Spaces (Empty rows)
+        currentRow += 5;
+        const nameRow = currentRow;
+
+        // Names (Underlines)
+        worksheet.mergeCells(`B${nameRow}:C${nameRow}`);
+        worksheet.getCell(`B${nameRow}`).border = { bottom: { style: 'thin' } };
+        
+        worksheet.mergeCells(`E${nameRow}:F${nameRow}`);
+        worksheet.getCell(`E${nameRow}`).border = { bottom: { style: 'thin' } };
+        
+        worksheet.mergeCells(`H${nameRow}:I${nameRow}`);
+        worksheet.getCell(`H${nameRow}`).border = { bottom: { style: 'thin' } };
+
+        // Download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `LPJ_Formal_${unit || 'SmartSantri'}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleReset = () => {
+        if (window.confirm("Apakah Anda yakin ingin menghapus semua data input? Seluruh baris, narasi, dan lampiran akan dikosongkan.")) {
+            setUnit('');
+            setBidang('');
+            setBulan('');
+            setTahunAjaran('');
+            setSelectedRkaId('');
+            setSelectedRkaData(null);
+            setLpjRows([
+                { 
+                    id: '1', 
+                    program: '', 
+                    operasional: '', 
+                    jumlah: '1x', 
+                    waktu: '', 
+                    tempat: '', 
+                    pic: '', 
+                    sasaran: '', 
+                    nominal: 0, 
+                    details: { 
+                        items: [{ name: '', unit: '', price: 0, qty: 0, total: 0 }], 
+                        fundingSplits: [{ source: '', percent: 0, nominal: 0 }] 
+                    }, 
+                    isFilled: false 
+                }
+            ]);
+            setNarasi('');
+            setAttachments([]);
+            setAttachmentPreviews([]);
+            if (importRef.current) importRef.current.value = '';
+        }
+    };
+
+    const handleExportPDF = () => {
+        // Since jspdf is not available, we use window.print() 
+        // with a print-friendly CSS approach (handled by tailwind print: classes or global css)
+        window.print();
+    };
+
+    const handleKirim = () => {
+        alert('Berhasil dikirim ke Bendahara Unit!');
+        window.location.href = '/admin/realisasi/rekap';
     };
 
     return (
-        <div className="p-4 space-y-4 max-w-6xl mx-auto">
-            
-            {/* Ultra Compact Header */}
-            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-lg shadow-emerald-100">
-                        <ClipboardCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-sm font-black text-slate-800 uppercase tracking-tight">Realisasi Anggaran</h1>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block border-r border-slate-100 pr-4">
-                        <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Periode Aktif</p>
-                        <p className="text-[11px] font-black text-slate-700 uppercase">Mei 2025</p>
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-100 uppercase italic">
-                        Sudah Diterima
-                    </span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="min-h-screen bg-slate-50 p-3 md:p-6 font-sans">
+            <div className="max-w-[1440px] mx-auto space-y-4">
                 
-                {/* Main Section */}
-                <div className="lg:col-span-8 space-y-4">
-                    
-                    {/* Item Selector & Stats Horizontal */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
-                                    <Search className="w-3 h-3 text-emerald-600" /> Pilih Kegiatan
-                                </label>
-                                <div className="relative group">
-                                    <select 
-                                        value={selectedItemId}
-                                        onChange={(e) => {
-                                            setSelectedItemId(e.target.value);
-                                            setSubsidiSources([]);
-                                            setItems([{ id: '1', name: '', unit: '', price: 0, qty: 0, total: 0 }]);
-                                        }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Cari item pengajuan...</option>
-                                        {APPROVED_ITEMS.map(item => (
-                                            <option key={item.id} value={item.id}>[{item.docId}] {item.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                {/* Header Section */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <div className="flex flex-col lg:flex-row justify-between gap-6">
+                        <div className="space-y-4 flex-1">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-xl text-emerald-700 shrink-0">
+                                    <ClipboardCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                                        Buat Realisasi Anggaran (LPJ)
+                                    </h1>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Pencatatan Realisasi Penggunaan Dana Program</p>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
-                                    <DollarSign className="w-3 h-3 text-emerald-600" /> Nominal Realisasi
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute left-4 top-2 text-xs font-black text-slate-400 italic">Rp</div>
-                                    <input 
-                                        type="number"
-                                        value={realisasiNominal || ''}
-                                        readOnly
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-lg font-black text-slate-400 focus:outline-none"
-                                        placeholder="0"
-                                    />
+
+                            {/* Metadata Row */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Building2 className="w-3 h-3 text-emerald-600" /> Unit <span className="text-rose-600">*</span>
+                                    </label>
+                                    <select 
+                                        value={unit}
+                                        onChange={(e) => setUnit(e.target.value)}
+                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                    >
+                                        <option value="">Pilih Unit...</option>
+                                        <option value="SDIT 1">SDIT 1</option>
+                                        <option value="SDIT 2">SDIT 2</option>
+                                        <option value="SMPIT">SMPIT</option>
+                                        <option value="SMAIT">SMAIT</option>
+                                        <option value="Pesantren">Pesantren</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <GraduationCap className="w-3 h-3 text-emerald-600" /> Bidang <span className="text-rose-600">*</span>
+                                    </label>
+                                    <select 
+                                        value={bidang}
+                                        onChange={(e) => setBidang(e.target.value)}
+                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                    >
+                                        <option value="">Pilih Bidang...</option>
+                                        <option value="KESISWAAN">KESISWAAN</option>
+                                        <option value="KURIKULUM">KURIKULUM</option>
+                                        <option value="SARPRAS">SARPRAS</option>
+                                        <option value="SDM">SDM</option>
+                                        <option value="HUMAS">HUMAS</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="w-3 h-3 text-emerald-600" /> Bulan <span className="text-rose-600">*</span>
+                                    </label>
+                                    <select 
+                                        value={bulan}
+                                        onChange={(e) => setBulan(e.target.value)}
+                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                    >
+                                        <option value="">Pilih Bulan...</option>
+                                        <option value="Januari" disabled>Januari (Lampau)</option>
+                                        <option value="Februari" disabled>Februari (Lampau)</option>
+                                        <option value="Maret" disabled>Maret (Lampau)</option>
+                                        <option value="April" disabled>April (Lampau)</option>
+                                        <option value="Mei">Mei (Sekarang)</option>
+                                        <option value="Juni">Juni</option>
+                                        <option value="Juli">Juli</option>
+                                        <option value="Agustus">Agustus</option>
+                                        <option value="September">September</option>
+                                        <option value="Oktober">Oktober</option>
+                                        <option value="November">November</option>
+                                        <option value="Desember">Desember</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Layers className="w-3 h-3 text-emerald-600" /> Tahun Ajaran <span className="text-rose-600">*</span>
+                                    </label>
+                                    <select 
+                                        value={tahunAjaran}
+                                        onChange={(e) => setTahunAjaran(e.target.value)}
+                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                    >
+                                        <option value="">Pilih Tahun...</option>
+                                        <option value="2024/2025" disabled>2024/2025 (Lampau)</option>
+                                        <option value="2025/2026">2025/2026 (Aktif)</option>
+                                        <option value="2026/2027">2026/2027</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-
-                        {activeItem && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-100 animate-in fade-in duration-300">
-                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase mb-1">Anggaran</p>
-                                    <p className="text-sm font-black text-slate-700">Rp {activeItem.budget.toLocaleString('id-ID')}</p>
-                                </div>
-                                <div className={`p-3 rounded-xl border ${selisih > 0 ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
-                                    <p className="text-[9px] font-extrabold uppercase mb-1">Selisih</p>
-                                    <p className="text-sm font-black">Rp {Math.abs(selisih).toLocaleString('id-ID')}</p>
-                                </div>
-                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 hidden md:block">
-                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase mb-1">Sumber Dana</p>
-                                    <p className="text-xs font-bold text-slate-600 truncate">{activeItem.source}</p>
-                                </div>
-                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase mb-1">Status Saldo</p>
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${selisih > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                        {selisih > 0 ? 'Kurang' : 'Aman'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* NEW: Rincian Realisasi Table */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Layout className="w-3 h-3 text-emerald-600" /> Rincian Penggunaan Dana (LPJ Kustom)
-                            </h3>
+                        <div className="flex items-start gap-3 relative">
                             <button 
-                                onClick={addItem}
-                                className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-all shadow-sm"
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-100 font-extrabold px-5 py-2.5 rounded-xl text-xs transition-all shadow-sm group active:scale-95"
                             >
-                                <PlusCircle className="w-3 h-3" /> Tambah Baris
+                                <div className="bg-emerald-50 p-1.5 rounded-lg text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                                    <FileSpreadsheet className="w-4 h-4" />
+                                </div>
+                                <span>Export Excel</span>
                             </button>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                    <tr className="divide-x divide-slate-200">
-                                        <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase text-center w-10">No</th>
-                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase text-left min-w-[200px]">Uraian Barang / Jasa</th>
-                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase text-center w-20">Satuan</th>
-                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase text-right w-32">Harga Satuan</th>
-                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase text-center w-16">Qty</th>
-                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase text-right w-32">Total</th>
-                                        <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase text-center w-10"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {items.map((item, idx) => (
-                                        <tr key={item.id} className="divide-x divide-slate-100 hover:bg-slate-50/30 transition-colors">
-                                            <td className="px-2 py-2 text-center text-[10px] font-bold text-slate-300">{idx + 1}</td>
-                                            <td className="p-0">
-                                                <input 
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-transparent border-none outline-none text-[11px] font-bold text-slate-700 placeholder:italic placeholder:font-normal"
-                                                    placeholder="Contoh: Kertas A4 80gr..."
-                                                />
-                                            </td>
-                                            <td className="p-0">
-                                                <input 
-                                                    type="text"
-                                                    value={item.unit}
-                                                    onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
-                                                    className="w-full px-2 py-2.5 bg-transparent border-none outline-none text-[10px] font-bold text-slate-500 text-center uppercase"
-                                                    placeholder="Rim"
-                                                />
-                                            </td>
-                                            <td className="p-0">
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-2.5 text-[9px] font-bold text-slate-300 italic">Rp</span>
-                                                    <input 
-                                                        type="number"
-                                                        value={item.price || ''}
-                                                        onChange={(e) => updateItem(item.id, 'price', e.target.value)}
-                                                        className="w-full pl-6 pr-3 py-2.5 bg-transparent border-none outline-none text-[11px] font-black text-right text-slate-700"
-                                                        placeholder="0"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="p-0">
-                                                <input 
-                                                    type="number"
-                                                    value={item.qty || ''}
-                                                    onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
-                                                    className="w-full px-2 py-2.5 bg-transparent border-none outline-none text-[11px] font-black text-center text-emerald-600"
-                                                    placeholder="0"
-                                                />
-                                            </td>
-                                            <td className="p-0 bg-slate-50/30">
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-2.5 text-[9px] font-bold text-slate-300 italic">Rp</span>
-                                                    <div className="w-full pl-6 pr-3 py-2.5 text-[11px] font-black text-right text-emerald-700">
-                                                        {item.total.toLocaleString('id-ID')}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-2 py-2 text-center">
-                                                <button 
-                                                    onClick={() => deleteItem(item.id)}
-                                                    className="p-1 text-slate-300 hover:text-rose-500 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start w-full">
+                    
+                    {/* Main Content Area (Tables) */}
+                    <div className="space-y-6 min-w-0">
+                        
+                        {/* Selector for RKA */}
+                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                                <Search className="w-3 h-3 text-emerald-600" /> Pilih Rencana Kegiatan & Anggaran (RKA) <span className="text-rose-600">*</span>
+                            </label>
+                            <select 
+                                value={selectedRkaId}
+                                onChange={(e) => {
+                                    setSelectedRkaId(e.target.value);
+                                    setSubsidiSources([]);
+                                }}
+                                className="w-full bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            >
+                                <option value="">-- Pilih RKA yang sudah diterima --</option>
+                                {approvedRkas.map(doc => (
+                                    <option key={doc.id} value={doc.id}>
+                                        [{doc.created_at?.split('T')[0]}] {doc.item_pengajuan?.[0]?.judul_kegiatan || doc.catatan_revisi || 'Tanpa Judul'}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-end items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal Rincian:</span>
-                            <span className="text-sm font-black text-emerald-700">Rp {realisasiNominal.toLocaleString('id-ID')}</span>
+
+                        {/* TABEL RKA (TOP) */}
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Tabel Rencana Kegiatan & Anggaran (RKA)</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-[11px] min-w-[900px]">
+                                    <thead className="bg-slate-100 border-b border-slate-200">
+                                        <tr className="divide-x divide-slate-200">
+                                            <th className="px-2 py-2 w-10 text-center font-black text-slate-900 uppercase tracking-widest">No</th>
+                                            <th className="px-3 py-2 text-left font-black text-slate-900 uppercase tracking-widest">Nama Program/ Kegiatan</th>
+                                            <th className="px-3 py-2 text-left font-black text-slate-900 uppercase tracking-widest">Deskripsi Kegiatan</th>
+                                            <th className="px-2 py-2 text-center w-20 font-black text-slate-900 uppercase tracking-widest leading-tight">Jumlah</th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">Waktu</th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">Tempat</th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest leading-tight">PIC</th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">Sasaran</th>
+                                            <th className="px-3 py-2 text-right w-28 font-black text-slate-900 uppercase tracking-widest">Anggaran</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                        {selectedRkaData ? (
+                                            selectedRkaData.item_pengajuan?.map((it: any, idx: number) => (
+                                                <tr key={idx} className="divide-x divide-slate-100 hover:bg-slate-50 transition-colors italic">
+                                                    <td className="px-3 py-2 text-center text-slate-400 font-bold">{idx + 1}</td>
+                                                    <td className="px-3 py-2 font-bold text-slate-700">{it.judul_kegiatan}</td>
+                                                    <td className="px-3 py-2 font-medium text-slate-600">{it.kategori_coa}</td>
+                                                    <td className="px-2 py-2 text-center font-medium">{it.jumlah_kegiatan || 1}</td>
+                                                    <td className="px-2 py-2">{it.waktu || '-'}</td>
+                                                    <td className="px-2 py-2">{it.tempat || '-'}</td>
+                                                    <td className="px-2 py-2">{it.pic || '-'}</td>
+                                                    <td className="px-2 py-2">{it.sasaran || '-'}</td>
+                                                    <td className="px-3 py-2 text-right font-black text-slate-900 bg-slate-50/30">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr className="divide-x divide-slate-100 italic text-slate-300">
+                                                <td className="px-3 py-2 text-center">-</td>
+                                                <td className="px-3 py-2">-</td>
+                                                <td className="px-3 py-2">-</td>
+                                                <td className="px-2 py-2 text-center">-</td>
+                                                <td className="px-2 py-2">-</td>
+                                                <td className="px-2 py-2">-</td>
+                                                <td className="px-2 py-2">-</td>
+                                                <td className="px-2 py-2">-</td>
+                                                <td className="px-3 py-2 text-right font-bold">-</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Detail Table Section for RKA */}
+                            <div className="p-5 bg-slate-50/50 border-t border-slate-100">
+                                <div className="flex flex-col lg:flex-row gap-8">
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Info className="w-3.5 h-3.5 text-emerald-600" />
+                                            <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest italic">Rincian Detail & Budgeting Plan:</p>
+                                        </div>
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px]">
+                                                <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <tr className="divide-x divide-slate-200">
+                                                        <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
+                                                        <th className="px-3 py-2 text-left font-black text-slate-600 uppercase tracking-widest">Item / Spesifikasi</th>
+                                                        <th className="px-2 py-2 text-center w-16 font-black text-slate-600 uppercase tracking-widest">Satuan</th>
+                                                        <th className="px-2 py-2 text-right w-24 font-black text-slate-600 uppercase tracking-widest">Harga</th>
+                                                        <th className="px-2 py-2 text-center w-12 font-black text-slate-600 uppercase tracking-widest">Qty</th>
+                                                        <th className="px-3 py-2 text-right w-28 font-black text-emerald-800 uppercase tracking-widest bg-emerald-50/30">Total (Rp)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 italic">
+                                                    {selectedRkaData ? (
+                                                        selectedRkaData.item_pengajuan?.flatMap((it: any) => {
+                                                            let details: any = {};
+                                                            try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                            return details.items || (Array.isArray(details) ? details : []);
+                                                        }).map((rin: any, rIdx: number) => (
+                                                            <tr key={rIdx} className="divide-x divide-slate-100 hover:bg-slate-50 transition-colors">
+                                                                <td className="px-2 py-1.5 text-center text-slate-400 font-bold">{rIdx + 1}</td>
+                                                                <td className="px-3 py-1.5 font-bold text-slate-700">{rin.name || rin.item}</td>
+                                                                <td className="px-2 py-1.5 text-center font-medium text-slate-500">{rin.unit || rin.satuan || '-'}</td>
+                                                                <td className="px-2 py-1.5 text-right font-medium text-slate-600">{(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                <td className="px-2 py-1.5 text-center font-bold text-slate-800">{rin.qty || rin.jumlah || 1}</td>
+                                                                <td className="px-3 py-1.5 text-right font-black text-emerald-900 bg-emerald-50/10">{( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr className="divide-x divide-slate-100 text-slate-300">
+                                                            <td className="px-2 py-1.5 text-center">-</td>
+                                                            <td className="px-3 py-1.5">-</td>
+                                                            <td className="px-2 py-1.5 text-center">-</td>
+                                                            <td className="px-2 py-1.5 text-right">-</td>
+                                                            <td className="px-2 py-1.5 text-center">-</td>
+                                                            <td className="px-3 py-1.5 text-right font-bold">-</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div className="w-56 shrink-0 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                            <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Alokasi Sumber Dana:</p>
+                                        </div>
+                                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 text-[10px] font-bold">
+                                            {rkaFundingAggregated.length > 0 ? rkaFundingAggregated.map((s, i) => (
+                                                <div key={i} className="flex justify-between items-center py-1 border-b border-slate-50">
+                                                    <span className="text-slate-400">{s.source}</span>
+                                                    <span className="text-slate-800">Rp {s.nominal.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )) : (
+                                                <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                                                    <span className="text-slate-400 italic">Belum ada data dana</span>
+                                                    <span className="text-slate-800">-</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-slate-100 text-slate-900">
+                                                <span className="uppercase tracking-widest text-[9px] font-black">Total Anggaran</span>
+                                                <span className="text-sm font-black italic tracking-tighter text-emerald-700">Rp {budgetTotal.toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-50 text-slate-900">
+                                                <span className="uppercase tracking-widest text-[9px] font-black text-slate-400">Jenis Pencairan Dana</span>
+                                                <span className="text-[10px] font-black text-slate-700 italic uppercase">
+                                                    {selectedRkaData?.metode_pembayaran || 'CASH'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* TABEL REALISASI (BOTTOM) */}
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Tabel Realisasi Anggaran (LPJ)</h2>
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="file"
+                                        ref={importRef}
+                                        onChange={handleImportExcel}
+                                        className="hidden"
+                                        accept=".xlsx,.xls"
+                                    />
+                                    <button 
+                                        onClick={() => importRef.current?.click()}
+                                        className="text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 text-[10px] font-black transition-all uppercase tracking-widest"
+                                    >
+                                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                                        Import Excel
+                                    </button>
+                                    <button 
+                                        onClick={handleReset}
+                                        className="text-rose-600 hover:text-rose-700 flex items-center gap-1.5 text-[10px] font-black transition-all uppercase tracking-widest border-l border-slate-200 pl-3"
+                                    >
+                                        <RotateCcw className="w-3.5 h-3.5" />
+                                        Reset Data
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-[11px] min-w-[900px]">
+                                    <thead className="bg-slate-100 border-b border-slate-200">
+                                        <tr className="divide-x divide-slate-200">
+                                            <th className="px-2 py-2 w-10 text-center font-black text-slate-900 uppercase tracking-widest">No</th>
+                                            <th className="px-3 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
+                                                Program/ Kegiatan <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
+                                                Deskripsi Kegiatan <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 text-center w-20 font-black text-slate-900 uppercase tracking-widest leading-tight">
+                                                Jumlah <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
+                                                Waktu <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
+                                                Tempat <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest leading-tight">
+                                                PIC <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
+                                                Sasaran <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-3 py-2 text-right w-28 font-black text-slate-900 uppercase tracking-widest">
+                                                Realisasi <span className="text-rose-500">*</span>
+                                            </th>
+                                            <th className="px-2 py-2 w-10 text-center font-black text-slate-900 uppercase tracking-widest">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                        {lpjRows.map((row, idx) => (
+                                            <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
+                                                <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
+                                                <td className="p-0 relative group border-r border-slate-100">
+                                                    <select 
+                                                        value={row.program}
+                                                        onChange={(e) => updateLpjRow(row.id, 'program', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none text-emerald-900"
+                                                    >
+                                                        <option value="">Pilih Program...</option>
+                                                        {RKA_PROGRAMS.map(prog => <option key={prog} value={prog}>{prog}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
+                                                </td>
+                                                <td className="p-0 relative group border-r border-slate-100">
+                                                    <select 
+                                                        value={row.operasional}
+                                                        onChange={(e) => updateLpjRow(row.id, 'operasional', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none text-emerald-900"
+                                                    >
+                                                        <option value="">Deskripsi Kegiatan...</option>
+                                                        {OPERASIONAL_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
+                                                </td>
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text"
+                                                        value={row.jumlah}
+                                                        onChange={(e) => updateLpjRow(row.id, 'jumlah', e.target.value)}
+                                                        className="w-full h-10 px-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500"
+                                                        placeholder="1x"
+                                                    />
+                                                </td>
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text"
+                                                        value={row.waktu}
+                                                        onChange={(e) => updateLpjRow(row.id, 'waktu', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        placeholder="..."
+                                                    />
+                                                </td>
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text"
+                                                        value={row.tempat}
+                                                        onChange={(e) => updateLpjRow(row.id, 'tempat', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        placeholder="..."
+                                                    />
+                                                </td>
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text"
+                                                        value={row.pic}
+                                                        onChange={(e) => updateLpjRow(row.id, 'pic', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        placeholder="..."
+                                                    />
+                                                </td>
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text"
+                                                        value={row.sasaran}
+                                                        onChange={(e) => updateLpjRow(row.id, 'sasaran', e.target.value)}
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        placeholder="..."
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-black text-emerald-900 bg-emerald-50/20">
+                                                    Rp {row.nominal.toLocaleString('id-ID')}
+                                                </td>
+                                                <td className="px-2 py-2 text-center">
+                                                    <button 
+                                                        onClick={() => deleteLpjRow(row.id)}
+                                                        className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
+                                                        title="Hapus Baris"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Detail Table Section for Realisasi */}
+                            <div className="p-5 bg-slate-50/50 border-t border-slate-100">
+                                <div className="flex flex-col lg:flex-row gap-8">
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Info className="w-3.5 h-3.5 text-emerald-600" />
+                                                <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest italic">Rincian Detail Realisasi:</p>
+                                            </div>
+                                            <button 
+                                                onClick={() => lpjRows[0] && addItemDetail(lpjRows[0].id)}
+                                                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 py-1.5 rounded-xl text-[9px] transition-all uppercase tracking-widest shadow-md shadow-emerald-100"
+                                            >
+                                                <PlusCircle className="w-3.5 h-3.5" /> Tambah Item Rincian
+                                            </button>
+                                        </div>
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px]">
+                                                <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <tr className="divide-x divide-slate-200">
+                                                        <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
+                                                        <th className="px-3 py-2 text-left font-black text-slate-600 uppercase tracking-widest">Nama Item / Spesifikasi</th>
+                                                        <th className="px-2 py-2 text-center w-16 font-black text-slate-600 uppercase tracking-widest">Satuan</th>
+                                                        <th className="px-2 py-2 text-right w-24 font-black text-slate-600 uppercase tracking-widest">Harga</th>
+                                                        <th className="px-2 py-2 text-center w-12 font-black text-slate-600 uppercase tracking-widest">Qty</th>
+                                                        <th className="px-3 py-2 text-right w-28 font-black text-emerald-800 uppercase tracking-widest bg-emerald-50/30">Total (Rp)</th>
+                                                        <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                {lpjRows.map((row) => (
+                                                    <Fragment key={row.id}>
+                                                        {row.details.items.map((rin: any, rIdx: number) => (
+                                                            <tr key={`${row.id}-${rIdx}`} className="divide-x divide-slate-100 hover:bg-emerald-50/5 transition-colors">
+                                                                <td className="px-2 py-1.5 text-center text-slate-400 font-bold">{rIdx + 1}</td>
+                                                                <td className="p-0">
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={rin.name}
+                                                                        onChange={(e) => updateLpjItem(row.id, rIdx, 'name', e.target.value)}
+                                                                        className="w-full h-8 px-3 bg-transparent border-none outline-none text-xs font-bold text-slate-800 focus:bg-emerald-50/10"
+                                                                        placeholder="Uraian item..."
+                                                                    />
+                                                                </td>
+                                                                <td className="p-0">
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={rin.unit}
+                                                                        onChange={(e) => updateLpjItem(row.id, rIdx, 'unit', e.target.value)}
+                                                                        className="w-full h-8 px-2 bg-transparent border-none outline-none text-xs font-bold text-center text-slate-700 focus:bg-emerald-50/10"
+                                                                        placeholder="Pcs"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-0">
+                                                                    <div className="relative">
+                                                                        <span className="absolute left-2 top-2 text-[8px] font-bold text-slate-300">Rp</span>
+                                                                        <input 
+                                                                            type="number"
+                                                                            value={rin.price || ''}
+                                                                            onChange={(e) => updateLpjItem(row.id, rIdx, 'price', e.target.value)}
+                                                                            className="w-full h-8 pl-6 pr-2 bg-transparent border-none outline-none text-xs font-black text-right text-slate-800 focus:bg-emerald-50/10"
+                                                                            placeholder="0"
+                                                                        />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-0">
+                                                                    <input 
+                                                                        type="number"
+                                                                        value={rin.qty || ''}
+                                                                        onChange={(e) => updateLpjItem(row.id, rIdx, 'qty', e.target.value)}
+                                                                        className="w-full h-8 px-2 bg-transparent border-none outline-none text-xs font-black text-center text-emerald-600 focus:bg-emerald-50/10"
+                                                                        placeholder="0"
+                                                                    />
+                                                                </td>
+                                                                <td className="px-3 py-1.5 text-right font-black text-emerald-900 bg-emerald-50/10">
+                                                                    {rin.total.toLocaleString('id-ID')}
+                                                                </td>
+                                                                <td className="px-2 py-1.5 text-center">
+                                                                    <button 
+                                                                        onClick={() => removeItemDetail(row.id, rIdx)}
+                                                                        className="p-1 text-slate-300 hover:text-rose-600 transition-colors"
+                                                                        title="Hapus Item"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </Fragment>
+                                                ))}
+                                                {lpjRows.every(row => row.details.items.length === 0) && (
+                                                    <tr className="divide-x divide-slate-100 text-slate-300">
+                                                        <td className="px-2 py-1.5 text-center">-</td>
+                                                        <td className="px-3 py-1.5">-</td>
+                                                        <td className="px-2 py-1.5 text-center">-</td>
+                                                        <td className="px-2 py-1.5 text-right">-</td>
+                                                        <td className="px-2 py-1.5 text-center">-</td>
+                                                        <td className="px-3 py-1.5 text-right font-bold">-</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-6">
+                                         {lpjRows.map((row) => (
+                                             <div key={row.id} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-slate-100">
+                                                 {/* Visual Summary */}
+                                                 <div className="bg-amber-50/50 border border-amber-100 rounded-3xl p-5 space-y-3">
+                                                     <label className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                                                         <Banknote className="w-3.5 h-3.5" /> Total Realisasi
+                                                     </label>
+                                                     <div className="space-y-1">
+                                                         <p className="text-2xl font-black text-amber-900 tracking-tight">Rp {row.nominal.toLocaleString('id-ID')}</p>
+                                                     </div>
+                                                     <div className="bg-white/60 p-3 rounded-2xl border border-amber-200/50">
+                                                         <p className="text-[9px] text-amber-800 leading-relaxed italic font-medium">
+                                                             * Alokasikan sumber dana untuk realisasi ini berdasarkan persentase atau nominal.
+                                                         </p>
+                                                     </div>
+                                                 </div>
+
+                                                 {/* Funding Splits Grid */}
+                                                 <div className="md:col-span-2 space-y-4">
+                                                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                                         <div className="flex items-center gap-3">
+                                                             <label className="text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">Alokasi Sumber Dana (Smart Split)</label>
+                                                             {(() => {
+                                                                 const totalP = row.details.fundingSplits.reduce((acc, s) => acc + (Number(s.percent) || 0), 0);
+                                                                 const isPerfect = Math.round(totalP) === 100;
+                                                                 return (
+                                                                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isPerfect ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'} transition-all`}>
+                                                                         <div className={`w-1.5 h-1.5 rounded-full ${isPerfect ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
+                                                                         <span className="text-[9px] font-black uppercase tracking-tighter">Total Akumulasi: {Math.round(totalP)}%</span>
+                                                                     </div>
+                                                                 );
+                                                             })()}
+                                                         </div>
+                                                         <button 
+                                                             onClick={() => addLpjFundingSplit(row.id)}
+                                                             className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline uppercase tracking-widest"
+                                                         >
+                                                             <Plus className="w-3 h-3" /> Tambah Alokasi Dana
+                                                         </button>
+                                                     </div>
+                                                     <div className="space-y-2">
+                                                         {row.details.fundingSplits.map((split, sIdx) => (
+                                                             <div key={sIdx} className="flex gap-2 items-center bg-white p-2 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-2">
+                                                                 <div className="flex-1">
+                                                                     <select 
+                                                                         value={split.source}
+                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'source', e.target.value)}
+                                                                         className="w-full px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
+                                                                     >
+                                                                         <option value="">Pilih Sumber...</option>
+                                                                         {FUND_SOURCES.map(source => (
+                                                                             <option key={source} value={source}>{source}</option>
+                                                                         ))}
+                                                                     </select>
+                                                                 </div>
+                                                                 <div className="w-20 relative">
+                                                                     <input 
+                                                                         type="number"
+                                                                         value={split.percent || ''}
+                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'percent', e.target.value)}
+                                                                         className="w-full pl-3 pr-6 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs font-black text-amber-800 outline-none focus:ring-2 focus:ring-amber-500"
+                                                                         placeholder="0"
+                                                                     />
+                                                                     <Percent className="absolute right-2 top-2 w-3 h-3 text-amber-400" />
+                                                                 </div>
+                                                                 <div className="w-36 relative">
+                                                                     <span className="absolute left-2 top-2 text-[10px] font-bold text-amber-400">Rp</span>
+                                                                     <input 
+                                                                         type="number" 
+                                                                         value={split.nominal || ''}
+                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'nominal', e.target.value)}
+                                                                         className="w-full pl-6 pr-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs font-black text-amber-800 outline-none focus:ring-2 focus:ring-amber-500 text-right"
+                                                                         placeholder="0"
+                                                                     />
+                                                                 </div>
+                                                                 <button 
+                                                                     onClick={() => removeLpjFundingSplit(row.id, sIdx)}
+                                                                     className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                                                                 >
+                                                                     <Trash2 className="w-3.5 h-3.5" />
+                                                                 </button>
+                                                             </div>
+                                                         ))}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         ))}
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
-                    {/* Subsidi Silang Area - Dynamic Percent & Nominal */}
-                    {selisih > 0 && (
-                        <div className="bg-white rounded-2xl border border-rose-200 shadow-sm p-5 space-y-4 animate-in zoom-in-95 duration-300">
-                            <div className="flex items-center justify-between border-b border-rose-100 pb-3">
-                                <div>
-                                    <h3 className="text-xs font-black text-rose-800 flex items-center gap-2 uppercase tracking-tight">
-                                        <AlertTriangle className="w-4 h-4 text-rose-500" /> Subsidi Silang Wajib
-                                    </h3>
-                                    <p className="text-[10px] text-rose-600 font-medium italic">Kelebihan belanja Rp {selisih.toLocaleString('id-ID')} harus ditutupi.</p>
+                    {/* Sidebar Area (Fixed Right) */}
+                    <div className="space-y-4 sticky top-24 w-full lg:w-80">
+                        {/* Summary Box */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                    <span>Total Budget RKA</span>
+                                    <span className="text-slate-600 italic">Rp {budgetTotal.toLocaleString('id-ID')}</span>
                                 </div>
-                                <div className={`text-xs font-black px-3 py-1 rounded-lg transition-all ${sisaKekurangan === 0 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-rose-600 text-white shadow-lg shadow-rose-100'}`}>
-                                    Sisa: Rp {sisaKekurangan.toLocaleString('id-ID')}
+                                <div className="flex justify-between items-center text-[11px] font-black text-slate-400 uppercase tracking-widest pt-2 border-t border-slate-50">
+                                    <span>Total Realisasi</span>
+                                    <span className="text-emerald-700 text-lg tracking-tighter italic">Rp {realisasiTotal.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className={`flex justify-between items-center text-[11px] font-black uppercase tracking-widest pt-2 border-t border-slate-50 ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                    <span>Selisih (Variance)</span>
+                                    <span>Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
                                 </div>
                             </div>
-                            
-                            <div className="space-y-2">
-                                {subsidiSources.map((subsidi, idx) => (
-                                    <div key={idx} className="flex flex-wrap md:flex-nowrap gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 animate-in slide-in-from-left-2 duration-200">
-                                        <div className="flex-1 min-w-[200px]">
-                                            <select 
-                                                value={subsidi.source}
-                                                onChange={(e) => updateSubsidi(idx, 'source', e.target.value)}
-                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                            >
-                                                <option value="">Pilih Sumber...</option>
-                                                {((activeItem?.isRestricted ? activeItem.allowedBackupSources : FUND_SOURCES) || []).map(s => <option key={s} value={s}>{s}</option>)}
-                                            </select>
-                                        </div>
-                                        
-                                        {/* Percent Input */}
-                                        <div className="relative w-20">
-                                            <input 
-                                                type="number"
-                                                value={subsidi.percent ? Math.round(subsidi.percent) : ''}
-                                                onChange={(e) => updateSubsidi(idx, 'percent', e.target.value)}
-                                                className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-6 py-1.5 text-[11px] font-extrabold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/20 text-center"
-                                                placeholder="0"
-                                            />
-                                            <Percent className="absolute right-1.5 top-2 w-2.5 h-2.5 text-slate-400" />
-                                        </div>
 
-                                        <ArrowRight className="w-3 h-3 text-slate-300 hidden md:block" />
-
-                                        {/* Nominal Input */}
-                                        <div className="relative w-36">
-                                            <div className="absolute left-2 top-2 text-[10px] font-black text-slate-400 italic">Rp</div>
-                                            <input 
-                                                type="number"
-                                                value={subsidi.amount || ''}
-                                                onChange={(e) => updateSubsidi(idx, 'amount', e.target.value)}
-                                                className="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-3 py-1.5 text-[11px] font-extrabold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                                placeholder="Nominal"
-                                            />
-                                        </div>
-
-                                        <button 
-                                            onClick={() => setSubsidiSources(subsidiSources.filter((_, i) => i !== idx))}
-                                            className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="space-y-3">
                                 <button 
-                                    onClick={() => setSubsidiSources([...subsidiSources, { source: '', amount: 0, percent: 0 }])}
-                                    className="w-full py-2 border-2 border-dashed border-slate-100 rounded-xl text-[10px] font-bold text-slate-400 hover:border-emerald-200 hover:text-emerald-600 transition-all flex items-center justify-center gap-1.5"
+                                    onClick={handleKirim}
+                                    disabled={!selectedRkaId || lpjRows.length === 0}
+                                    className="w-full bg-slate-900 hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex flex-col items-center justify-center gap-0.5 group relative overflow-hidden active:scale-95"
                                 >
-                                    <Plus className="w-3 h-3" /> Tambah Sumber Dana Subsidi
+                                    <div className="flex items-center gap-2">
+                                        <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-emerald-400" />
+                                        <span className="text-xs uppercase tracking-widest">Kirim Realisasi</span>
+                                    </div>
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Finalisasi LPJ Unit</span>
+                                </button>
+
+                                <button 
+                                    className="w-full bg-amber-400 hover:bg-amber-500 disabled:bg-slate-100 disabled:text-slate-300 text-amber-900 font-black py-3 px-6 rounded-2xl shadow-lg shadow-amber-100 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest active:scale-95 border-b-4 border-amber-600"
+                                >
+                                    <Save className="w-3.5 h-3.5" />
+                                    Simpan Draft
                                 </button>
                             </div>
                         </div>
-                    )}
 
-                    {/* Narrative Input - Compact */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
-                            <FileText className="w-3 h-3 text-emerald-600" /> Narasi Pelaksanaan
-                        </label>
-                        <textarea 
-                            value={narasi}
-                            onChange={(e) => setNarasi(e.target.value)}
-                            placeholder="Tuliskan detail pelaksanaan kegiatan di sini..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-700 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
-                        />
-                    </div>
-                </div>
+                        {/* File Upload / Bukti Nota */}
+                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                    <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Bukti Nota / Lampiran
+                                </label>
+                                <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-full">{attachments.length} File</span>
+                            </div>
 
-                {/* Right Sidebar - Compact */}
-                <div className="lg:col-span-4 space-y-4">
-                    
-                    {/* Media Attachments - Ultra Compact */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
-                            <CameraIcon className="w-3 h-3 text-emerald-600" /> Bukti Nota / Kuitansi
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button 
-                                onClick={() => setIsCameraOpen(true)}
-                                className="flex items-center justify-center gap-2 py-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 hover:bg-emerald-100 transition-all group"
-                            >
-                                <CameraIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter">Ambil Foto</span>
-                            </button>
-                            <label className="flex items-center justify-center gap-2 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-500 hover:bg-slate-100 cursor-pointer transition-all">
-                                <Upload className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter">Upload</span>
-                                <input type="file" multiple onChange={handleFileChange} className="hidden" />
-                            </label>
-                        </div>
-                        <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 max-h-48 overflow-y-auto">
-                            {attachments.length === 0 ? (
-                                <div className="py-6 text-center">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase italic">Belum ada lampiran</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {attachments.map((file, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200">
-                                            <div className="w-6 h-6 bg-emerald-50 rounded flex items-center justify-center text-emerald-600 shrink-0">
-                                                <FileIcon className="w-3 h-3" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[9px] font-bold text-slate-700 truncate">{file.name}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button 
+                                    onClick={() => setIsCameraOpen(true)}
+                                    className="flex flex-col items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 border-dashed rounded-2xl transition-all group"
+                                >
+                                    <CameraIcon className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Ambil Foto</span>
+                                </button>
+                                <label className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-2xl cursor-pointer transition-all group">
+                                    <Upload className="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Upload File</span>
+                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                                </label>
+                            </div>
+
+                            {attachments.length > 0 && (
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                    {attachments.map((att, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-100 group">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-emerald-600 shrink-0">
+                                                    <FileIcon className="w-4 h-4" />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className="text-[10px] font-bold text-slate-700 truncate">{att.customName}</p>
+                                                    <p className="text-[8px] text-slate-400">{(att.file.size / 1024).toFixed(1)} KB</p>
+                                                </div>
                                             </div>
                                             <button 
                                                 onClick={() => removeAttachment(idx)}
-                                                className="p-1 text-slate-300 hover:text-rose-500"
+                                                className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
                                             >
-                                                <X className="w-3 h-3" />
+                                                <X className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-                    </div>
 
-                    {/* Final Action - Compact */}
-                    <div className="bg-slate-900 rounded-2xl p-5 shadow-xl shadow-slate-200 space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Realisasi</span>
-                            <span className="text-xl font-black text-white italic tracking-tighter">Rp {realisasiNominal.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button 
-                                onClick={() => { alert('Berhasil disimpan ke Draft Saya!'); window.location.href = '/admin/pengajuan/draft-saya'; }}
-                                disabled={!activeItem}
-                                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] uppercase tracking-wider"
-                            >
-                                <LayoutGrid className="w-3.5 h-3.5" /> Simpan Draft
-                            </button>
-                            <button 
-                                onClick={() => { alert('Berhasil dikirim ke Bendahara Unit!'); window.location.href = '/admin/pengajuan/rekap'; }}
-                                disabled={!activeItem || (selisih > 0 && sisaKekurangan > 0)}
-                                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] uppercase tracking-wider"
-                            >
-                                <Send className="w-3.5 h-3.5" /> Kirim LPJ
-                            </button>
-                        </div>
-
+                        {/* Variance Logic Box */}
+                        {selisih !== 0 && (
+                            <div className={`rounded-3xl p-5 border-2 animate-in slide-in-from-right-4 duration-500 ${selisih > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                                <div className="flex gap-3">
+                                    <div className={`p-2 rounded-xl h-fit ${selisih > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                                        <AlertTriangle className="w-4 h-4" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className={`text-[10px] font-black uppercase tracking-widest ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                            {selisih > 0 ? 'Over Budget Detected' : 'Under Budget Detected'}
+                                        </p>
+                                        <p className={`text-[11px] leading-relaxed font-bold ${selisih > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                            {selisih > 0 
+                                                ? `Terdapat selisih lebih sebesar Rp ${selisih.toLocaleString('id-ID')}. Mohon lampirkan alasan di subsidi silang.` 
+                                                : `Hemat anggaran sebesar Rp ${Math.abs(selisih).toLocaleString('id-ID')}.`}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
+
+
             </div>
 
-            {/* --- Camera Modal --- */}
+            {/* Camera Modal (Preserved) */}
             {isCameraOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" onClick={() => setIsCameraOpen(false)}></div>
-                    <div className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl relative z-10">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <div className="flex items-center gap-2">
-                                <CameraIcon className="w-4 h-4 text-emerald-600" />
-                                <h3 className="font-bold text-slate-800 text-xs">Ambil Foto Nota</h3>
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
+                                    <CameraIcon className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-black text-slate-800 text-sm tracking-tight uppercase">Ambil Foto Nota</h3>
                             </div>
-                            <button onClick={() => setIsCameraOpen(false)} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
-                                <X className="w-4 h-4 text-slate-400" />
+                            <button onClick={() => setIsCameraOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-slate-400" />
                             </button>
                         </div>
-                        <div className="relative bg-black aspect-[3/4]">
+                        <div className="relative bg-black aspect-[3/4] flex items-center justify-center">
                             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                            <div className="absolute inset-x-0 bottom-8 flex justify-center">
-                                <button 
-                                    onClick={capturePhoto}
-                                    className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all border-4 border-slate-200"
-                                >
-                                    <div className="w-10 h-10 border-2 border-slate-900 rounded-full"></div>
+                            <div className="absolute inset-x-0 bottom-0 p-8 flex justify-center items-center gap-6 bg-gradient-to-t from-black/60 to-transparent">
+                                <button onClick={capturePhoto} className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all group">
+                                    <div className="w-12 h-12 border-4 border-slate-900 rounded-full group-hover:bg-slate-100 transition-colors"></div>
                                 </button>
                             </div>
                         </div>
-                        <div className="p-3 bg-slate-50 text-center">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
-                                <RotateCcw className="w-3 h-3" /> Fokuskan pada area nota
+                        <div className="p-4 bg-slate-50 text-center">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                                <RotateCcw className="w-3 h-3" /> Posisikan nota tepat di tengah kamera
                             </p>
                         </div>
                     </div>
                 </div>
             )}
+                    </div>
+
+            {/* --- PRINT ONLY REPORT --- */}
+            <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 overflow-y-auto" style={{ fontFamily: '"Times New Roman", serif' }}>
+                <div className="max-w-[1000px] mx-auto space-y-6">
+                    {/* Header */}
+                    <div className="text-center space-y-1">
+                        <h1 className="text-xl font-bold uppercase underline">Laporan Realisasi Anggaran</h1>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="grid grid-cols-4 gap-x-4 text-sm font-bold">
+                        <div className="text-right">Unit :</div>
+                        <div className="border-b border-black">{unit || '-'}</div>
+                        <div className="text-right">Bulan :</div>
+                        <div className="border-b border-black">{bulan || '-'}</div>
+                        
+                        <div className="text-right">Bidang :</div>
+                        <div className="border-b border-black">{bidang || '-'}</div>
+                        <div className="text-right">Tahun Ajaran :</div>
+                        <div className="border-b border-black">{tahunAjaran || '-'}</div>
+                    </div>
+
+                    {/* RKA SECTION */}
+                    <div className="space-y-2">
+                        <div className="border border-black p-1 text-center font-bold bg-slate-50 text-sm">
+                            Tabel Rencana Kegiatan & Anggaran (RKA)
+                        </div>
+                        <table className="w-full text-[10px] border-collapse border border-black">
+                            <thead>
+                                <tr className="font-bold text-center">
+                                    <th className="border border-black p-1 w-8">No</th>
+                                    <th className="border border-black p-1 text-left">Nama Program/ Kegiatan</th>
+                                    <th className="border border-black p-1">Operasional</th>
+                                    <th className="border border-black p-1">Jumlah</th>
+                                    <th className="border border-black p-1">Waktu</th>
+                                    <th className="border border-black p-1">Tempat</th>
+                                    <th className="border border-black p-1">PIC</th>
+                                    <th className="border border-black p-1">Sasaran</th>
+                                    <th className="border border-black p-1">Anggaran</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {selectedRkaData?.data?.map((rka: any, i: number) => (
+                                    <tr key={i}>
+                                        <td className="border border-black p-1 text-center">{i+1}</td>
+                                        <td className="border border-black p-1">{rka.program}</td>
+                                        <td className="border border-black p-1">{rka.operasional}</td>
+                                        <td className="border border-black p-1 text-center">{rka.jumlah}</td>
+                                        <td className="border border-black p-1 text-center">{rka.waktu}</td>
+                                        <td className="border border-black p-1 text-center">{rka.tempat}</td>
+                                        <td className="border border-black p-1 text-center">{rka.pic}</td>
+                                        <td className="border border-black p-1 text-center">{rka.sasaran}</td>
+                                        <td className="border border-black p-1 text-right">Rp {Number(rka.nominal).toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* LPJ & SIDEBAR SECTION */}
+                    <div className="flex gap-4">
+                        <div className="flex-1 space-y-2">
+                            <div className="border border-black p-1 text-center font-bold bg-slate-50 text-sm">
+                                Tabel Realisasi Anggaran (LPJ)
+                            </div>
+                            <table className="w-full text-[10px] border-collapse border border-black">
+                                <thead>
+                                    <tr className="font-bold text-center">
+                                        <th className="border border-black p-1 w-8">No</th>
+                                        <th className="border border-black p-1 text-left">Nama Program/ Kegiatan</th>
+                                        <th className="border border-black p-1">Operasional</th>
+                                        <th className="border border-black p-1">Jumlah</th>
+                                        <th className="border border-black p-1 text-right">Total Realisasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {lpjRows.map((row, i) => (
+                                        <Fragment key={row.id}>
+                                            <tr className="font-bold">
+                                                <td className="border border-black p-1 text-center">{i+1}</td>
+                                                <td className="border border-black p-1">{row.program}</td>
+                                                <td className="border border-black p-1">{row.operasional}</td>
+                                                <td className="border border-black p-1 text-center">{row.jumlah}</td>
+                                                <td className="border border-black p-1 text-right">Rp {Number(row.nominal).toLocaleString()}</td>
+                                            </tr>
+                                            {/* Items */}
+                                            {row.details.items.map((item, idx) => (
+                                                <tr key={idx} className="italic text-slate-600">
+                                                    <td className="border border-black"></td>
+                                                    <td className="border border-black p-0.5 pl-4">• {item.name}</td>
+                                                    <td className="border border-black p-0.5 text-center text-[8px]">{item.price.toLocaleString()} x {item.qty}</td>
+                                                    <td className="border border-black"></td>
+                                                    <td className="border border-black p-0.5 text-right">Rp {item.total.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                            {/* Splits */}
+                                            {row.details.fundingSplits.map((split, sidx) => (
+                                                <tr key={`s-${sidx}`} className="text-[9px]">
+                                                    <td colSpan={3} className="border border-black"></td>
+                                                    <td className="border border-black p-0.5 text-right font-bold italic">{split.source} ({split.percent}%):</td>
+                                                    <td className="border border-black p-0.5 text-right font-bold">Rp {Number(split.nominal).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </Fragment>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="font-bold bg-slate-100">
+                                        <td colSpan={4} className="border border-black p-1 text-right uppercase">Total Seluruh Realisasi</td>
+                                        <td className="border border-black p-1 text-right">Rp {realisasiTotal.toLocaleString()}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="w-64 space-y-4 pt-10">
+                            <div className="border-2 border-black p-4 text-center space-y-1">
+                                <p className="text-[10px] font-bold uppercase underline">Selisih Anggaran</p>
+                                <p className={`text-sm font-bold ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                    Rp {selisih.toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="border-2 border-black p-4 h-48">
+                                <p className="text-[10px] font-bold uppercase underline mb-2">Catatan:</p>
+                                <p className="text-[10px] whitespace-pre-wrap">{narasi || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Evidence Gallery */}
+                    {attachments.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="border-2 border-black bg-slate-900 text-white text-center py-1 text-xs font-bold uppercase tracking-widest">
+                                Bukti Nota / Kuitansi (Evidence Gallery)
+                            </div>
+                            <div className="grid grid-cols-2 gap-8">
+                                {attachments.map((att, idx) => (
+                                    <div key={idx} className="space-y-2 text-center break-inside-avoid">
+                                        <img 
+                                            src={URL.createObjectURL(att.file)} 
+                                            alt={att.customName}
+                                            className="w-full h-64 object-contain border border-slate-300 rounded shadow-sm"
+                                        />
+                                        <p className="text-xs font-bold uppercase underline">{att.customName}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer / Signature Area */}
+                    <div className="pt-12 grid grid-cols-2 text-center text-xs">
+                        <div className="space-y-12">
+                            <p>Diajukan Oleh,</p>
+                            <div className="border-b border-black w-48 mx-auto"></div>
+                            <p className="font-bold uppercase">( Staff / Pelaksana )</p>
+                        </div>
+                        <div className="space-y-12">
+                            <p>Mengetahui,</p>
+                            <div className="border-b border-black w-48 mx-auto"></div>
+                            <p className="font-bold uppercase">( Bendahara Unit )</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

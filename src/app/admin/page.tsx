@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
     Settings, 
     ChevronDown, 
@@ -28,13 +28,15 @@ import { YayasanWidgets } from '@/components/dashboard/YayasanWidgets';
 import { PendidikanWidgets } from '@/components/dashboard/PendidikanWidgets';
 import { AsramaWidgets } from '@/components/dashboard/AsramaWidgets';
 import { DapurWidgets } from '@/components/dashboard/DapurWidgets';
+import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
+import { createClient } from '@/utils/supabase/client';
 
 const UNITS = [
   'Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 
   'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri'
 ];
 
-const AVAILABLE_STATUSES = ['MENUNGGU KEPALA', 'MENUNGGU PUSAT', 'MENUNGGU CAIR', 'CAIR', 'DITOLAK', 'BUTUH REVISI', 'SELESAI', 'SUDAH DITERIMA', 'DRAFT'];
+const AVAILABLE_STATUSES = ['MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'MENUNGGU PUSAT', 'MENUNGGU CAIR', 'CAIR', 'DITOLAK', 'BUTUH REVISI', 'SELESAI', 'SUDAH DITERIMA', 'DRAFT'];
 
 export default function AdminDashboardPage() {
   // --- CORE STATE ---
@@ -63,6 +65,8 @@ export default function AdminDashboardPage() {
 
   // --- REAL DATA (Initialized Empty) ---
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [verificationQueue, setVerificationQueue] = useState<any[]>([]);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const [balances, setBalances] = useState({
     yayasan: 0,
@@ -108,45 +112,178 @@ export default function AdminDashboardPage() {
     setSelectedTrx(null);
   };
 
-  const handleReviewAction = (action: 'APPROVE' | 'REJECT') => {
-    if (!selectedTrxForReview) return;
+  const handleReviewAction = async (action: 'APPROVE' | 'REJECT', overrideNote?: string) => {
+    if (!selectedTrxForReview || isVerifying) return;
     
-    setTransactions(prev => prev.map(t => {
-      if (t.id === selectedTrxForReview.id) {
+    setIsVerifying(true);
+    try {
+        const finalNote = overrideNote || reviewNote;
+        let calculatedNextStatus = selectedTrxForReview.rawStatus;
+
         if (action === 'APPROVE') {
-          let nextStatus = t.status;
-          let nextColor = t.statusColor;
-          
-          if (t.status === 'MENUNGGU KEPALA') {
-              nextStatus = 'MENUNGGU PUSAT';
-              nextColor = 'bg-orange-100 text-orange-700';
-          } else if (t.status === 'MENUNGGU PUSAT') {
-              nextStatus = 'MENUNGGU CAIR';
-              nextColor = 'bg-blue-100 text-blue-700';
-          } else if (t.status === 'MENUNGGU CAIR') {
-              nextStatus = 'CAIR';
-              nextColor = 'bg-emerald-100 text-emerald-700';
-          } else if (t.status === 'CAIR') {
-              nextStatus = t.type === 'RKA' ? 'SUDAH DITERIMA' : 'SELESAI';
-              nextColor = 'bg-indigo-100 text-indigo-700';
-              
-              // LOGIKA PEMOTONGAN SALDO (Hanya saat SUDAH DITERIMA / SELESAI)
-              if (t.desc.includes('Yayasan')) setBalances(b => ({ ...b, yayasan: b.yayasan - t.nominal }));
-              if (t.desc.includes('BOS')) setBalances(b => ({ ...b, bos: b.bos - t.nominal }));
-          }
-          
-          return { ...t, status: nextStatus, statusColor: nextColor, note: reviewNote };
+            if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
+                calculatedNextStatus = 'MENUNGGU_KEPALA';
+            } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
+                calculatedNextStatus = 'MENUNGGU_PUSAT';
+            } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
+                calculatedNextStatus = 'MENUNGGU_CAIR';
+            } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_CAIR') {
+                calculatedNextStatus = 'CAIR';
+            } else if (selectedTrxForReview.rawStatus === 'CAIR') {
+                calculatedNextStatus = selectedTrxForReview.type === 'RKA' ? 'SUDAH_DITERIMA' : 'SELESAI';
+            }
         } else {
-          // Jika TOLAK, kembali ke DRAFT Staf
-          return { ...t, status: 'DRAFT', statusColor: 'bg-slate-100 text-slate-500', note: reviewNote };
+            calculatedNextStatus = 'REVISI';
         }
+
+        // PERSIST TO DATABASE
+        if (action === 'APPROVE') {
+            await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus);
+        } else {
+            await revisiPengajuan(selectedTrxForReview.id, finalNote);
+        }
+
+        // UPDATE LOCAL STATE
+        let yayasanAdd = 0;
+
+        if (calculatedNextStatus === 'SUDAH_DITERIMA' || calculatedNextStatus === 'SELESAI') {
+            selectedTrxForReview.items?.forEach((item: any) => {
+                try {
+                    const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
+                    const splits = details.fundingSplits || [];
+                    if (Array.isArray(splits)) {
+                        splits.forEach((s: any) => {
+                            const source = (s.source || s.sumber || '').toLowerCase();
+                            const amount = Number(s.amount || s.nominal || 0);
+                            if (source.includes('yayasan') || source.includes('pesantren')) yayasanAdd += amount;
+                        });
+                    }
+                } catch (e) {}
+            });
+        }
+
+        if (yayasanAdd > 0) {
+            setBalances(b => ({
+                ...b,
+                yayasan: b.yayasan + yayasanAdd
+            }));
+        }
+
+        setTransactions(prev => prev.map(t => {
+          if (t.id === selectedTrxForReview.id) {
+              const statusDisplay = calculatedNextStatus.replace(/_/g, ' ');
+              let statusColor = 'bg-slate-100 text-slate-500';
+              
+              if (calculatedNextStatus === 'MENUNGGU_VERIFIKASI') statusColor = 'bg-sky-100 text-sky-700';
+              else if (calculatedNextStatus === 'MENUNGGU_KEPALA') statusColor = 'bg-amber-100 text-amber-700';
+              else if (calculatedNextStatus === 'MENUNGGU_PUSAT') statusColor = 'bg-orange-100 text-orange-700';
+              else if (calculatedNextStatus === 'MENUNGGU_CAIR') statusColor = 'bg-blue-100 text-blue-700';
+              else if (calculatedNextStatus === 'CAIR') statusColor = 'bg-emerald-100 text-emerald-700';
+              else if (calculatedNextStatus === 'REVISI') statusColor = 'bg-rose-100 text-rose-700';
+
+              return { ...t, status: statusDisplay, rawStatus: calculatedNextStatus, statusColor: statusColor, note: finalNote };
+          }
+          return t;
+        }));
+        
+        setIsReviewModalOpen(false);
+        setSelectedTrxForReview(null);
+        setReviewNote('');
+    } catch (e) {
+        console.error("Error in handleReviewAction:", e);
+    } finally {
+        setIsVerifying(false);
+    }
+  };
+
+  const fetchVerificationQueue = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('dokumen_pengajuan')
+        .select(`
+            *,
+            item_pengajuan(nominal)
+        `)
+        .eq('status', 'MENUNGGU_VERIFIKASI')
+        .order('created_at', { ascending: false });
+
+    if (!error && data) {
+        const mapped = data.map(doc => ({
+            id: doc.id,
+            shortId: String(doc.id).slice(0, 8).toUpperCase(),
+            bidang: doc.bidang || 'Tanpa Bidang',
+            periode: `${doc.periode_bulan} ${doc.periode_tahun}`,
+            nominal: doc.item_pengajuan?.reduce((acc: number, curr: any) => acc + curr.nominal, 0) || 0,
+            itemCount: doc.item_pengajuan?.length || 0,
+            status: doc.status
+        }));
+        setVerificationQueue(mapped);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('dokumen_pengajuan')
+        .select(`
+            *,
+            item_pengajuan(*)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (!error && data) {
+        const mapped = data.map(doc => {
+            const items = doc.item_pengajuan || [];
+            const total = items.reduce((acc: number, curr: any) => acc + curr.nominal, 0) || 0;
+            
+            // Map status to color and labels used in Dashboard
+            let statusDisplay = doc.status.replace(/_/g, ' ');
+            let statusColor = 'bg-slate-100 text-slate-500';
+            
+            if (doc.status === 'MENUNGGU_VERIFIKASI') statusColor = 'bg-sky-100 text-sky-700';
+            else if (doc.status === 'MENUNGGU_KEPALA') statusColor = 'bg-amber-100 text-amber-700';
+            else if (doc.status === 'MENUNGGU_PUSAT') statusColor = 'bg-orange-100 text-orange-700';
+            else if (doc.status === 'DISETUJUI') statusColor = 'bg-emerald-100 text-emerald-700';
+            else if (doc.status === 'REVISI') statusColor = 'bg-rose-100 text-rose-700';
+            else if (doc.status === 'DRAFT') statusColor = 'bg-slate-100 text-slate-500';
+
+            return {
+                id: doc.id,
+                type: doc.mode || 'RKA',
+                title: doc.kegiatan || items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Tanpa Judul',
+                unit: doc.unit || 'SDIT 1', 
+                desc: doc.bidang || 'Tanpa Bidang',
+                date: new Date(doc.created_at).toLocaleDateString('id-ID'),
+                nominal: total,
+                items: items, 
+                status: statusDisplay,
+                rawStatus: doc.status, // Original DB status
+                statusColor: statusColor,
+                note: doc.catatan_revisi,
+                isRevised: !!doc.catatan_revisi && doc.status !== 'REVISI'
+            };
+        });
+        setTransactions(mapped);
+    }
+  };
+
+  const handleDashboardApprove = async (id: string) => {
+      setIsVerifying(true);
+      const res = await verifikasiPengajuan(id);
+      if (res.success) {
+          setVerificationQueue(prev => prev.filter(i => i.id !== id));
       }
-      return t;
-    }));
-    
-    setIsReviewModalOpen(false);
-    setSelectedTrxForReview(null);
-    setReviewNote('');
+      setIsVerifying(false);
+  };
+
+  const handleDashboardReject = async (id: string, note: string) => {
+      setIsVerifying(true);
+      const res = await revisiPengajuan(id, note);
+      if (res.success) {
+          setVerificationQueue(prev => prev.filter(i => i.id !== id));
+      }
+      setIsVerifying(false);
   };
 
   // --- EFFECTS ---
@@ -162,6 +299,13 @@ export default function AdminDashboardPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+    if (userRole === 'BENDAHARA_UNIT') {
+        fetchVerificationQueue();
+    }
+  }, [userRole]);
 
   // --- DERIVED DATA ---
   const category = (unit: string) => {
@@ -220,10 +364,10 @@ export default function AdminDashboardPage() {
     // 4. Role-Based Visibility (Workflow Logic Simulation)
     if (userRole === 'BENDAHARA_PUSAT') {
       // Pusat hanya melihat yang sudah disetujui Kepala Unit (MENUNGGU PUSAT) ke atas
-      if (['DRAFT', 'MENUNGGU KEPALA', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'KEPALA_UNIT') {
       // Kepala Unit melihat yang butuh persetujuannya (MENUNGGU KEPALA) atau yang sudah berjalan lebih lanjut
-      if (['DRAFT', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'BENDAHARA_UNIT') {
       // Bendahara Unit melihat progres, tapi DRAFT hanya muncul di halaman Rekap Draft
       if (t.status === 'DRAFT') return false;
@@ -444,8 +588,13 @@ export default function AdminDashboardPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-2 py-2">
-                                                        <p className="font-black text-slate-800 tracking-tight leading-none mb-0.5">{trx.title}</p>
-                                                        <p className="text-[8px] text-slate-400 font-medium leading-none">{trx.date} • {trx.desc}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-black text-slate-800 tracking-tight leading-none">{trx.title}</p>
+                                                            {trx.isRevised && (
+                                                                <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[6px] rounded-sm font-black uppercase tracking-widest border border-indigo-200">Revisi</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[8px] text-slate-400 font-medium leading-none mt-1">{trx.date} • {trx.desc}</p>
                                                     </td>
                                                     <td className="px-2 py-2 text-center">
                                                         <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${trx.statusColor}`}>
@@ -463,47 +612,22 @@ export default function AdminDashboardPage() {
                                                                 <ShieldCheck className="w-3.5 h-3.5" />
                                                             </button>
                                                             
-                                                            {/* DINAMIS BERDASARKAN ROLE DAN STATUS */}
-                                                            {userRole === 'BENDAHARA_PUSAT' && trx.status === 'MENUNGGU PUSAT' && (
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        setSelectedTrxForReview(trx);
-                                                                        setReviewNote(trx.note || '');
-                                                                        setIsReviewModalOpen(true);
-                                                                    }}
-                                                                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-all shadow-sm border border-emerald-100" title="Verifikasi Pengajuan"><ArrowUpRight className="w-3.5 h-3.5" /></button>
-                                                            )}
-
-                                                            {userRole === 'BENDAHARA_PUSAT' && trx.status === 'MENUNGGU CAIR' && (
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        setSelectedTrxForReview(trx);
-                                                                        setIsReviewModalOpen(true);
-                                                                    }}
-                                                                    className="p-1 text-amber-600 hover:bg-amber-50 rounded transition-all shadow-sm border border-amber-100" title="Cairkan Dana Sekarang"><Banknote className="w-3.5 h-3.5" /></button>
-                                                            )}
-
-                                                            {userRole === 'BENDAHARA_PUSAT' && trx.status === 'CAIR' && (
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        setSelectedTrxForReview(trx);
-                                                                        setIsReviewModalOpen(true);
-                                                                    }}
-                                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-all shadow-sm border border-blue-100" title="Konfirmasi Sudah Diterima"><CheckCircle className="w-3.5 h-3.5" /></button>
-                                                            )}
-
-                                                            {/* Role lain hanya bisa melihat detail */}
-                                                            {userRole !== 'BENDAHARA_PUSAT' && (
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        setSelectedTrxForReview(trx);
-                                                                        setReviewNote(trx.note || '');
-                                                                        setIsReviewModalOpen(true);
-                                                                    }}
-                                                                    className="p-1 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-all shadow-sm border border-slate-100" title="Tinjau Detail">
-                                                                    <ArrowUpRight className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            )}
+                                                            {/* TOMBOL REVIEW UTAMA */}
+                                                            <button 
+                                                                 onClick={() => {
+                                                                     setSelectedTrxForReview(trx);
+                                                                     setReviewNote(trx.note || '');
+                                                                     setIsReviewModalOpen(true);
+                                                                 }}
+                                                                 className={`p-1 rounded transition-all shadow-sm border ${
+                                                                     ((userRole === 'BENDAHARA_UNIT' && trx.status === 'MENUNGGU VERIFIKASI') || (userRole === 'BENDAHARA_PUSAT' && trx.status === 'MENUNGGU PUSAT'))
+                                                                     ? 'text-emerald-600 hover:bg-emerald-50 border-emerald-100' 
+                                                                     : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border-slate-100 hover:border-indigo-100'
+                                                                 }`} 
+                                                                 title="Lihat Detail & Verifikasi"
+                                                             >
+                                                                 <ArrowUpRight className="w-3.5 h-3.5" />
+                                                             </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -533,23 +657,44 @@ export default function AdminDashboardPage() {
             <div className="p-6 space-y-6">
               <div className="relative space-y-6">
                 <div className="absolute left-[9px] top-1 bottom-1 w-[1px] bg-slate-100"></div>
-                {[
-                    { l: 'DRAFT', d: 'Staf Pengaju', r: 'INIT' },
-                    { l: 'VERIFIKASI', d: 'Bendahara Unit', r: 'TREASURER' },
-                    { l: 'PERSETUJUAN', d: 'Kepala Unit', r: 'HEAD' },
-                    { l: 'OTORISASI', d: 'Bendahara Pusat', r: 'CENTRAL' },
-                    { l: 'PENCAIRAN', d: 'Dana Siap/Cair', r: 'DONE' }
-                ].map((step, i) => (
-                    <div key={i} className="flex gap-4 relative z-10 items-start">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${i < 3 ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                            {i < 3 ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                        </div>
-                        <div>
-                            <p className={`text-[10px] font-black tracking-tight ${i < 3 ? 'text-slate-800' : 'text-slate-400'}`}>{step.l}</p>
-                            <p className={`text-[9px] font-bold uppercase tracking-widest ${i < 3 ? 'text-indigo-500/70' : 'text-slate-300'}`}>{step.d}</p>
-                        </div>
-                    </div>
-                ))}
+                {(() => {
+                    const statusRank: Record<string, number> = {
+                        'DRAFT': 0,
+                        'REVISI': 0,
+                        'MENUNGGU_VERIFIKASI': 1,
+                        'MENUNGGU_KEPALA': 2,
+                        'MENUNGGU_PUSAT': 3,
+                        'MENUNGGU_CAIR': 4,
+                        'CAIR': 5,
+                        'SUDAH_DITERIMA': 6,
+                        'SELESAI': 6
+                    };
+                    const currentRank = statusRank[selectedTrxForTracking.rawStatus] || 0;
+
+                    return [
+                        { l: 'DRAFT', d: 'Staf Pengaju', rank: 1 },
+                        { l: 'VERIFIKASI', d: 'Bendahara Unit', rank: 2 },
+                        { l: 'PERSETUJUAN', d: 'Kepala Unit', rank: 3 },
+                        { l: 'OTORISASI', d: 'Bendahara Pusat', rank: 4 },
+                        { l: 'PENCAIRAN', d: 'Dana Siap/Cair', rank: 5 },
+                        { l: 'SELESAI', d: 'Sudah Diterima', rank: 6 }
+                    ].map((step, i) => {
+                        const isDone = currentRank >= step.rank;
+                        const isActive = currentRank === step.rank - 1;
+
+                        return (
+                            <div key={i} className="flex gap-4 relative z-10 items-start">
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all duration-500 ${isDone ? 'bg-indigo-600 text-white' : isActive ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-400'}`}>
+                                    {isDone ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                </div>
+                                <div>
+                                    <p className={`text-[10px] font-black tracking-tight ${isDone ? 'text-slate-800' : 'text-slate-400'}`}>{step.l}</p>
+                                    <p className={`text-[9px] font-bold uppercase tracking-widest ${isDone ? 'text-indigo-500/70' : 'text-slate-300'}`}>{step.d}</p>
+                                </div>
+                            </div>
+                        );
+                    });
+                })()}
               </div>
             </div>
             <div className="p-4 bg-slate-50 flex justify-end">
@@ -587,78 +732,219 @@ export default function AdminDashboardPage() {
       {/* REVIEW & APPROVAL MODAL */}
       {isReviewModalOpen && selectedTrxForReview && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className={`p-6 text-white flex justify-between items-start ${selectedTrxForReview.type === 'RKA' ? 'bg-amber-600' : 'bg-blue-600'}`}>
-              <div className="flex gap-4">
-                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                   {selectedTrxForReview.type === 'RKA' ? <FileText className="w-6 h-6" /> : <ClipboardCheck className="w-6 h-6" />}
+          <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            {/* Header - Fixed Height */}
+            <div className={`px-6 py-4 text-white flex justify-between items-start shrink-0 ${selectedTrxForReview.type === 'RKA' ? 'bg-amber-600' : 'bg-blue-600'}`}>
+              <div className="flex gap-3">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                   {selectedTrxForReview.type === 'RKA' ? <FileText className="w-5 h-5" /> : <ClipboardCheck className="w-5 h-5" />}
                 </div>
                 <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-white/20 rounded-full text-[8px] font-black uppercase tracking-widest">ID: {selectedTrxForReview.id}</span>
-                        <span className="px-2 py-0.5 bg-white/20 rounded-full text-[8px] font-black uppercase tracking-widest">{selectedTrxForReview.type}</span>
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-black italic leading-tight uppercase tracking-tight">
+                            {selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title}
+                        </h3>
+                        {selectedTrxForReview.isRevised && (
+                            <span className="px-2 py-0.5 bg-white/20 border border-white/30 rounded-full text-[8px] font-black uppercase tracking-widest">Hasil Revisi</span>
+                        )}
                     </div>
-                    <h3 className="text-lg font-black italic leading-tight">{selectedTrxForReview.title}</h3>
-                    <p className="text-xs font-bold opacity-80 uppercase tracking-tighter">{selectedTrxForReview.unit} • {selectedTrxForReview.date}</p>
+                    <p className="text-[10px] font-bold opacity-90 uppercase tracking-tighter">
+                        {selectedTrxForReview.unit} / {selectedTrxForReview.desc} • {selectedTrxForReview.date}
+                    </p>
                 </div>
               </div>
-              <button onClick={() => setIsReviewModalOpen(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setIsReviewModalOpen(false)} className="p-1.5 bg-white/10 rounded-full hover:bg-white/20 transition-colors"><X className="w-4 h-4" /></button>
             </div>
+            
+            {/* Funding Accumulation Summary - Professional Toolbar */}
+            {selectedTrxForReview && (
+                <div className="bg-slate-100/50 border-b border-slate-200 px-6 py-2 flex flex-wrap gap-3 items-center shrink-0">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Akumulasi Dana:</span>
+                    {(() => {
+                        const summary: Record<string, number> = {};
+                        selectedTrxForReview.items?.forEach((it: any) => {
+                            let details: any = {};
+                            try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                            const splits = details.fundingSplits || [];
+                            if (Array.isArray(splits)) {
+                                splits.forEach((s: any) => {
+                                    const source = s.source || s.sumber || 'Lainnya';
+                                    const amount = Number(s.amount || s.nominal || 0);
+                                    if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                });
+                            }
+                        });
+                        return Object.entries(summary).map(([source, amount], idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                <div className={`w-1.5 h-1.5 rounded-full ${source.toLowerCase().includes('bos') ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">{source}:</span>
+                                <span className="text-[9px] font-black text-slate-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
+                            </div>
+                        ));
+                    })()}
+                </div>
+            )}
 
-            <div className="p-8 space-y-6">
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Saat Ini</p>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${selectedTrxForReview.statusColor}`}>
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/30">
+                {/* Status & Summary Bar */}
+                <div className="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status:</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${selectedTrxForReview.statusColor}`}>
                             {selectedTrxForReview.status}
                         </span>
                     </div>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Nominal</p>
-                        <p className="text-base font-black text-slate-800 italic">Rp {selectedTrxForReview.nominal.toLocaleString('id-ID')}</p>
+                    <div className="text-right flex flex-col items-end">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Pengajuan:</span>
+                            <span className="text-sm font-black text-slate-800 italic">Rp {selectedTrxForReview.nominal.toLocaleString('id-ID')}</span>
+                        </div>
                     </div>
                 </div>
+                
+                {/* Unified Data Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table className="w-full text-left text-[9px] border-collapse">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">No</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Program/Kegiatan</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Operasional</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Waktu/Tempat</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-right">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {selectedTrxForReview.items?.map((it: any, idx: number) => (
+                                <Fragment key={idx}>
+                                    <tr className="bg-white">
+                                        <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                        <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                        <td className="px-3 py-2"><span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                        <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                        <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                    {/* Nested Item Breakdown Row */}
+                                    <tr>
+                                        <td colSpan={7} className="px-8 pb-4 bg-slate-50/50">
+                                            <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
+                                                <div className="flex items-center gap-2 mb-1 px-1">
+                                                    <div className="w-1 h-3 bg-emerald-600 rounded-full"></div>
+                                                    <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Rincian Detail & Budgeting</p>
+                                                </div>
+                                                <table className="w-full text-[9px]">
+                                                    <thead>
+                                                        <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                            <th className="py-1.5">Nama Item / Spesifikasi</th>
+                                                            <th className="py-1.5 text-center">Satuan</th>
+                                                            <th className="py-1.5 text-right">Harga Satuan</th>
+                                                            <th className="py-1.5 text-center">Qty</th>
+                                                            <th className="py-1.5 text-right">Total (Rp)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-50">
+                                                        {(() => {
+                                                            let details: any = {};
+                                                            try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                            let rincian = details.items || (Array.isArray(details) ? details : []);
+                                                            return rincian.map((rin: any, rIdx: number) => (
+                                                                <tr key={rIdx}>
+                                                                    <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
+                                                                    <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
+                                                                    <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                    <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
+                                                                    <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                                </tr>
+                                                            ));
+                                                        })()}
+                                                    </tbody>
+                                                </table>
+                                                {/* Line Funding info */}
+                                                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                                    {(() => {
+                                                        let details: any = {};
+                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                        let sd = details.fundingSplits || [];
+                                                        return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
+                                                            <span key={sIdx} className="text-[8px] font-black text-emerald-800 uppercase bg-emerald-100/50 px-2 py-1 rounded-md border border-emerald-200/50">
+                                                                {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                            </span>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Edit3 className="w-3 h-3" /> Catatan Peninjauan</p>
-                        <span className="text-[8px] font-bold text-slate-300 italic">Opsional</span>
-                    </div>
+                {/* Note Field */}
+                <div className="space-y-1.5">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Edit3 className="w-3 h-3" /> Catatan Peninjauan</p>
                     <textarea 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-xs font-bold text-slate-700 focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[100px] italic placeholder:text-slate-300"
-                        placeholder="Tambahkan catatan atau alasan penolakan di sini..."
+                        className="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-xs font-bold text-slate-700 focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[80px] italic placeholder:text-slate-300 shadow-inner"
+                        placeholder="Tambahkan catatan jika perlu..."
                         value={reviewNote}
                         onChange={(e) => setReviewNote(e.target.value)}
                     />
                 </div>
             </div>
 
-            <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex gap-3">
-                {selectedTrxForReview.status === 'MENUNGGU PUSAT' || selectedTrxForReview.status === 'MENUNGGU KEPALA' ? (
+            {/* Footer Actions - Fixed Bottom */}
+            <div className="p-4 bg-white border-t border-slate-100 flex gap-3 shrink-0">
+                {['MENUNGGU VERIFIKASI', 'MENUNGGU PUSAT', 'MENUNGGU KEPALA'].includes(selectedTrxForReview.status) ? (
                     <>
                         <button 
                             onClick={() => handleReviewAction('REJECT')}
-                            className="flex-1 py-4 bg-white border-2 border-rose-100 text-rose-600 text-xs font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-rose-50 transition-all flex items-center justify-center gap-2 shadow-sm"
+                            disabled={isVerifying}
+                            className="flex-1 py-3 bg-white border-2 border-rose-100 text-rose-600 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <XCircle className="w-4 h-4" /> Tolak
+                            <XCircle className="w-3.5 h-3.5" /> Tolak
                         </button>
                         <button 
                             onClick={() => handleReviewAction('APPROVE')}
-                            className="flex-[2] py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                            disabled={isVerifying}
+                            className="flex-1 py-3 bg-emerald-600 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <CheckCircle className="w-4 h-4" /> Terima
+                            <CheckCircle className="w-3.5 h-3.5" /> 
+                            {isVerifying ? 'Memproses...' : (selectedTrxForReview.status === 'MENUNGGU VERIFIKASI' ? 'Setuju' : 'Terima')}
                         </button>
                     </>
+                ) : selectedTrxForReview.status === 'MENUNGGU CAIR' ? (
+                    <div className="flex gap-3 w-full">
+                        <button 
+                            onClick={() => handleReviewAction('APPROVE', 'Dicairkan melalui Transfer')}
+                            disabled={isVerifying}
+                            className="flex-1 py-3 bg-amber-500 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Banknote className="w-3.5 h-3.5" /> 
+                            {isVerifying ? 'Memproses...' : 'Cairkan melalui Transfer'}
+                        </button>
+                        <button 
+                            onClick={() => handleReviewAction('APPROVE', 'Dicairkan melalui Cash')}
+                            disabled={isVerifying}
+                            className="flex-1 py-3 bg-indigo-500 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Banknote className="w-3.5 h-3.5" /> 
+                            {isVerifying ? 'Memproses...' : 'Cairkan melalui Cash'}
+                        </button>
+                    </div>
                 ) : (
                     <button 
                         onClick={() => handleReviewAction('APPROVE')}
-                        className="flex-1 py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                        disabled={isVerifying}
+                        className="flex-1 py-3 bg-emerald-600 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <CheckCircle className="w-4 h-4" /> 
-                        {selectedTrxForReview.status === 'MENUNGGU CAIR' ? 'Cairkan Dana Sekarang' : 
-                         selectedTrxForReview.status === 'CAIR' ? 'Konfirmasi Sudah Diterima' : 'Proses'}
+                        <CheckCircle className="w-3.5 h-3.5" /> 
+                        {isVerifying ? 'Memproses...' : (selectedTrxForReview.status === 'CAIR' ? 'Sudah Diterima' : 'Selesai')}
                     </button>
                 )}
             </div>

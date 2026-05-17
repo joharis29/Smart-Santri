@@ -1,18 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import {
-    Plus,
-    Search,
-    Edit2,
-    Trash2,
-    BookOpen,
-    Filter,
-    X,
-    Save,
-    AlertCircle,
-    CheckCircle2
-} from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save } from 'lucide-react';
 
 interface RKAReference {
     id: string;
@@ -41,39 +30,9 @@ const STRUKTUR_BIDANG: Record<string, string[]> = {
     'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan']
 };
 
-const REFERENCE_RKA: Record<string, Record<string, string[]>> = {
-    'Asrama Putra': {
-        'Optimalisasi Manajemen Pengarsipan': ['Mengelola surat statis & dinamis, mutasi santri, arsip proposal/laporan, backup dokumen Naqieb'],
-        'Optimalisasi ATK & Sarpras': ['Pengadaan ATK, sarpras kantor, pemeliharaan sarpras, inventarisasi aset, seragam pengurus'],
-        'Manajemen Buku Admin': ['Pengadaan, pengisian rutin, dan evaluasi kelengkapan buku administrasi'],
-        'Database Santri': ['Update data semesteran & digitalisasi database santri'],
-        'Layanan & Komunikasi': ['WAG Ortu, booklet profil, buku santri, penyambutan santri baru, optimasi IG asrama'],
-        'Koordinasi Rapat': ['Rapat pekanan, rapat terbatas, rapat Naqieb, Rapat Kerja (Raker)'],
-        'Sistem Keuangan': ['Penyusunan RAB, pencairan dana, pencatatan BKU, pelaporan realisasi'],
-        'Manajemen Aset': ['Penitipan uang santri, pengadaan sarpras kebutuhan santri'],
-        'Kegiatan Pendidikan': ['KISS (Kajian Senin Subuh), Halaqah Masa, Bimbel sore, Rapot Asrama Bulanan'],
-        'Penegakan Disiplin': ['Operasi rambut/kerapihan, sidak kamar, pembinaan santri, reward & punishment'],
-        'Minat Bakat': ['Muhadharah (Pidato), Olahraga pekanan, Seni Bela Diri'],
-        'Program Tahfidz': ['Setoran hafalan harian', 'Tasmi\'', 'Munaqasyah', 'Wisuda Tahfidz'],
-        'Pembiasaan Ibadah': ['Shalat berjamaah 5 waktu, Tahajjud bersama, Puasa Sunnah'],
-        'Lingkungan & Kesehatan': ['Roan (Kerja bakti), pengelolaan sampah, layanan Poskestren, sosialisasi PHBS'],
-        'Pemeliharaan': ['Perbaikan sarana rusak, pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)']
-    }
-};
+const REFERENCE_RKA: Record<string, Record<string, string[]>> = {};
 
-const INITIAL_DATA: RKAReference[] = [
-    { id: '1', unit: 'Asrama Putra', bidang: 'Sekretaris', standar: '(-)', program: 'Optimalisasi Manajemen Pengarsipan', namaKegiatan: 'Pengarsipan Surat & Dokumen', kegiatan: 'Mengelola surat statis & dinamis, mutasi santri, arsip proposal/laporan, backup dokumen Naqieb', pelaksana: 'Sekretaris Asrama', sasaran: 'Pihak terkait, Santri, TU', prioritas: 'Program Tetap & Wajib', indikator: 'Dokumen terarsip & terdokumentasi dengan rapi' },
-    { id: '2', unit: 'Asrama Putra', bidang: 'Sekretaris', standar: '(-)', program: 'Optimalisasi ATK & Sarpras', namaKegiatan: 'Manajemen Inventaris Kantor', kegiatan: 'Pengadaan ATK, sarpras kantor, pemeliharaan sarpras, inventarisasi aset, seragam pengurus', pelaksana: 'Sekretaris Asrama', sasaran: 'Sekretariat, Pengurus', prioritas: 'Program Tetap & Wajib', indikator: 'Kebutuhan operasional kantor terpenuhi' },
-    { id: '3', unit: 'Asrama Putra', bidang: 'Sekretaris', standar: '(-)', program: 'Manajemen Buku Admin', namaKegiatan: 'Administrasi Buku Kendali', kegiatan: 'Pengadaan, pengisian rutin, dan evaluasi kelengkapan buku administrasi', pelaksana: 'Sekretaris Asrama', sasaran: 'Sekretariat', prioritas: 'Program Tetap & Wajib', indikator: 'Administrasi asrama terkontrol & lengkap' },
-    { id: '4', unit: 'Asrama Putra', bidang: 'Sekretaris', standar: '(-)', program: 'Database Santri', namaKegiatan: 'Digitalisasi Data Santri', kegiatan: 'Update data semesteran & digitalisasi database santri', pelaksana: 'Sekretaris Asrama', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Database akurat & mudah diakses' },
-    { id: '5', unit: 'Asrama Putra', bidang: 'Bendahara', standar: '(-)', program: 'Sistem Keuangan', namaKegiatan: 'Pelaporan & Pembukuan Kas', kegiatan: 'Penyusunan RAB, pencairan dana, pencatatan BKU, pelaporan realisasi', pelaksana: 'Bendahara Asrama', sasaran: 'Pengurus, Yayasan', prioritas: 'Program Tetap & Wajib', indikator: 'Laporan keuangan akuntabel & transparan' },
-    { id: '6', unit: 'Asrama Putra', bidang: 'Pendidikan Dan Pengasuhan', standar: '(-)', program: 'Kegiatan Pendidikan', namaKegiatan: 'Pembinaan Akademik & Spiritual', kegiatan: 'KISS (Kajian Senin Subuh), Halaqah Masa, Bimbel sore, Rapot Asrama Bulanan', pelaksana: 'Bidang Pendidikan', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Kegiatan edukasi berjalan konsisten' },
-    { id: '7', unit: 'Asrama Putra', bidang: 'Kesantrian Dan Kedisiplinan', standar: '(-)', program: 'Penegakan Disiplin', namaKegiatan: 'Pengawasan Tata Tertib', kegiatan: 'Operasi rambut/kerapihan, sidak kamar, pembinaan santri, reward & punishment', pelaksana: 'Bidang Kesantrian', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Karakter & disiplin santri terbentuk' },
-    { id: '8', unit: 'Asrama Putra', bidang: 'Pondok Tahfidz', standar: '(-)', program: 'Program Tahfidz', namaKegiatan: 'Evaluasi Hafalan Santri', kegiatan: 'Setoran hafalan harian, Tasmi\', Munaqasyah, Wisuda Tahfidz', pelaksana: 'Unit Tahfidz', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Target hafalan santri tercapai' },
-    { id: '9', unit: 'Asrama Putra', bidang: 'Kesantrian Dan Kedisiplinan', standar: '(-)', program: 'Pembiasaan Ibadah', namaKegiatan: 'Manajemen Ibadah Jamaah', kegiatan: 'Shalat berjamaah 5 waktu, Tahajjud bersama, Puasa Sunnah', pelaksana: 'Bidang Ibadah', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Terbentuknya habit ibadah yang kuat' },
-    { id: '10', unit: 'Asrama Putra', bidang: 'Sarana Dan Kebersihan Lingkungan', standar: '(-)', program: 'Lingkungan & Kesehatan', namaKegiatan: 'Sanitasi & Kebersihan Asrama', kegiatan: 'Roan (Kerja bakti), pengelolaan sampah, layanan Poskestren, sosialisasi PHBS', pelaksana: 'Bidang Kebersihan', sasaran: 'Santri', prioritas: 'Program Tetap & Wajib', indikator: 'Lingkungan asrama bersih & sehat' },
-    { id: '11', unit: 'Asrama Putra', bidang: 'Sarana Dan Kebersihan Lingkungan', standar: '(-)', program: 'Pemeliharaan', namaKegiatan: 'Pemeliharaan Fasilitas Umum', kegiatan: 'Perbaikan sarana rusak, pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)', pelaksana: 'Bidang Sarpras', sasaran: 'Fasilitas Asrama', prioritas: 'Program Tetap & Wajib', indikator: 'Sarana prasarana terawat & layak guna' },
-];
+const INITIAL_DATA: RKAReference[] = [];
 
 export default function RKAReferencePage() {
     const [data, setData] = useState<RKAReference[]>(INITIAL_DATA);
@@ -85,6 +44,14 @@ export default function RKAReferencePage() {
     const [customBidangs, setCustomBidangs] = useState<Record<string, string[]>>({});
     const [customPrograms, setCustomPrograms] = useState<Record<string, string[]>>({});
     const [customKegiatans, setCustomKegiatans] = useState<Record<string, Record<string, string[]>>>({});
+
+    // Search Terms for Dropdowns
+    const [programSearch, setProgramSearch] = useState('');
+    const [kegiatanSearch, setKegiatanSearch] = useState('');
+    const [isProgramDropdownOpen, setIsProgramDropdownOpen] = useState(false);
+    const [isKegiatanDropdownOpen, setIsKegiatanDropdownOpen] = useState(false);
+    const programDropdownRef = useRef<HTMLDivElement>(null);
+    const kegiatanDropdownRef = useRef<HTMLDivElement>(null);
 
     // Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,14 +97,32 @@ export default function RKAReferencePage() {
     const availablePrograms = useMemo(() => {
         const base = Object.keys(REFERENCE_RKA[formData.unit] || {});
         const custom = customPrograms[formData.unit] || [];
-        return Array.from(new Set([...base, ...custom]));
-    }, [formData.unit, customPrograms]);
+        const all = Array.from(new Set([...base, ...custom]));
+        if (!programSearch) return all;
+        return all.filter(p => p.toLowerCase().includes(programSearch.toLowerCase()));
+    }, [formData.unit, customPrograms, programSearch]);
 
     const availableKegiatans = useMemo(() => {
         const base = (REFERENCE_RKA[formData.unit] || {})[formData.program] || [];
         const custom = (customKegiatans[formData.unit] || {})[formData.program] || [];
-        return Array.from(new Set([...base, ...custom]));
-    }, [formData.unit, formData.program, customKegiatans]);
+        const all = Array.from(new Set([...base, ...custom]));
+        if (!kegiatanSearch) return all;
+        return all.filter(k => k.toLowerCase().includes(kegiatanSearch.toLowerCase()));
+    }, [formData.unit, formData.program, customKegiatans, kegiatanSearch]);
+
+    // Handle Click Outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (programDropdownRef.current && !programDropdownRef.current.contains(event.target as Node)) {
+                setIsProgramDropdownOpen(false);
+            }
+            if (kegiatanDropdownRef.current && !kegiatanDropdownRef.current.contains(event.target as Node)) {
+                setIsKegiatanDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const filterBidangOptions = useMemo(() => {
         const filteredByUnit = filterUnit ? (STRUKTUR_BIDANG[filterUnit] || []) : Object.values(STRUKTUR_BIDANG).flat();
@@ -148,7 +133,15 @@ export default function RKAReferencePage() {
     const handleOpenAdd = () => {
         setEditingItem(null);
         setIsAddingNewBidang(false);
+        setIsAddingNewProgram(false);
+        setIsAddingNewKegiatan(false);
+        setProgramSearch('');
+        setKegiatanSearch('');
+        setIsProgramDropdownOpen(false);
+        setIsKegiatanDropdownOpen(false);
         setNewBidangName('');
+        setNewProgramName('');
+        setNewKegiatanName('');
         setFormData({
             unit: 'Asrama Putra',
             bidang: '',
@@ -167,7 +160,15 @@ export default function RKAReferencePage() {
     const handleOpenEdit = (item: RKAReference) => {
         setEditingItem(item);
         setIsAddingNewBidang(false);
+        setIsAddingNewProgram(false);
+        setIsAddingNewKegiatan(false);
+        setProgramSearch('');
+        setKegiatanSearch('');
+        setIsProgramDropdownOpen(false);
+        setIsKegiatanDropdownOpen(false);
         setNewBidangName('');
+        setNewProgramName('');
+        setNewKegiatanName('');
         setFormData({
             unit: item.unit,
             bidang: item.bidang,
@@ -322,7 +323,7 @@ export default function RKAReferencePage() {
                         <tbody className="divide-y divide-slate-50">
                             {filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-12 text-center">
+                                    <td colSpan={9} className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center gap-2 text-slate-300">
                                             <AlertCircle className="w-8 h-8 opacity-20" />
                                             <p className="text-xs font-bold uppercase tracking-widest">Tidak ada data ditemukan</p>
@@ -529,28 +530,59 @@ export default function RKAReferencePage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1 relative" ref={programDropdownRef}>
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Program</label>
                                     {!isAddingNewProgram ? (
                                         <div className="relative">
-                                            <select
-                                                required
-                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
-                                                value={formData.program}
-                                                onChange={(e) => {
-                                                    if (e.target.value === 'ADD_NEW') {
-                                                        setIsAddingNewProgram(true);
-                                                    } else {
-                                                        setFormData({ ...formData, program: e.target.value, namaKegiatan: '' });
-                                                    }
-                                                }}
+                                            <div 
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
+                                                onClick={() => setIsProgramDropdownOpen(!isProgramDropdownOpen)}
                                             >
-                                                <option value="" disabled>Pilih Program...</option>
-                                                {availablePrograms.map(prog => (
-                                                    <option key={prog} value={prog}>{prog}</option>
-                                                ))}
-                                                <option value="ADD_NEW" className="text-emerald-600 font-black">+ TAMBAH PROGRAM BARU</option>
-                                            </select>
+                                                <input
+                                                    type="text"
+                                                    placeholder={formData.program || "Cari & Pilih Program..."}
+                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700"
+                                                    value={programSearch}
+                                                    onChange={(e) => {
+                                                        setProgramSearch(e.target.value);
+                                                        setIsProgramDropdownOpen(true);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onFocus={() => setIsProgramDropdownOpen(true)}
+                                                />
+                                                <Filter className="w-3 h-3 text-slate-400" />
+                                            </div>
+
+                                            {isProgramDropdownOpen && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                                                    {availablePrograms.length === 0 ? (
+                                                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
+                                                    ) : (
+                                                        availablePrograms.map(prog => (
+                                                            <div
+                                                                key={prog}
+                                                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
+                                                                onClick={() => {
+                                                                    setFormData({ ...formData, program: prog, namaKegiatan: '' });
+                                                                    setProgramSearch('');
+                                                                    setIsProgramDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                {prog}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
+                                                        onClick={() => {
+                                                            setIsAddingNewProgram(true);
+                                                            setIsProgramDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        + TAMBAH PROGRAM BARU
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
@@ -572,28 +604,59 @@ export default function RKAReferencePage() {
                                     )}
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1 relative" ref={kegiatanDropdownRef}>
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Kegiatan</label>
                                     {!isAddingNewKegiatan ? (
                                         <div className="relative">
-                                            <select
-                                                required
-                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
-                                                value={formData.namaKegiatan}
-                                                onChange={(e) => {
-                                                    if (e.target.value === 'ADD_NEW') {
-                                                        setIsAddingNewKegiatan(true);
-                                                    } else {
-                                                        setFormData({ ...formData, namaKegiatan: e.target.value });
-                                                    }
-                                                }}
+                                            <div 
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
+                                                onClick={() => setIsKegiatanDropdownOpen(!isKegiatanDropdownOpen)}
                                             >
-                                                <option value="" disabled>Pilih Kegiatan...</option>
-                                                {availableKegiatans.map(keg => (
-                                                    <option key={keg} value={keg}>{keg}</option>
-                                                ))}
-                                                <option value="ADD_NEW" className="text-emerald-600 font-black">+ TAMBAH KEGIATAN BARU</option>
-                                            </select>
+                                                <input
+                                                    type="text"
+                                                    placeholder={formData.namaKegiatan || "Cari & Pilih Kegiatan..."}
+                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700"
+                                                    value={kegiatanSearch}
+                                                    onChange={(e) => {
+                                                        setKegiatanSearch(e.target.value);
+                                                        setIsKegiatanDropdownOpen(true);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onFocus={() => setIsKegiatanDropdownOpen(true)}
+                                                />
+                                                <Filter className="w-3 h-3 text-slate-400" />
+                                            </div>
+
+                                            {isKegiatanDropdownOpen && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                                                    {availableKegiatans.length === 0 ? (
+                                                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
+                                                    ) : (
+                                                        availableKegiatans.map(keg => (
+                                                            <div
+                                                                key={keg}
+                                                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
+                                                                onClick={() => {
+                                                                    setFormData({ ...formData, namaKegiatan: keg });
+                                                                    setKegiatanSearch('');
+                                                                    setIsKegiatanDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                {keg}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
+                                                        onClick={() => {
+                                                            setIsAddingNewKegiatan(true);
+                                                            setIsKegiatanDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        + TAMBAH KEGIATAN BARU
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
