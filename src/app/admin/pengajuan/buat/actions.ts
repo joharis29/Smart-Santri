@@ -32,6 +32,23 @@ export async function batchSavePengajuan(payload: {
   const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
   const total_nominal = payload.data.reduce((sum, row) => sum + (Number(row.nominal) || 0), 0);
 
+  // 1.5. Resolve Unit Name to unit_id and jenjang_id
+  let unit_id: string | null = null
+  let jenjang_id: string | null = null
+  
+  if (payload.unit) {
+    const { data: unitData } = await supabase
+      .from('unit')
+      .select('id, jenjang_id')
+      .eq('name', payload.unit)
+      .maybeSingle()
+      
+    if (unitData) {
+      unit_id = unitData.id
+      jenjang_id = unitData.jenjang_id
+    }
+  }
+
   // 2. Create/Update Document Header
   let docId = payload.id;
   
@@ -44,6 +61,8 @@ export async function batchSavePengajuan(payload: {
         periode_tahun: tahunInt,
         status: payload.status,
         unit: payload.unit,
+        unit_id: unit_id,
+        jenjang_id: jenjang_id,
         bidang: payload.bidang,
         jenis: payload.mode,
         total_nominal: total_nominal
@@ -64,6 +83,8 @@ export async function batchSavePengajuan(payload: {
         periode_tahun: tahunInt,
         status: payload.status,
         unit: payload.unit,
+        unit_id: unit_id,
+        jenjang_id: jenjang_id,
         bidang: payload.bidang,
         jenis: payload.mode,
         total_nominal: total_nominal

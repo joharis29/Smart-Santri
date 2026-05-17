@@ -1,10 +1,9 @@
 -- =========================================================================================
 -- MIGRASI DATABASE: MEMPERBAIKI OTORITAS UPDATE BENDAHARA UNIT/JENJANG & ENUM STATUS (INDESTRUCTIBLE)
 -- =========================================================================================
--- Skrip SQL ini memperbarui kebijakan RLS 'dokumen_update_policy' agar Bendahara Unit,
--- Kepala Unit, Bendahara Jenjang, dan Kepala Jenjang diizinkan secara resmi untuk mengubah
--- status dokumen RKA/LPJ milik unit/jenjang kerjanya sendiri (baik berdasarkan profil aktif
--- maupun tabel profiles_multi_role) dengan andal dan tanpa ketergantungan fungsi pembantu.
+-- Skrip SQL ini memperbarui RLS, tipe ENUM status_pengajuan, dan secara otomatis melakukan
+-- pengisian (retroactive backfill) untuk kolom unit_id dan jenjang_id pada semua dokumen
+-- pengajuan lama yang masih bernilai NULL di database Anda.
 --
 -- CARA MENJALANKAN DI SUPABASE:
 -- 1. Masuk ke Supabase Dashboard proyek Anda (https://supabase.com).
@@ -13,23 +12,31 @@
 -- 4. Paste skrip SQL ini sepenuhnya, lalu klik "Run".
 -- =========================================================================================
 
--- 1. Pastikan status 'REKAP_BENDAHARA' terdaftar di tipe ENUM
+-- 1. Pastikan status 'REKAP_BENDAHARA' terdaftar di tipe ENUM status_pengajuan
 ALTER TYPE public.status_pengajuan ADD VALUE IF NOT EXISTS 'REKAP_BENDAHARA';
 
--- 2. Hapus kebijakan RLS lama pada tabel dokumen_pengajuan
+-- 2. Retroactive Backfill: Isi unit_id & jenjang_id untuk semua dokumen lama agar lolos RLS
+UPDATE public.dokumen_pengajuan d
+SET 
+  unit_id = u.id,
+  jenjang_id = u.jenjang_id
+FROM public.unit u
+WHERE d.unit = u.name AND (d.unit_id IS NULL OR d.jenjang_id IS NULL);
+
+-- 3. Hapus kebijakan RLS lama pada tabel dokumen_pengajuan
 DROP POLICY IF EXISTS "dokumen_update_policy" ON public.dokumen_pengajuan;
 
--- 3. Buat ulang kebijakan RLS baru yang mencakup semua wewenang secara kokoh
+-- 4. Buat ulang kebijakan RLS baru yang mencakup semua wewenang secara kokoh dan langsung (Direct Query)
 CREATE POLICY "dokumen_update_policy" ON public.dokumen_pengajuan
   FOR UPDATE TO authenticated
   USING (
-    -- 1. Admin & Bendahara Pusat memiliki otoritas penuh edit/approve dokumen apa saja
+    -- Admin & Bendahara Pusat memiliki otoritas penuh edit/approve dokumen apa saja
     (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('ADMINISTRATOR', 'BENDAHARA_PUSAT')
     
-    -- 2. Pembuat dokumen hanya dapat mengubah isi jika status saat ini masih berwujud 'DRAFT' atau 'REVISI'
+    -- Pembuat dokumen hanya dapat mengubah isi jika status saat ini masih berwujud 'DRAFT' atau 'REVISI'
     OR (pembuat_id = auth.uid() AND status IN ('DRAFT', 'REVISI'))
     
-    -- 3. Kepala & Bendahara Unit (Berdasarkan Unit Aktif atau tabel Multi-Role)
+    -- Kepala & Bendahara Unit (Berdasarkan Unit Aktif atau tabel Multi-Role)
     OR (
       (
         (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('KEPALA_UNIT', 'BENDAHARA_UNIT')
@@ -41,7 +48,7 @@ CREATE POLICY "dokumen_update_policy" ON public.dokumen_pengajuan
       )
     )
     
-    -- 4. Kepala & Bendahara Jenjang (Berdasarkan Jenjang Aktif atau tabel Multi-Role)
+    -- Kepala & Bendahara Jenjang (Dapat menyetujui dokumen di bawah jenjangnya secara otomatis)
     OR (
       (
         (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('KEPALA_JENJANG', 'BENDAHARA_JENJANG')
