@@ -464,7 +464,7 @@ function BuatPengajuanContent() {
             if (!isCenterUser && unitName) {
               setUnit(unitName)
             } else {
-              const savedActiveUnit = localStorage.getItem('activeUnit')
+              const savedActiveUnit = localStorage.getItem(`activeUnit_${user.id}`) || localStorage.getItem('activeUnit')
               if (savedActiveUnit) {
                 setUnit(savedActiveUnit)
               }

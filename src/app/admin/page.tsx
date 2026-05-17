@@ -46,6 +46,7 @@ export default function AdminDashboardPage() {
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'STAFF' | 'BENDAHARA_UNIT' | 'KEPALA_UNIT' | 'BENDAHARA_PUSAT'>('BENDAHARA_PUSAT');
   const [activeTab, setActiveTab] = useState<'ALL' | 'RKA' | 'LPJ'>('ALL');
+  const [userId, setUserId] = useState<string>('');
 
   // --- FILTER & MODAL STATE ---
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -304,6 +305,7 @@ export default function AdminDashboardPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        setUserId(user.id);
 
         const { data: profile } = await supabase
           .from('profiles')
@@ -312,18 +314,20 @@ export default function AdminDashboardPage() {
           .single();
 
         if (profile) {
-          const savedRole = localStorage.getItem('activeRole') || profile.role;
+          const activeRoleKey = `activeRole_${user.id}`;
+          const activeUnitKey = `activeUnit_${user.id}`;
+          const savedRole = localStorage.getItem(activeRoleKey) || profile.role;
           const cleanRole = savedRole.toUpperCase();
           const isCenterRole = ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
 
-          let finalUnit = localStorage.getItem('activeUnit') || 'Pusat (Yayasan)';
+          let finalUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
 
           // Strict RBAC Enforcement: If NOT a center/super-user role, lock them strictly to their database-assigned unit!
           if (!isCenterRole) {
             const dbUnitName = (Array.isArray(profile.unit) ? profile.unit[0]?.name : (profile.unit as any)?.name) || 'Pusat (Yayasan)';
             if (finalUnit !== dbUnitName) {
               finalUnit = dbUnitName;
-              localStorage.setItem('activeUnit', dbUnitName);
+              localStorage.setItem(activeUnitKey, dbUnitName);
               // Sync with active profile action
               await switchActiveProfile({ role: savedRole, unitName: dbUnitName });
             }
@@ -536,8 +540,10 @@ export default function AdminDashboardPage() {
                     onChange={async (e) => {
                       const val = e.target.value;
                       setActiveUnit(val);
-                      localStorage.setItem('activeUnit', val);
-                      const savedRole = localStorage.getItem('activeRole') || 'BENDAHARA_PUSAT';
+                      const activeRoleKey = userId ? `activeRole_${userId}` : 'activeRole';
+                      const activeUnitKey = userId ? `activeUnit_${userId}` : 'activeUnit';
+                      localStorage.setItem(activeUnitKey, val);
+                      const savedRole = localStorage.getItem(activeRoleKey) || 'BENDAHARA_PUSAT';
                       await switchActiveProfile({ role: savedRole, unitName: val });
                       window.location.reload();
                     }}

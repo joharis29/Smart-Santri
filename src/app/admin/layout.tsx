@@ -72,7 +72,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [expensesOpen, setExpensesOpen] = useState(false);
     const [incomeOpen, setIncomeOpen] = useState(false);
-    const [userProfile, setUserProfile] = useState<{ name: string; role: string } | null>(null);
+        const [userProfile, setUserProfile] = useState<{ name: string; role: string } | null>(null);
+    const [userId, setUserId] = useState<string>('');
     const [actualRole, setActualRole] = useState<string>('');
     const [activeRole, setActiveRole] = useState<string>('');
     const [activeUnit, setActiveUnit] = useState<string>('Pusat (Yayasan)');
@@ -85,6 +86,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const supabase = createClient();
                 const { data: { user }, error: authError } = await supabase.auth.getUser();
                 if (authError || !user) return;
+
+                setUserId(user.id);
 
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
@@ -111,15 +114,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }
 
                 // Load simulated role and unit from localStorage, or fallback to real database profile
-                const savedRole = localStorage.getItem('activeRole') || profile.role;
-                const savedUnit = localStorage.getItem('activeUnit') || 'Pusat (Yayasan)';
+                const activeRoleKey = `activeRole_${user.id}`;
+                const activeUnitKey = `activeUnit_${user.id}`;
+                const savedRole = localStorage.getItem(activeRoleKey) || profile.role;
+                const savedUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
                 
                 setActiveRole(savedRole);
                 setActiveUnit(savedUnit);
 
                 // Pre-populate if not set
-                if (!localStorage.getItem('activeRole')) localStorage.setItem('activeRole', profile.role);
-                if (!localStorage.getItem('activeUnit')) localStorage.setItem('activeUnit', savedUnit);
+                if (!localStorage.getItem(activeRoleKey)) localStorage.setItem(activeRoleKey, profile.role);
+                if (!localStorage.getItem(activeUnitKey)) localStorage.setItem(activeUnitKey, savedUnit);
 
                 const mapRoleToDisplay = (roleDb: string) => {
                     switch (roleDb) {
@@ -146,8 +151,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         };
 
         const interval = setInterval(() => {
-            const savedRole = localStorage.getItem('activeRole');
-            const savedUnit = localStorage.getItem('activeUnit');
+            if (!userId) return;
+            const activeRoleKey = `activeRole_${userId}`;
+            const activeUnitKey = `activeUnit_${userId}`;
+            const savedRole = localStorage.getItem(activeRoleKey);
+            const savedUnit = localStorage.getItem(activeUnitKey);
             if (savedRole && savedRole !== activeRole) {
                 setActiveRole(savedRole);
             }
@@ -158,12 +166,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         fetchProfile();
         return () => clearInterval(interval);
-    }, [activeRole, activeUnit]);
+    }, [activeRole, activeUnit, userId]);
 
     const handleLogout = async () => {
         try {
             const supabase = createClient();
             await supabase.auth.signOut();
+            if (userId) {
+                localStorage.removeItem(`activeRole_${userId}`);
+                localStorage.removeItem(`activeUnit_${userId}`);
+            }
+            // Clear legacy keys to prevent leaks
+            localStorage.removeItem('activeRole');
+            localStorage.removeItem('activeUnit');
             window.location.href = '/login';
         } catch (err) {
             console.error('Error during sign out:', err);
@@ -394,8 +409,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                             const [newRole, newUnit] = e.target.value.split(':');
                                             const res = await switchActiveProfile({ role: newRole, unitName: newUnit });
                                             if (res.success) {
-                                                localStorage.setItem('activeRole', newRole);
-                                                localStorage.setItem('activeUnit', newUnit);
+                                                const activeRoleKey = userId ? `activeRole_${userId}` : 'activeRole';
+                                                localStorage.setItem(activeRoleKey, newRole);
+                                                const activeUnitKey = userId ? `activeUnit_${userId}` : 'activeUnit';
+                                                localStorage.setItem(activeUnitKey, newUnit);
                                                 window.location.reload();
                                             } else {
                                                 alert(res.error || 'Gagal mengubah peran/unit aktif');
