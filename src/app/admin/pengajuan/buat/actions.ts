@@ -221,29 +221,37 @@ export async function deletePengajuan(id: string) {
 export async function revisiPengajuan(id: string, catatan: string) {
   const supabase = await createClient()
   
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('dokumen_pengajuan')
     .update({ 
       status: 'DRAFT',
       catatan_revisi: catatan
     })
     .eq('id', id)
+    .select()
 
   if (error) return { error: error.message }
+  if (!data || data.length === 0) {
+    return { error: "Pembaruan ditolak oleh sistem keamanan (RLS). Pastikan peran Anda memiliki hak akses update dokumen di unit/jenjang ini." }
+  }
 
   return { success: true }
 }
 export async function verifikasiPengajuan(id: string, nextStatus?: string) {
   const supabase = await createClient()
   
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('dokumen_pengajuan')
     .update({ 
       status: nextStatus || 'MENUNGGU_KEPALA'
     })
     .eq('id', id)
+    .select()
 
   if (error) return { error: error.message }
+  if (!data || data.length === 0) {
+    return { error: "Pembaruan ditolak oleh sistem keamanan (RLS). Pastikan peran Anda memiliki hak akses update dokumen di unit/jenjang ini." }
+  }
 
   return { success: true }
 }
