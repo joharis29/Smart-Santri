@@ -189,17 +189,29 @@ export default function UserManagementPage() {
         if (!res.success) throw new Error(res.error);
         const newId = res.userId!;
 
-        const newUser: UserData = {
-          id: newId,
-          name: formData.name,
-          email: formData.email || `${formData.name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
-          role: formData.role,
-          unit: formData.unit,
-          status: 'Aktif',
-          joinedAt: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-        };
-        setUsers([newUser, ...users]);
-        alert(`Berhasil: Akun login & profil untuk ${formData.name} berhasil dibuat!`);
+        const emailExists = users.some(u => u.email.toLowerCase() === formData.email.toLowerCase());
+        
+        if (emailExists) {
+          setUsers(users.map(u => u.email.toLowerCase() === formData.email.toLowerCase() ? {
+            ...u,
+            name: formData.name,
+            role: formData.role,
+            unit: formData.unit
+          } : u));
+          alert(`Berhasil: Akun ${formData.email} sudah ada. Peran & unit aktifnya telah sukses dialihkan/diperbarui!`);
+        } else {
+          const newUser: UserData = {
+            id: newId,
+            name: formData.name,
+            email: formData.email || `${formData.name.toLowerCase().replace(/\s+/g, '.')}@smartsantri.com`,
+            role: formData.role,
+            unit: formData.unit,
+            status: 'Aktif',
+            joinedAt: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+          };
+          setUsers([newUser, ...users]);
+          alert(`Berhasil: Akun login & profil untuk ${formData.name} berhasil dibuat!`);
+        }
       } else {
         const { error } = await supabase
           .from('profiles')
