@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin } from './actions';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 type UserData = {
   id: number | string;
@@ -162,45 +162,126 @@ export default function UserManagementPage() {
     return matchesSearch && matchesRole && matchesStatus && matchesUnit;
   });
 
-  // Export users to Excel (.xlsx)
-  const handleExportExcel = () => {
+  // Export users to Excel (.xlsx) with premium styling matching the user's reference
+  const handleExportExcel = async () => {
     if (filteredUsers.length === 0) {
       alert('Tidak ada data pengguna untuk diekspor!');
       return;
     }
 
-    // 1. Prepare data with clean Indonesian headers
-    const dataToExport = filteredUsers.map((user, idx) => ({
-      'No': idx + 1,
-      'Nama Lengkap': user.name,
-      'Email Address': user.email,
-      'Peran Aktif': user.role,
-      'Unit Kerja': user.unit,
-      'Status': user.status,
-      'Tanggal Terdaftar': user.joinedAt
-    }));
+    try {
+      // 1. Create workbook and worksheet
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Data Staf');
 
-    // 2. Convert JSON data to sheet
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      // 2. Define headers and columns config
+      worksheet.columns = [
+        { header: 'No', key: 'no', width: 6 },
+        { header: 'Nama Lengkap', key: 'name', width: 28 },
+        { header: 'Email Address', key: 'email', width: 32 },
+        { header: 'Peran Aktif', key: 'role', width: 22 },
+        { header: 'Unit Kerja', key: 'unit', width: 22 },
+        { header: 'Status', key: 'status', width: 12 },
+        { header: 'Tanggal Terdaftar', key: 'joinedAt', width: 18 }
+      ];
 
-    // 3. Set column widths automatically for supreme readability
-    const colWidths = [
-      { wch: 6 },   // No
-      { wch: 28 },  // Nama Lengkap
-      { wch: 32 },  // Email Address
-      { wch: 22 },  // Peran Aktif
-      { wch: 22 },  // Unit Kerja
-      { wch: 12 },  // Status
-      { wch: 18 }   // Tanggal Terdaftar
-    ];
-    worksheet['!cols'] = colWidths;
+      // 3. Add rows from filteredUsers
+      filteredUsers.forEach((user, idx) => {
+        worksheet.addRow({
+          no: idx + 1,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          unit: user.unit,
+          status: user.status,
+          joinedAt: user.joinedAt
+        });
+      });
 
-    // 4. Create workbook and append the sheet
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Staf');
+      // 4. Style cells (Header & Body) exactly matching user's image request
+      // Style the header row (Row 1)
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 24;
+      
+      headerRow.eachCell((cell) => {
+        // Bold, Rata Tengah, Font Times New Roman 11pt
+        cell.font = {
+          name: 'Times New Roman',
+          size: 11,
+          bold: true,
+          color: { argb: 'FF000000' } // Black text
+        };
+        // Soft green background matching screenshot (#70C160 -> argb: 'FF70C160')
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF70C160' }
+        };
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: 'center'
+        };
+        // Thin solid black borders
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+      });
 
-    // 5. Trigger client-side file download
-    XLSX.writeFile(workbook, `Daftar_Staf_Smart_Santri_${new Date().toISOString().split('T')[0]}.xlsx`);
+      // Style data rows (Rows 2 onwards)
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header row
+        row.height = 20;
+        row.eachCell((cell, colNumber) => {
+          // Font Times New Roman 11pt, Regular
+          cell.font = {
+            name: 'Times New Roman',
+            size: 11,
+            bold: false,
+            color: { argb: 'FF000000' }
+          };
+          
+          // Alignment
+          if (colNumber === 1 || colNumber === 6) {
+            // Column 1 (No) & Column 6 (Status): Rata Tengah
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: 'center'
+            };
+          } else {
+            // Other columns: Rata Kiri
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: 'left'
+            };
+          }
+
+          // Thin solid black borders for all cells
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
+          };
+        });
+      });
+
+      // 5. Generate Excel buffer and trigger file download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Daftar_Staf_Smart_Santri_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error generating Excel file:', error);
+      alert('Gagal mengekspor data ke Excel.');
+    }
   };
 
   // Handlers
