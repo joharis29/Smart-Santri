@@ -30,7 +30,8 @@ export async function registerUserByAdmin(userData: {
       // Reset password jika admin menginput password baru
       if (userData.password) {
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          password: userData.password
+          password: userData.password,
+          email_confirm: true
         });
         if (updateError) {
           throw new Error(`Gagal memperbarui kata sandi akun yang sudah terdaftar: ${updateError.message}`);
@@ -150,7 +151,8 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     const supabaseAdmin = createAdminClient();
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      password: newPassword
+      password: newPassword,
+      email_confirm: true
     });
 
     if (error) {
