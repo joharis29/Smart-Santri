@@ -297,16 +297,26 @@ export default function AdminDashboardPage() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, unit:unit_id(name)')
           .eq('id', user.id)
           .single();
 
         if (profile) {
-          const savedRole = localStorage.getItem('activeRole');
-          const savedUnit = localStorage.getItem('activeUnit');
+          const savedRole = localStorage.getItem('activeRole') || profile.role;
+          const cleanRole = savedRole.toUpperCase();
+          const isCenterRole = ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
 
-          if (savedUnit) {
-            setActiveUnit(savedUnit);
+          let finalUnit = localStorage.getItem('activeUnit') || 'Pusat (Yayasan)';
+
+          // Strict RBAC Enforcement: If NOT a center/super-user role, lock them strictly to their database-assigned unit!
+          if (!isCenterRole) {
+            const dbUnitName = profile.unit?.name || 'Pusat (Yayasan)';
+            if (finalUnit !== dbUnitName) {
+              finalUnit = dbUnitName;
+              localStorage.setItem('activeUnit', dbUnitName);
+              // Sync with active profile action
+              await switchActiveProfile({ role: savedRole, unitName: dbUnitName });
+            }
           }
 
           const mapProfileRoleToDashboard = (dbRole: string) => {
@@ -326,11 +336,8 @@ export default function AdminDashboardPage() {
             }
           };
 
-          if (savedRole) {
-            setUserRole(mapProfileRoleToDashboard(savedRole));
-          } else {
-            setUserRole(mapProfileRoleToDashboard(profile.role));
-          }
+          setActiveUnit(finalUnit);
+          setUserRole(mapProfileRoleToDashboard(savedRole));
         }
       } catch (err) {
         console.error('Error fetching dashboard user role:', err);
@@ -445,21 +452,29 @@ export default function AdminDashboardPage() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-tighter">Unit:</h2>
             <div className="relative">
-              <select 
-                className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
-                value={activeUnit}
-                onChange={async (e) => {
-                  const val = e.target.value;
-                  setActiveUnit(val);
-                  localStorage.setItem('activeUnit', val);
-                  const savedRole = localStorage.getItem('activeRole') || 'BENDAHARA_PUSAT';
-                  await switchActiveProfile({ role: savedRole, unitName: val });
-                  window.location.reload();
-                }}
-              >
-                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {userRole === 'BENDAHARA_PUSAT' ? (
+                <>
+                  <select 
+                    className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
+                    value={activeUnit}
+                    onChange={async (e) => {
+                      const val = e.target.value;
+                      setActiveUnit(val);
+                      localStorage.setItem('activeUnit', val);
+                      const savedRole = localStorage.getItem('activeRole') || 'BENDAHARA_PUSAT';
+                      await switchActiveProfile({ role: savedRole, unitName: val });
+                      window.location.reload();
+                    }}
+                  >
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </>
+              ) : (
+                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-black px-2.5 py-1 rounded-md text-[11px] tracking-tight">
+                  🔒 {activeUnit}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -517,23 +532,40 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Widgets Area */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {activeCategory === 'pusat' && (
-            <YayasanWidgets 
-                preferences={prefs} 
-                simulatedBalances={{ spp: balances.spp, yayasan: balances.yayasan }} 
-            />
-        )}
-        {activeCategory === 'pendidikan' && (
-            <PendidikanWidgets 
-                unitType={activeUnit} 
-                preferences={prefs} 
-                simulatedBalances={{ yayasan: balances.yayasan, bos: balances.bos }}
-            />
-        )}
-        {activeCategory === 'asrama' && <AsramaWidgets unitType={activeUnit} preferences={prefs} />}
-        {activeCategory === 'dapur' && <DapurWidgets preferences={prefs} />}
-      </div>
+      {userRole !== 'STAFF' ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {activeCategory === 'pusat' && (
+              <YayasanWidgets 
+                  preferences={prefs} 
+                  simulatedBalances={{ spp: balances.spp, yayasan: balances.yayasan }} 
+              />
+          )}
+          {activeCategory === 'pendidikan' && (
+              <PendidikanWidgets 
+                  unitType={activeUnit} 
+                  preferences={prefs} 
+                  simulatedBalances={{ yayasan: balances.yayasan, bos: balances.bos }}
+              />
+          )}
+          {activeCategory === 'asrama' && <AsramaWidgets unitType={activeUnit} preferences={prefs} />}
+          {activeCategory === 'dapur' && <DapurWidgets preferences={prefs} />}
+        </div>
+      ) : (
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+              <Banknote className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">Sumber Dana Pesantren</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Akses terbatas demi menjaga kerahasiaan keuangan pesantren</p>
+            </div>
+          </div>
+          <span className="bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded text-[8px] uppercase tracking-widest border border-slate-200">
+            🔒 Terkunci
+          </span>
+        </div>
+      )}
 
       {/* Integrated Audit Trail with Working Filter */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
