@@ -1273,18 +1273,6 @@ export default function BuatRealisasiPage() {
 
         // LPJ Footer
         worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
-        worksheet.getCell(`G${currentRow}`).value = 'Alokasi Sumber Dana';
-        currentRow++;
-
-        (lpjData.details.fundingSplits || []).forEach((split) => {
-            worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
-            worksheet.getCell(`G${currentRow}`).value = `${split.source} (${split.percent}%)`;
-            worksheet.getCell(`I${currentRow}`).value = Number(split.nominal);
-            worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
-            currentRow++;
-        });
-        
-        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
         worksheet.getCell(`G${currentRow}`).value = 'Total Realisasi';
         worksheet.getCell(`G${currentRow}`).font = { bold: true };
         worksheet.getCell(`I${currentRow}`).value = Number(lpjData.nominal);
@@ -1307,9 +1295,7 @@ export default function BuatRealisasiPage() {
             }
         }
         // Bold LPJ Summary Titles
-        for (let r = lpjEndRow - (lpjData.details.fundingSplits?.length || 0) - 1; r <= lpjEndRow; r++) {
-            worksheet.getCell(r, 7).font = { bold: true };
-        }
+        worksheet.getCell(lpjEndRow, 7).font = { bold: true };
 
         // RIGHT SIDEBAR: Selisih, Subsidi Silang, & Catatan
         worksheet.mergeCells(`K${lpjStartRow}:L${lpjStartRow+1}`);
@@ -2254,95 +2240,6 @@ export default function BuatRealisasiPage() {
                                                 )}
                                             </tbody>
                                         </table>
-                                    </div>
-                                    <div className="md:col-span-2 space-y-6">
-                                         {lpjRows.map((row) => (
-                                             <div key={row.id} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-slate-100">
-                                                 {/* Visual Summary */}
-                                                 <div className="bg-amber-50/50 border border-amber-100 rounded-3xl p-5 space-y-3">
-                                                     <label className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
-                                                         <Banknote className="w-3.5 h-3.5" /> Total Realisasi
-                                                     </label>
-                                                     <div className="space-y-1">
-                                                         <p className="text-2xl font-black text-amber-900 tracking-tight">Rp {row.nominal.toLocaleString('id-ID')}</p>
-                                                     </div>
-                                                     <div className="bg-white/60 p-3 rounded-2xl border border-amber-200/50">
-                                                         <p className="text-[9px] text-amber-800 leading-relaxed italic font-medium">
-                                                             * Alokasikan sumber dana untuk realisasi ini berdasarkan persentase atau nominal.
-                                                         </p>
-                                                     </div>
-                                                 </div>
-
-                                                 {/* Funding Splits Grid */}
-                                                 <div className="md:col-span-2 space-y-4">
-                                                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                                         <div className="flex items-center gap-3">
-                                                             <label className="text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">Alokasi Sumber Dana (Smart Split)</label>
-                                                             {(() => {
-                                                                 const totalP = row.details.fundingSplits.reduce((acc, s) => acc + (Number(s.percent) || 0), 0);
-                                                                 const isPerfect = Math.round(totalP) === 100;
-                                                                 return (
-                                                                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isPerfect ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'} transition-all`}>
-                                                                         <div className={`w-1.5 h-1.5 rounded-full ${isPerfect ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
-                                                                         <span className="text-[9px] font-black uppercase tracking-tighter">Total Akumulasi: {Math.round(totalP)}%</span>
-                                                                     </div>
-                                                                 );
-                                                             })()}
-                                                         </div>
-                                                         <button 
-                                                             onClick={() => addLpjFundingSplit(row.id)}
-                                                             className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline uppercase tracking-widest"
-                                                         >
-                                                             <Plus className="w-3 h-3" /> Tambah Alokasi Dana
-                                                         </button>
-                                                     </div>
-                                                     <div className="space-y-2">
-                                                         {row.details.fundingSplits.map((split, sIdx) => (
-                                                             <div key={sIdx} className="flex gap-2 items-center bg-white p-2 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-2">
-                                                                 <div className="flex-1">
-                                                                     <select 
-                                                                         value={split.source}
-                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'source', e.target.value)}
-                                                                         className="w-full px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
-                                                                     >
-                                                                         <option value="">Pilih Sumber...</option>
-                                                                         {availableFundSources.map(source => (
-                                                                             <option key={source} value={source}>{source}</option>
-                                                                         ))}
-                                                                     </select>
-                                                                 </div>
-                                                                 <div className="w-20 relative">
-                                                                     <input 
-                                                                         type="number"
-                                                                         value={split.percent || ''}
-                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'percent', e.target.value)}
-                                                                         className="w-full pl-3 pr-6 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs font-black text-amber-800 outline-none focus:ring-2 focus:ring-amber-500"
-                                                                         placeholder="0"
-                                                                     />
-                                                                     <Percent className="absolute right-2 top-2 w-3 h-3 text-amber-400" />
-                                                                 </div>
-                                                                 <div className="w-36 relative">
-                                                                     <span className="absolute left-2 top-2 text-[10px] font-bold text-amber-400">Rp</span>
-                                                                     <input 
-                                                                         type="number" 
-                                                                         value={split.nominal || ''}
-                                                                         onChange={(e) => updateLpjFundingSplit(row.id, sIdx, 'nominal', e.target.value)}
-                                                                         className="w-full pl-6 pr-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs font-black text-amber-800 outline-none focus:ring-2 focus:ring-amber-500 text-right"
-                                                                         placeholder="0"
-                                                                     />
-                                                                 </div>
-                                                                 <button 
-                                                                     onClick={() => removeLpjFundingSplit(row.id, sIdx)}
-                                                                     className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                                                                 >
-                                                                     <Trash2 className="w-3.5 h-3.5" />
-                                                                 </button>
-                                                             </div>
-                                                         ))}
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         ))}
                                     </div>
                                 </div>
                             </div>
