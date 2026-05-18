@@ -1299,14 +1299,7 @@ export default function BuatRealisasiPage() {
     };
 
     const handleReset = () => {
-        if (window.confirm("Apakah Anda yakin ingin menghapus semua data input? Seluruh baris, narasi, dan lampiran akan dikosongkan.")) {
-            setUnit('');
-            setBidang('');
-            setBulan('');
-            setTahunAjaran('');
-            setSelectedRkaId('');
-            setActiveItemId(null);
-            setSelectedRkaData(null);
+        if (window.confirm("Apakah Anda yakin ingin mereset Tabel Realisasi Anggaran (LPJ)?")) {
             setLpjRows([
                 { 
                     id: '1', 
