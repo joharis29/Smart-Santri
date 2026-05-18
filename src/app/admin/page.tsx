@@ -1006,9 +1006,12 @@ export default function AdminDashboardPage() {
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Akumulasi Dana:</span>
                     {(() => {
                         const summary: Record<string, number> = {};
+                        const subsidiSummary: Record<string, number> = {};
+                        
                         selectedTrxForReview.items?.forEach((it: any) => {
                             let details: any = {};
                             try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                            
                             const splits = details.fundingSplits || [];
                             if (Array.isArray(splits)) {
                                 splits.forEach((s: any) => {
@@ -1017,14 +1020,35 @@ export default function AdminDashboardPage() {
                                     if (amount > 0) summary[source] = (summary[source] || 0) + amount;
                                 });
                             }
+
+                            const subsidi = details.subsidiSources || [];
+                            if (Array.isArray(subsidi)) {
+                                subsidi.forEach((s: any) => {
+                                    const source = s.source || s.sumber || 'Lainnya';
+                                    const amount = Number(s.amount || s.nominal || 0);
+                                    if (amount > 0) subsidiSummary[source] = (subsidiSummary[source] || 0) + amount;
+                                });
+                            }
                         });
-                        return Object.entries(summary).map(([source, amount], idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
-                                <div className={`w-1.5 h-1.5 rounded-full ${source.toLowerCase().includes('bos') ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">{source}:</span>
-                                <span className="text-[9px] font-black text-slate-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
-                            </div>
-                        ));
+                        
+                        return (
+                            <Fragment>
+                                {Object.entries(summary).map(([source, amount], idx) => (
+                                    <div key={`main-${idx}`} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${source.toLowerCase().includes('bos') ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                        <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">{source}:</span>
+                                        <span className="text-[9px] font-black text-slate-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                ))}
+                                {Object.entries(subsidiSummary).map(([source, amount], idx) => (
+                                    <div key={`subsidi-${idx}`} className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <span className="text-[9px] font-black text-emerald-800 uppercase tracking-tighter">{source} (Subsidi Silang):</span>
+                                        <span className="text-[9px] font-black text-emerald-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                ))}
+                            </Fragment>
+                        );
                     })()}
                 </div>
             )}
