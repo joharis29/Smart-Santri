@@ -2088,6 +2088,19 @@ export default function BuatRealisasiPage() {
 
                         {/* File Upload / Bukti Nota & Variance Box */}
                         <div className="space-y-4">
+                            {/* Catatan / Keterangan Realisasi */}
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-emerald-600" /> Catatan / Keterangan Realisasi
+                                </label>
+                                <textarea
+                                    value={narasi}
+                                    onChange={(e) => setNarasi(e.target.value)}
+                                    placeholder="Masukkan catatan tambahan mengenai realisasi ini (misalnya: rincian kendala, alasan selisih anggaran, dsb)..."
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 min-h-[90px] resize-y placeholder:text-slate-400 transition-all"
+                                />
+                            </div>
+
                             {/* File Upload / Bukti Nota */}
                             <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
                                 <div className="flex items-center justify-between">
