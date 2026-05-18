@@ -729,7 +729,7 @@ export default function InputPendapatanPage() {
                                 title="Ekspor data ke Excel"
                             >
                                 <FileSpreadsheet className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] tracking-widest uppercase hidden md:inline">Export Excel</span>
+                                <span className="text-[9px] tracking-widest uppercase hidden md:inline">Ekspor Excel</span>
                             </button>
 
                             <button 

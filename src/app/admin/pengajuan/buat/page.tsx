@@ -1581,14 +1581,14 @@ function BuatPengajuanContent() {
               className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-amber-900 font-extrabold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-amber-100"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              Import Excel
+              Impor Excel
             </button>
             <button 
               onClick={handleExportExcelProfessional}
               className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-extrabold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
-              Export Excel
+              Ekspor Excel
             </button>
           </div>
         </div>

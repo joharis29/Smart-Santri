@@ -1543,7 +1543,7 @@ export default function BuatRealisasiPage() {
                                 <div className="bg-emerald-50 p-1.5 rounded-lg text-emerald-600 group-hover:bg-emerald-100 transition-colors">
                                     <FileSpreadsheet className="w-4 h-4" />
                                 </div>
-                                <span>Export Excel</span>
+                                <span>Ekspor Excel</span>
                             </button>
                         </div>
                     </div>
@@ -1755,7 +1755,7 @@ export default function BuatRealisasiPage() {
                                         className="text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 text-[10px] font-black transition-all uppercase tracking-widest"
                                     >
                                         <FileSpreadsheet className="w-3.5 h-3.5" />
-                                        Import Excel
+                                        Impor Excel
                                     </button>
                                     <button 
                                         onClick={handleReset}
