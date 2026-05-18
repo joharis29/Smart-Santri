@@ -1008,28 +1008,75 @@ export default function AdminDashboardPage() {
                         const summary: Record<string, number> = {};
                         const subsidiSummary: Record<string, number> = {};
                         
-                        selectedTrxForReview.items?.forEach((it: any) => {
-                            let details: any = {};
-                            try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                            
-                            const splits = details.fundingSplits || [];
-                            if (Array.isArray(splits)) {
-                                splits.forEach((s: any) => {
-                                    const source = s.source || s.sumber || 'Lainnya';
-                                    const amount = Number(s.amount || s.nominal || 0);
-                                    if (amount > 0) summary[source] = (summary[source] || 0) + amount;
-                                });
-                            }
+                        if (selectedTrxForReview.type === 'RKA') {
+                            selectedTrxForReview.items?.forEach((it: any) => {
+                                let details: any = {};
+                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                
+                                const splits = details.fundingSplits || [];
+                                if (Array.isArray(splits)) {
+                                    splits.forEach((s: any) => {
+                                        const source = s.source || s.sumber || 'Lainnya';
+                                        const amount = Number(s.nominal || s.amount || 0);
+                                        if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                    });
+                                }
+                            });
+                        } else {
+                            // LPJ: Subsidi Silang from LPJ
+                            selectedTrxForReview.items?.forEach((it: any) => {
+                                let details: any = {};
+                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                
+                                const subsidi = details.subsidiSources || [];
+                                if (Array.isArray(subsidi)) {
+                                    subsidi.forEach((s: any) => {
+                                        const source = s.source || s.sumber || 'Lainnya';
+                                        const amount = Number(s.nominal || s.amount || 0);
+                                        if (amount > 0) subsidiSummary[source] = (subsidiSummary[source] || 0) + amount;
+                                    });
+                                }
+                            });
 
-                            const subsidi = details.subsidiSources || [];
-                            if (Array.isArray(subsidi)) {
-                                subsidi.forEach((s: any) => {
-                                    const source = s.source || s.sumber || 'Lainnya';
-                                    const amount = Number(s.amount || s.nominal || 0);
-                                    if (amount > 0) subsidiSummary[source] = (subsidiSummary[source] || 0) + amount;
+                            // LPJ: Alokasi dari RKA Rujukan
+                            if (parentRkaData) {
+                                const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
+                                const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
+                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                    return rkaActivityName === lpjActivityName;
+                                }) || [];
+                                const rkaItems = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
+
+                                rkaItems.forEach((it: any) => {
+                                    let rkaDetails: any = {};
+                                    try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                    
+                                    const splits = rkaDetails.fundingSplits || [];
+                                    if (Array.isArray(splits)) {
+                                        splits.forEach((s: any) => {
+                                            const source = s.source || s.sumber || 'Lainnya';
+                                            const amount = Number(s.nominal || s.amount || 0);
+                                            if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                        });
+                                    }
+                                });
+                            } else {
+                                // Fallback: use LPJ's own splits
+                                selectedTrxForReview.items?.forEach((it: any) => {
+                                    let details: any = {};
+                                    try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                    
+                                    const splits = details.fundingSplits || [];
+                                    if (Array.isArray(splits)) {
+                                        splits.forEach((s: any) => {
+                                            const source = s.source || s.sumber || 'Lainnya';
+                                            const amount = Number(s.nominal || s.amount || 0);
+                                            if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                        });
+                                    }
                                 });
                             }
-                        });
+                        }
                         
                         return (
                             <Fragment>
@@ -1219,7 +1266,7 @@ export default function AdminDashboardPage() {
                                                                             let sd = details.fundingSplits || [];
                                                                             return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
                                                                                 <span key={sIdx} className="text-[8px] font-black text-amber-800 uppercase bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
-                                                                                    {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                                                    {s.source || s.sumber}: {s.percent || s.percentage || 0}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
                                                                                 </span>
                                                                             ));
                                                                         })()}
