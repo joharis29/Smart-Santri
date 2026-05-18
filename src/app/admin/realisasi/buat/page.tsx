@@ -183,93 +183,108 @@ export default function BuatRealisasiPage() {
         fetchApproved();
     }, []);
 
-    // SYNC SELECTED RKA
+    // SYNC SELECTED RKA & AUTOFILL METADATA
     useEffect(() => {
-        if (selectedRkaId) {
-            const rka = approvedRkas.find(r => r.id === selectedRkaId);
-            if (rka) {
-                setSelectedRkaData(rka);
-                setUnit(rka.unit_id || '');
-                setBidang(rka.bidang || '');
-                setBulan(rka.bulan || '');
-                setTahunAjaran(rka.tahun_ajaran || '');
-            }
-        } else {
-            setSelectedRkaData(null);
-        }
-    }, [selectedRkaId, approvedRkas]);
-
-    // AUTOFILL FROM URL QUERY PARAM (?itemId=...)
-    useEffect(() => {
+        // Step 1: Detect if there is a redirect query param (?itemId=...)
+        let targetRkaId = selectedRkaId;
+        let targetItemIdParam = '';
+        
         if (typeof window !== 'undefined' && approvedRkas.length > 0) {
             const params = new URLSearchParams(window.location.search);
             const itemIdParam = params.get('itemId');
             if (itemIdParam) {
-                // Find target document and target item
+                targetItemIdParam = itemIdParam;
+                // Find matching document for this itemIdParam (either as item ID or document ID)
                 let foundDoc = approvedRkas.find(doc => 
                     doc.item_pengajuan?.some((it: any) => it.id === itemIdParam)
                 );
-                let targetItem: any = null;
-
-                if (foundDoc) {
-                    targetItem = foundDoc.item_pengajuan?.find((it: any) => it.id === itemIdParam);
-                } else {
-                    // Fallback: Check if itemIdParam matches document ID directly
+                if (!foundDoc) {
                     foundDoc = approvedRkas.find(doc => doc.id === itemIdParam);
-                    if (foundDoc && foundDoc.item_pengajuan?.length > 0) {
-                        targetItem = foundDoc.item_pengajuan[0];
+                }
+                
+                if (foundDoc && selectedRkaId !== foundDoc.id) {
+                    targetRkaId = foundDoc.id;
+                    setSelectedRkaId(foundDoc.id);
+                    return; // Let the state update trigger the next run of this effect
+                }
+            }
+        }
+
+        // Step 2: Sync RKA data and metadata when targetRkaId is set
+        if (targetRkaId && approvedRkas.length > 0) {
+            const rka = approvedRkas.find(r => r.id === targetRkaId);
+            if (rka) {
+                // Determine which items to display
+                let filteredItems = rka.item_pengajuan || [];
+                let singleTargetItem: any = null;
+
+                if (targetItemIdParam) {
+                    const matched = (rka.item_pengajuan || []).find((it: any) => it.id === targetItemIdParam);
+                    if (matched) {
+                        singleTargetItem = matched;
+                        filteredItems = [matched];
+                    } else if (rka.item_pengajuan?.length > 0) {
+                        singleTargetItem = rka.item_pengajuan[0];
                     }
+                } else if (rka.item_pengajuan?.length > 0) {
+                    singleTargetItem = rka.item_pengajuan[0];
                 }
 
-                if (foundDoc && targetItem) {
-                    setSelectedRkaId(foundDoc.id);
-                    
-                    // Filter item_pengajuan to contain ONLY the specific clicked item
-                    const filteredItems = [targetItem];
-                    
-                    // Update setSelectedRkaData with a new object having only the filtered items!
-                    setSelectedRkaData({
-                        ...foundDoc,
-                        item_pengajuan: filteredItems
-                    });
-                    
-                    // Populate header metadata
-                    setUnit(foundDoc.unit_id || foundDoc.unit || '');
-                    setBidang(foundDoc.bidang || '');
-                    
-                    const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                    const bulanVal = typeof foundDoc.periode_bulan === 'number'
-                        ? monthNames[foundDoc.periode_bulan]
-                        : (monthNames[Number(foundDoc.periode_bulan)] || foundDoc.bulan || foundDoc.periode_bulan || '');
-                    setBulan(bulanVal);
-                    
-                    const tahunVal = foundDoc.tahun_ajaran || `${foundDoc.periode_tahun}/${Number(foundDoc.periode_tahun) + 1}`;
-                    setTahunAjaran(tahunVal);
+                // Set isolated selected RKA data
+                setSelectedRkaData({
+                    ...rka,
+                    nominal: filteredItems.reduce((acc: number, it: any) => acc + Number(it.nominal || 0), 0),
+                    item_pengajuan: filteredItems
+                });
 
-                    // Autofill the LPJ input table (Tabel Realisasi Anggaran) using details from this item!
+                // Unit mapping (prioritize name string like 'SDIT 1' instead of UUID)
+                const unitVal = rka.unit || rka.unit_id || '';
+                setUnit(unitVal);
+
+                // Bidang mapping (convert to uppercase, map 'Sarana' -> 'SARPRAS')
+                const dbBidang = String(rka.bidang || '').toUpperCase();
+                if (dbBidang.includes('SARANA') || dbBidang.includes('SARPRAS')) {
+                    setBidang('SARPRAS');
+                } else {
+                    setBidang(dbBidang);
+                }
+
+                // Bulan mapping (convert number 1-12 to string name)
+                const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                const bulanVal = typeof rka.periode_bulan === 'number'
+                    ? monthNames[rka.periode_bulan]
+                    : (monthNames[Number(rka.periode_bulan)] || rka.bulan || rka.periode_bulan || '');
+                setBulan(bulanVal);
+
+                // Tahun Ajaran mapping
+                const tahunVal = rka.tahun_ajaran || (rka.periode_tahun ? `${rka.periode_tahun}/${Number(rka.periode_tahun) + 1}` : '');
+                setTahunAjaran(tahunVal);
+
+                // Autofill the LPJ input table (Tabel Realisasi Anggaran) using details from this isolated item!
+                if (singleTargetItem) {
                     let details: any = {};
                     try {
-                        details = typeof targetItem.rincian_json === 'string' 
-                            ? JSON.parse(targetItem.rincian_json) 
-                            : (targetItem.rincian_json || {});
+                        details = typeof singleTargetItem.rincian_json === 'string' 
+                            ? JSON.parse(singleTargetItem.rincian_json) 
+                            : (singleTargetItem.rincian_json || {});
                     } catch (e) {
                         details = {};
                     }
 
-                    const defaultItems = details.items || [{ name: targetItem.judul_kegiatan || '', unit: 'Pcs', price: Number(targetItem.nominal || 0), qty: 1, total: Number(targetItem.nominal || 0) }];
-                    const defaultSplits = details.fundingSplits || [{ source: targetItem.sumber_dana || 'Yayasan', percent: 100, nominal: targetItem.nominal }];
+                    const defaultItems = details.items || [{ name: singleTargetItem.judul_kegiatan || '', unit: 'Pcs', price: Number(singleTargetItem.nominal || 0), qty: 1, total: Number(singleTargetItem.nominal || 0) }];
+                    const defaultSplits = details.fundingSplits || [{ source: singleTargetItem.sumber_dana || 'Yayasan', percent: 100, nominal: singleTargetItem.nominal }];
 
                     setLpjRows([
                         {
                             id: '1',
-                            program: targetItem.judul_kegiatan || '',
-                            operasional: targetItem.kategori_coa || '',
+                            program: singleTargetItem.judul_kegiatan || '',
+                            operasional: singleTargetItem.kategori_coa || '',
                             jumlah: details.jumlah_kegiatan || '1x',
-                            waktu: targetItem.waktu || '',
-                            tempat: targetItem.tempat || '',
-                            pic: targetItem.pic || '',
-                            sasaran: targetItem.sasaran || '',
-                            nominal: Number(targetItem.nominal || 0),
+                            waktu: singleTargetItem.waktu || '',
+                            tempat: singleTargetItem.tempat || '',
+                            pic: singleTargetItem.pic || '',
+                            sasaran: singleTargetItem.sasaran || '',
+                            nominal: Number(singleTargetItem.nominal || 0),
                             details: {
                                 items: defaultItems,
                                 fundingSplits: defaultSplits
@@ -279,8 +294,10 @@ export default function BuatRealisasiPage() {
                     ]);
                 }
             }
+        } else {
+            setSelectedRkaData(null);
         }
-    }, [approvedRkas]);
+    }, [selectedRkaId, approvedRkas]);
     
     const budgetTotal = useMemo(() => {
         if (!selectedRkaData) return 0;
