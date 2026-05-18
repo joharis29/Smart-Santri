@@ -198,6 +198,80 @@ export default function BuatRealisasiPage() {
             setSelectedRkaData(null);
         }
     }, [selectedRkaId, approvedRkas]);
+
+    // AUTOFILL FROM URL QUERY PARAM (?itemId=...)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && approvedRkas.length > 0) {
+            const params = new URLSearchParams(window.location.search);
+            const itemIdParam = params.get('itemId');
+            if (itemIdParam) {
+                // Find the document that contains this itemIdParam
+                const foundDoc = approvedRkas.find(doc => 
+                    doc.item_pengajuan?.some((it: any) => it.id === itemIdParam)
+                );
+                if (foundDoc) {
+                    setSelectedRkaId(foundDoc.id);
+                    
+                    // Filter item_pengajuan to contain ONLY the specific clicked item
+                    const filteredItems = (foundDoc.item_pengajuan || []).filter((it: any) => it.id === itemIdParam);
+                    
+                    // Update setSelectedRkaData with a new object having only the filtered items!
+                    setSelectedRkaData({
+                        ...foundDoc,
+                        item_pengajuan: filteredItems
+                    });
+                    
+                    // Populate header metadata
+                    setUnit(foundDoc.unit_id || foundDoc.unit || '');
+                    setBidang(foundDoc.bidang || '');
+                    
+                    const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    const bulanVal = typeof foundDoc.periode_bulan === 'number'
+                        ? monthNames[foundDoc.periode_bulan]
+                        : (monthNames[Number(foundDoc.periode_bulan)] || foundDoc.bulan || foundDoc.periode_bulan || '');
+                    setBulan(bulanVal);
+                    
+                    const tahunVal = foundDoc.tahun_ajaran || `${foundDoc.periode_tahun}/${Number(foundDoc.periode_tahun) + 1}`;
+                    setTahunAjaran(tahunVal);
+
+                    // Autofill the LPJ input table (Tabel Realisasi Anggaran) using details from this item!
+                    if (filteredItems.length > 0) {
+                        const targetItem = filteredItems[0];
+                        let details: any = {};
+                        try {
+                            details = typeof targetItem.rincian_json === 'string' 
+                                ? JSON.parse(targetItem.rincian_json) 
+                                : (targetItem.rincian_json || {});
+                        } catch (e) {
+                            details = {};
+                        }
+
+                        const defaultItems = details.items || [{ name: targetItem.judul_kegiatan || '', unit: 'Pcs', price: Number(targetItem.nominal || 0), qty: 1, total: Number(targetItem.nominal || 0) }];
+                        const defaultSplits = details.fundingSplits || [{ source: targetItem.sumber_dana || 'Yayasan', percent: 100, nominal: targetItem.nominal }];
+
+                        setLpjRows([
+                            {
+                                id: '1',
+                                program: targetItem.judul_kegiatan || '',
+                                operasional: targetItem.kategori_coa || '',
+                                jumlah: details.jumlah_kegiatan || '1x',
+                                waktu: targetItem.waktu || '',
+                                tempat: targetItem.tempat || '',
+                                pic: targetItem.pic || '',
+                                sasaran: targetItem.sasaran || '',
+                                nominal: Number(targetItem.nominal || 0),
+                                details: {
+                                    items: defaultItems,
+                                    fundingSplits: defaultSplits
+                                },
+                                isFilled: true
+                            }
+                        ]);
+                    }
+                }
+            }
+        }
+    }, [approvedRkas]);
     
     const budgetTotal = useMemo(() => {
         if (!selectedRkaData) return 0;
@@ -817,7 +891,7 @@ export default function BuatRealisasiPage() {
         worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
         worksheet.getCell(`G${currentRow}`).value = 'Jenis Pencairan';
         worksheet.getCell(`G${currentRow}`).font = { bold: true };
-        worksheet.getCell(`I${currentRow}`).value = selectedRkaData?.metode_pembayaran || 'CASH';
+        worksheet.getCell(`I${currentRow}`).value = selectedRkaData?.metode_pencairan || selectedRkaData?.metode_pembayaran || 'CASH';
         worksheet.getCell(`I${currentRow}`).font = { italic: true };
         const rkaEndRow = currentRow;
 
@@ -1350,7 +1424,7 @@ export default function BuatRealisasiPage() {
                                             <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-50 text-slate-900">
                                                 <span className="uppercase tracking-widest text-[9px] font-black text-slate-400">Jenis Pencairan Dana</span>
                                                 <span className="text-[10px] font-black text-slate-700 italic uppercase">
-                                                    {selectedRkaData?.metode_pembayaran || 'CASH'}
+                                                    {selectedRkaData?.metode_pencairan || selectedRkaData?.metode_pembayaran || 'CASH'}
                                                 </span>
                                             </div>
                                         </div>
