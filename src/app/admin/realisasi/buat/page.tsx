@@ -1003,9 +1003,30 @@ export default function BuatRealisasiPage() {
         currentRow++;
 
         // RKA Data
-        const rkaData = selectedRkaData?.data?.[0];
+        const rkaItem = selectedRkaData?.item_pengajuan?.[0];
+        let rkaDetails: any = {};
+        if (rkaItem?.rincian_json) {
+            try {
+                rkaDetails = typeof rkaItem.rincian_json === 'string'
+                    ? JSON.parse(rkaItem.rincian_json)
+                    : rkaItem.rincian_json;
+            } catch (e) {
+                rkaDetails = {};
+            }
+        }
+
         const rkaMainRow = worksheet.getRow(currentRow);
-        rkaMainRow.values = [1, rkaData?.program || '-', rkaData?.operasional || '-', rkaData?.jumlah || '-', rkaData?.waktu || '-', rkaData?.tempat || '-', rkaData?.pic || '-', rkaData?.sasaran || '-', Number(rkaData?.nominal || 0)];
+        rkaMainRow.values = [
+            1, 
+            rkaItem?.judul_kegiatan || rkaItem?.kegiatan || '-', 
+            rkaItem?.kategori_coa || '-', 
+            rkaDetails?.jumlah_kegiatan || '1x', 
+            rkaItem?.waktu || '-', 
+            rkaItem?.tempat || '-', 
+            rkaItem?.pic || '-', 
+            rkaItem?.sasaran || '-', 
+            Number(rkaItem?.nominal || 0)
+        ];
         rkaMainRow.getCell(9).numFmt = '"Rp "#,##0';
         currentRow++;
 
@@ -1019,9 +1040,10 @@ export default function BuatRealisasiPage() {
         rkaSubHeader.values = ['No', 'Nama Item / Spesifikasi', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)'];
         currentRow++;
 
-        (rkaData?.details?.items || []).forEach((item: any, i: number) => {
+        const rkaSubItems = rkaDetails?.items || [{ name: rkaItem?.judul_kegiatan || '', unit: 'Pcs', price: Number(rkaItem?.nominal || 0), qty: 1, total: Number(rkaItem?.nominal || 0) }];
+        rkaSubItems.forEach((item: any, i: number) => {
             const row = worksheet.getRow(currentRow);
-            row.values = [i + 1, item.name, item.unit, Number(item.price), Number(item.qty), Number(item.total)];
+            row.values = [i + 1, item.name, item.unit, Number(item.price || 0), Number(item.qty || 0), Number(item.total || 0)];
             [4, 6].forEach(c => row.getCell(c).numFmt = '"Rp "#,##0');
             currentRow++;
         });
@@ -1031,7 +1053,8 @@ export default function BuatRealisasiPage() {
         worksheet.getCell(`G${currentRow}`).value = 'Alokasi Sumber Dana';
         currentRow++;
 
-        (rkaData?.details?.fundingSplits || []).forEach((split: any) => {
+        const rkaSplits = rkaDetails?.fundingSplits || [{ source: rkaItem?.sumber_dana || 'Yayasan', percent: 100, nominal: rkaItem?.nominal }];
+        rkaSplits.forEach((split: any) => {
             worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
             worksheet.getCell(`G${currentRow}`).value = `${split.source} (${split.percent}%)`;
             worksheet.getCell(`I${currentRow}`).value = Number(split.nominal);
@@ -1042,7 +1065,7 @@ export default function BuatRealisasiPage() {
         worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
         worksheet.getCell(`G${currentRow}`).value = 'Total Pengajuan';
         worksheet.getCell(`G${currentRow}`).font = { bold: true };
-        worksheet.getCell(`I${currentRow}`).value = Number(rkaData?.nominal || 0);
+        worksheet.getCell(`I${currentRow}`).value = Number(rkaItem?.nominal || 0);
         worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
         worksheet.getCell(`I${currentRow}`).font = { bold: true };
         currentRow++;
@@ -1069,7 +1092,7 @@ export default function BuatRealisasiPage() {
             }
         }
         // Bold RKA Summary Titles
-        for (let r = rkaEndRow - (rkaData?.details?.fundingSplits?.length || 0) - 1; r <= rkaEndRow; r++) {
+        for (let r = rkaEndRow - rkaSplits.length - 1; r <= rkaEndRow; r++) {
             worksheet.getCell(r, 7).font = { bold: true };
         }
 
@@ -1152,7 +1175,7 @@ export default function BuatRealisasiPage() {
         // RIGHT SIDEBAR: Selisih & Catatan
         worksheet.mergeCells(`K${lpjStartRow}:L${lpjStartRow+1}`);
         const selisihBox = worksheet.getCell(`K${lpjStartRow}`);
-        selisihBox.value = `Selisih\nRp ${(Number(rkaData?.nominal || 0) - Number(lpjData.nominal)).toLocaleString()}`;
+        selisihBox.value = `Selisih\nRp ${(Number(rkaItem?.nominal || 0) - Number(lpjData.nominal)).toLocaleString()}`;
         selisihBox.font = { bold: true };
         selisihBox.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         selisihBox.border = thickBorder;
