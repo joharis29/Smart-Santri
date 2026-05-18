@@ -372,7 +372,6 @@ export default function BuatRealisasiPage() {
 
     // SYNC SELECTED RKA & AUTOFILL METADATA
     useEffect(() => {
-        if (isLoadingEditRef.current) return;
         // Step 1: Detect if there is a redirect query param (?itemId=...)
         let targetRkaId = selectedRkaId;
         let targetItemIdParam = activeItemId || '';
@@ -410,6 +409,15 @@ export default function BuatRealisasiPage() {
                 let filteredItems = rka.item_pengajuan || [];
                 let singleTargetItem: any = null;
 
+                // Try to find the matching RKA item based on the LPJ program name if targetItemIdParam is empty
+                if (!targetItemIdParam && lpjRows.length > 0 && lpjRows[0]?.program) {
+                    const matched = (rka.item_pengajuan || []).find((it: any) => it.judul_kegiatan === lpjRows[0].program);
+                    if (matched) {
+                        targetItemIdParam = matched.id;
+                        setActiveItemId(matched.id);
+                    }
+                }
+
                 if (targetItemIdParam) {
                     const matched = (rka.item_pengajuan || []).find((it: any) => it.id === targetItemIdParam);
                     if (matched) {
@@ -428,6 +436,11 @@ export default function BuatRealisasiPage() {
                     nominal: filteredItems.reduce((acc: number, it: any) => acc + Number(it.nominal || 0), 0),
                     item_pengajuan: filteredItems
                 });
+
+                // If loading draft, stop here to avoid overwriting metadata or lpjRows loaded from draft
+                if (isLoadingEditRef.current) {
+                    return;
+                }
 
                 // Unit mapping (prioritize name string like 'SDIT 1' instead of UUID)
                 const unitVal = rka.unit || rka.unit_id || '';
