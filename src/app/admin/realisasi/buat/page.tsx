@@ -410,6 +410,42 @@ export default function BuatRealisasiPage() {
         return realisasiTotal - budgetTotal;
     }, [selectedRkaData, realisasiTotal, budgetTotal]);
 
+    const isSubmitDisabled = useMemo(() => {
+        // 1. Check metadata headers
+        if (!unit || !bidang || !bulan || !tahunAjaran || !selectedRkaId) {
+            return true;
+        }
+
+        // 2. Check Bukti Nota / Lampiran (attachments)
+        if (attachments.length === 0) {
+            return true;
+        }
+
+        // 3. Check Rincian Detail Realisasi (for all lpjRows)
+        for (const row of lpjRows) {
+            const items = row.details?.items || [];
+            if (items.length === 0) {
+                return true;
+            }
+            for (const item of items) {
+                if (!item.name || !item.name.trim()) {
+                    return true;
+                }
+                if (!item.unit || !item.unit.trim()) {
+                    return true;
+                }
+                if (!item.price || Number(item.price) <= 0) {
+                    return true;
+                }
+                if (!item.qty || Number(item.qty) <= 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }, [unit, bidang, bulan, tahunAjaran, selectedRkaId, attachments, lpjRows]);
+
     const rkaFundingAggregated = useMemo(() => {
         if (!selectedRkaData) return [];
         const splits: Record<string, number> = {};
@@ -2008,8 +2044,8 @@ export default function BuatRealisasiPage() {
                             <div className="space-y-3">
                                 <button 
                                     onClick={handleKirim}
-                                    disabled={!selectedRkaId || lpjRows.length === 0}
-                                    className="w-full bg-slate-900 hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex flex-col items-center justify-center gap-0.5 group relative overflow-hidden active:scale-95"
+                                    disabled={isSubmitDisabled}
+                                    className="w-full bg-slate-900 hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed disabled:shadow-none text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex flex-col items-center justify-center gap-0.5 group relative overflow-hidden active:scale-95"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-emerald-400" />
