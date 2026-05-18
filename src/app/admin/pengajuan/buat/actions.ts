@@ -13,129 +13,134 @@ export async function batchSavePengajuan(payload: {
   status: 'DRAFT' | 'MENUNGGU_VERIFIKASI' | 'MENUNGGU_KEPALA' | 'REVISI',
   data: any[]
 }) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  // 1. Get Real Authenticated User
-  const { data: userData, error: authError } = await supabase.auth.getUser()
-  if (authError || !userData?.user) {
-    return { error: 'Anda harus login untuk melakukan aksi ini.' }
-  }
-  const pembuat_id = userData.user.id
+    // 1. Get Real Authenticated User
+    const { data: userData, error: authError } = await supabase.auth.getUser()
+    if (authError || !userData?.user) {
+      return { error: 'Anda harus login untuk melakukan aksi ini.' }
+    }
+    const pembuat_id = userData.user.id
 
-  // Helper to convert month name to integer
-  const monthMap: Record<string, number> = {
-    'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
-    'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
-  }
-  const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
-  
-  const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
-  const total_nominal = payload.data.reduce((sum, row) => sum + (Number(row.nominal) || 0), 0);
+    // Helper to convert month name to integer
+    const monthMap: Record<string, number> = {
+      'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+      'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+    }
+    const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
+    
+    const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
+    const total_nominal = payload.data.reduce((sum, row) => sum + (Number(row.nominal) || 0), 0);
 
-  // 1.5. Resolve Unit Name to unit_id and jenjang_id
-  let unit_id: string | null = null
-  let jenjang_id: string | null = null
-  
-  if (payload.unit) {
-    const { data: unitData } = await supabase
-      .from('unit')
-      .select('id, jenjang_id')
-      .eq('name', payload.unit)
-      .maybeSingle()
+    // 1.5. Resolve Unit Name to unit_id and jenjang_id
+    let unit_id: string | null = null
+    let jenjang_id: string | null = null
+    
+    if (payload.unit) {
+      const { data: unitData } = await supabase
+        .from('unit')
+        .select('id, jenjang_id')
+        .eq('name', payload.unit)
+        .maybeSingle()
+        
+      if (unitData) {
+        unit_id = unitData.id
+        jenjang_id = unitData.jenjang_id
+      }
+    }
+
+    // 2. Create/Update Document Header
+    let docId = payload.id;
+    
+    if (docId) {
+      // Update existing
+      const { error: upError } = await supabase
+        .from('dokumen_pengajuan')
+        .update({
+          periode_bulan: bulanInt,
+          periode_tahun: tahunInt,
+          status: payload.status,
+          unit: payload.unit,
+          unit_id: unit_id,
+          jenjang_id: jenjang_id,
+          bidang: payload.bidang,
+          jenis: payload.mode,
+          total_nominal: total_nominal
+        })
+        .eq('id', docId);
       
-    if (unitData) {
-      unit_id = unitData.id
-      jenjang_id = unitData.jenjang_id
+      if (upError) return { error: 'Gagal update dokumen: ' + upError.message };
+
+      // Delete old items to replace them
+      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+    } else {
+      // Create new
+      const { data: dokumen, error: docError } = await supabase
+        .from('dokumen_pengajuan')
+        .insert({
+          pembuat_id,
+          periode_bulan: bulanInt,
+          periode_tahun: tahunInt,
+          status: payload.status,
+          unit: payload.unit,
+          unit_id: unit_id,
+          jenjang_id: jenjang_id,
+          bidang: payload.bidang,
+          jenis: payload.mode,
+          total_nominal: total_nominal
+        })
+        .select('id')
+        .single();
+
+      if (docError) {
+        console.error('Doc Error:', docError);
+        return { error: 'Gagal membuat dokumen: ' + docError.message };
+      }
+      docId = dokumen.id;
     }
-  }
 
-  // 2. Create/Update Document Header
-  let docId = payload.id;
-  
-  if (docId) {
-    // Update existing
-    const { error: upError } = await supabase
-      .from('dokumen_pengajuan')
-      .update({
-        periode_bulan: bulanInt,
-        periode_tahun: tahunInt,
-        status: payload.status,
-        unit: payload.unit,
-        unit_id: unit_id,
-        jenjang_id: jenjang_id,
-        bidang: payload.bidang,
-        jenis: payload.mode,
-        total_nominal: total_nominal
-      })
-      .eq('id', docId);
-    
-    if (upError) return { error: 'Gagal update dokumen: ' + upError.message };
+    // 3. Save Items (Including ALL columns)
+    const itemsToInsert = payload.data.map(row => {
+      // Attempt to get the first valid source from fundingSplits, fallback to 'Dana BOS'
+      const firstSource = row.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS';
+      
+      // Inject 'jumlah_kegiatan' into the details JSON since the column doesn't exist in DB
+      const finalDetails = {
+        ...(row.details || {}),
+        jumlah_kegiatan: row.jumlah || '1'
+      };
 
-    // Delete old items to replace them
-    await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
-  } else {
-    // Create new
-    const { data: dokumen, error: docError } = await supabase
-      .from('dokumen_pengajuan')
-      .insert({
-        pembuat_id,
-        periode_bulan: bulanInt,
-        periode_tahun: tahunInt,
-        status: payload.status,
-        unit: payload.unit,
-        unit_id: unit_id,
-        jenjang_id: jenjang_id,
-        bidang: payload.bidang,
-        jenis: payload.mode,
-        total_nominal: total_nominal
-      })
-      .select('id')
-      .single();
+      return {
+        dokumen_id: docId,
+        judul_kegiatan: payload.mode === 'RKA' ? row.program : row.item,
+        kategori_coa: payload.mode === 'RKA' ? row.operasional : 'DAPUR',
+        nominal: Number(row.nominal) || 0,
+        sumber_dana: firstSource,
+        pic: row.pic || '',
+        waktu: row.waktu || '',
+        tempat: row.tempat || '',
+        sasaran: row.sasaran || '',
+        rincian_json: finalDetails
+      }
+    })
 
-    if (docError) {
-      console.error('Doc Error:', docError);
-      return { error: 'Gagal membuat dokumen: ' + docError.message };
+    const { error: itemError } = await supabase
+      .from('item_pengajuan')
+      .insert(itemsToInsert)
+
+    if (itemError) {
+      console.error('Item Error:', itemError)
+      return { error: 'Gagal menyimpan rincian: ' + itemError.message }
     }
-    docId = dokumen.id;
+
+    revalidatePath('/admin/pengajuan/draft-saya')
+    revalidatePath('/admin/pengajuan/rekap')
+    return { success: true, id: docId }
+  } catch (err: any) {
+    console.error("batchSavePengajuan unhandled error:", err)
+    return { error: err.message || String(err) }
   }
-
-  // 3. Save Items (Including ALL columns)
-  const itemsToInsert = payload.data.map(row => {
-    // Attempt to get the first valid source from fundingSplits, fallback to 'Dana BOS'
-    const firstSource = row.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS';
-    
-    // Inject 'jumlah_kegiatan' into the details JSON since the column doesn't exist in DB
-    const finalDetails = {
-      ...(row.details || {}),
-      jumlah_kegiatan: row.jumlah || '1'
-    };
-
-    return {
-      dokumen_id: docId,
-      judul_kegiatan: payload.mode === 'RKA' ? row.program : row.item,
-      kategori_coa: payload.mode === 'RKA' ? row.operasional : 'DAPUR',
-      nominal: Number(row.nominal) || 0,
-      sumber_dana: firstSource,
-      pic: row.pic || '',
-      waktu: row.waktu || '',
-      tempat: row.tempat || '',
-      sasaran: row.sasaran || '',
-      rincian_json: finalDetails
-    }
-  })
-
-  const { error: itemError } = await supabase
-    .from('item_pengajuan')
-    .insert(itemsToInsert)
-
-  if (itemError) {
-    console.error('Item Error:', itemError)
-    return { error: 'Gagal menyimpan rincian: ' + itemError.message }
-  }
-
-  revalidatePath('/admin/pengajuan/draft-saya')
-  revalidatePath('/admin/pengajuan/rekap')
-  return { success: true, id: docId }
 }
 
 export async function saveDraftItem(formData: FormData) {
@@ -359,124 +364,129 @@ export async function saveLPJ(payload: {
   subsidiSources: any[],
   attachments: Array<{ customName: string; base64?: string; url?: string }>
 }) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  // 1. Get Real Authenticated User
-  const { data: userData, error: authError } = await supabase.auth.getUser()
-  if (authError || !userData?.user) {
-    return { error: 'Anda harus login untuk melakukan aksi ini.' }
-  }
-  const pembuat_id = userData.user.id
-
-  // Helper to convert month name to integer
-  const monthMap: Record<string, number> = {
-    'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
-    'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
-  }
-  const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
-  const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
-
-  // Resolve Unit Name to unit_id and jenjang_id
-  let unit_id: string | null = null
-  let jenjang_id: string | null = null
-  
-  if (payload.unit) {
-    const { data: unitData } = await supabase
-      .from('unit')
-      .select('id, jenjang_id')
-      .eq('name', payload.unit)
-      .maybeSingle()
-      
-    if (unitData) {
-      unit_id = unitData.id
-      jenjang_id = unitData.jenjang_id
+    // 1. Get Real Authenticated User
+    const { data: userData, error: authError } = await supabase.auth.getUser()
+    if (authError || !userData?.user) {
+      return { error: 'Anda harus login untuk melakukan aksi ini.' }
     }
-  }
+    const pembuat_id = userData.user.id
 
-  let docId = payload.id;
-  
-  if (docId) {
-    // Update existing LPJ Document Header
-    const { error: upError } = await supabase
-      .from('dokumen_pengajuan')
-      .update({
-        periode_bulan: bulanInt,
-        periode_tahun: tahunInt,
-        status: payload.status,
-        unit: payload.unit,
-        unit_id: unit_id,
-        jenjang_id: jenjang_id,
-        bidang: payload.bidang,
-        jenis: 'LPJ',
-        total_nominal: payload.total_nominal
-      })
-      .eq('id', docId);
+    // Helper to convert month name to integer
+    const monthMap: Record<string, number> = {
+      'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+      'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+    }
+    const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
+    const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
+
+    // Resolve Unit Name to unit_id and jenjang_id
+    let unit_id: string | null = null
+    let jenjang_id: string | null = null
     
-    if (upError) return { error: 'Gagal update dokumen LPJ: ' + upError.message };
-
-    // Delete old items to replace them
-    await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
-  } else {
-    // Create new LPJ Document Header
-    const { data: dokumen, error: docError } = await supabase
-      .from('dokumen_pengajuan')
-      .insert({
-        pembuat_id,
-        periode_bulan: bulanInt,
-        periode_tahun: tahunInt,
-        status: payload.status,
-        unit: payload.unit,
-        unit_id: unit_id,
-        jenjang_id: jenjang_id,
-        bidang: payload.bidang,
-        jenis: 'LPJ',
-        total_nominal: payload.total_nominal
-      })
-      .select('id')
-      .single();
-
-    if (docError) {
-      console.error('Doc Error:', docError);
-      return { error: 'Gagal membuat dokumen LPJ: ' + docError.message };
+    if (payload.unit) {
+      const { data: unitData } = await supabase
+        .from('unit')
+        .select('id, jenjang_id')
+        .eq('name', payload.unit)
+        .maybeSingle()
+        
+      if (unitData) {
+        unit_id = unitData.id
+        jenjang_id = unitData.jenjang_id
+      }
     }
-    docId = dokumen.id;
+
+    let docId = payload.id;
+    
+    if (docId) {
+      // Update existing LPJ Document Header
+      const { error: upError } = await supabase
+        .from('dokumen_pengajuan')
+        .update({
+          periode_bulan: bulanInt,
+          periode_tahun: tahunInt,
+          status: payload.status,
+          unit: payload.unit,
+          unit_id: unit_id,
+          jenjang_id: jenjang_id,
+          bidang: payload.bidang,
+          jenis: 'LPJ',
+          total_nominal: payload.total_nominal
+        })
+        .eq('id', docId);
+      
+      if (upError) return { error: 'Gagal update dokumen LPJ: ' + upError.message };
+
+      // Delete old items to replace them
+      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+    } else {
+      // Create new LPJ Document Header
+      const { data: dokumen, error: docError } = await supabase
+        .from('dokumen_pengajuan')
+        .insert({
+          pembuat_id,
+          periode_bulan: bulanInt,
+          periode_tahun: tahunInt,
+          status: payload.status,
+          unit: payload.unit,
+          unit_id: unit_id,
+          jenjang_id: jenjang_id,
+          bidang: payload.bidang,
+          jenis: 'LPJ',
+          total_nominal: payload.total_nominal
+        })
+        .select('id')
+        .single();
+
+      if (docError) {
+        console.error('Doc Error:', docError);
+        return { error: 'Gagal membuat dokumen LPJ: ' + docError.message };
+      }
+      docId = dokumen.id;
+    }
+
+    // Save Items (Typically 1 item representing the realized activity in LPJ)
+    const firstRow = payload.lpjRows[0] || {};
+    const firstSource = firstRow.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana Pesantren/Yayasan';
+
+    const finalDetails = {
+      ...(firstRow.details || {}),
+      rka_id: payload.rka_id,
+      narasi: payload.narasi,
+      subsidiSources: payload.subsidiSources,
+      attachments: payload.attachments,
+      jumlah_kegiatan: firstRow.jumlah || '1x'
+    };
+
+    const itemToInsert = {
+      dokumen_id: docId,
+      judul_kegiatan: firstRow.program || 'Realisasi Kegiatan',
+      kategori_coa: firstRow.operasional || 'Lainnya',
+      nominal: Number(payload.total_nominal) || 0,
+      sumber_dana: firstSource,
+      pic: firstRow.pic || '',
+      waktu: firstRow.waktu || '',
+      tempat: firstRow.tempat || '',
+      sasaran: firstRow.sasaran || '',
+      rincian_json: finalDetails
+    };
+
+    const { error: itemError } = await supabase
+      .from('item_pengajuan')
+      .insert(itemToInsert);
+
+    if (itemError) {
+      console.error('Item Error:', itemError);
+      return { error: 'Gagal menyimpan rincian LPJ: ' + itemError.message };
+    }
+
+    return { success: true, id: docId }
+  } catch (err: any) {
+    console.error("saveLPJ unhandled error:", err)
+    return { error: err.message || String(err) }
   }
-
-  // Save Items (Typically 1 item representing the realized activity in LPJ)
-  const firstRow = payload.lpjRows[0] || {};
-  const firstSource = firstRow.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana Pesantren/Yayasan';
-
-  const finalDetails = {
-    ...(firstRow.details || {}),
-    rka_id: payload.rka_id,
-    narasi: payload.narasi,
-    subsidiSources: payload.subsidiSources,
-    attachments: payload.attachments,
-    jumlah_kegiatan: firstRow.jumlah || '1x'
-  };
-
-  const itemToInsert = {
-    dokumen_id: docId,
-    judul_kegiatan: firstRow.program || 'Realisasi Kegiatan',
-    kategori_coa: firstRow.operasional || 'Lainnya',
-    nominal: Number(payload.total_nominal) || 0,
-    sumber_dana: firstSource,
-    pic: firstRow.pic || '',
-    waktu: firstRow.waktu || '',
-    tempat: firstRow.tempat || '',
-    sasaran: firstRow.sasaran || '',
-    rincian_json: finalDetails
-  };
-
-  const { error: itemError } = await supabase
-    .from('item_pengajuan')
-    .insert(itemToInsert);
-
-  if (itemError) {
-    console.error('Item Error:', itemError);
-    return { error: 'Gagal menyimpan rincian LPJ: ' + itemError.message };
-  }
-
-  return { success: true, id: docId }
 }
 
