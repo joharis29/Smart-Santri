@@ -410,6 +410,15 @@ export default function BuatRealisasiPage() {
         return realisasiTotal - budgetTotal;
     }, [selectedRkaData, realisasiTotal, budgetTotal]);
 
+    const totalSubsidi = useMemo(() => 
+        subsidiSources.reduce((acc, curr) => acc + curr.amount, 0), 
+    [subsidiSources]);
+
+    const sisaKekurangan = useMemo(() => {
+        if (selisih <= 0) return 0;
+        return Math.max(0, selisih - totalSubsidi);
+    }, [selisih, totalSubsidi]);
+
     const isSubmitDisabled = useMemo(() => {
         // 1. Check metadata headers
         if (!unit || !bidang || !bulan || !tahunAjaran || !selectedRkaId) {
@@ -443,8 +452,20 @@ export default function BuatRealisasiPage() {
             }
         }
 
+        // 4. If over budget, require cross-subsidy coverage to fully cover it
+        if (selisih > 0) {
+            if (sisaKekurangan > 0) {
+                return true;
+            }
+            for (const sub of subsidiSources) {
+                if (!sub.source || sub.amount <= 0) {
+                    return true;
+                }
+            }
+        }
+
         return false;
-    }, [unit, bidang, bulan, tahunAjaran, selectedRkaId, attachments, lpjRows]);
+    }, [unit, bidang, bulan, tahunAjaran, selectedRkaId, attachments, lpjRows, selisih, sisaKekurangan, subsidiSources]);
 
     const rkaFundingAggregated = useMemo(() => {
         if (!selectedRkaData) return [];
@@ -473,15 +494,6 @@ export default function BuatRealisasiPage() {
         });
         return Object.entries(splits).map(([source, nominal]) => ({ source, nominal }));
     }, [lpjRows]);
-
-    const totalSubsidi = useMemo(() => 
-        subsidiSources.reduce((acc, curr) => acc + curr.amount, 0), 
-    [subsidiSources]);
-
-    const sisaKekurangan = useMemo(() => {
-        if (selisih <= 0) return 0;
-        return Math.max(0, selisih - totalSubsidi);
-    }, [selisih, totalSubsidi]);
 
     // --- Row Logic ---
     const updateLpjRow = (id: string, field: keyof LPJRow, value: any) => {
@@ -612,6 +624,14 @@ export default function BuatRealisasiPage() {
 
         news[index] = item;
         setSubsidiSources(news);
+    };
+
+    const addSubsidi = () => {
+        setSubsidiSources(prev => [...prev, { source: '', amount: 0, percent: 0 }]);
+    };
+
+    const removeSubsidi = (index: number) => {
+        setSubsidiSources(prev => prev.filter((_, idx) => idx !== index));
     };
 
     const addLpjFundingSplit = (rowId: string) => {
@@ -1368,6 +1388,25 @@ export default function BuatRealisasiPage() {
             return;
         }
 
+        // Validate Subsidi Silang if over budget
+        if (selisih > 0) {
+            if (sisaKekurangan > 0) {
+                alert(`Realisasi melebihi anggaran sebesar Rp ${selisih.toLocaleString('id-ID')}. Anda harus mengalokasikan Subsidi Silang sampai seluruh kekurangan tersebut tertutupi (sisa kekurangan harus Rp 0)!`);
+                return;
+            }
+            for (let sIdx = 0; sIdx < subsidiSources.length; sIdx++) {
+                const sub = subsidiSources[sIdx];
+                if (!sub.source) {
+                    alert(`Sumber dana subsidi silang ke-${sIdx + 1} wajib dipilih!`);
+                    return;
+                }
+                if (Number(sub.amount || 0) <= 0) {
+                    alert(`Nominal subsidi silang ke-${sIdx + 1} ("${sub.source}") harus lebih dari 0!`);
+                    return;
+                }
+            }
+        }
+
         alert('Berhasil dikirim ke Bendahara Unit!');
         window.location.href = '/admin/realisasi/rekap';
     };
@@ -2055,6 +2094,18 @@ export default function BuatRealisasiPage() {
                                     <span>Selisih (Variance)</span>
                                     <span>Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
                                 </div>
+                                {selisih > 0 && (
+                                    <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-widest pt-1 text-slate-400">
+                                        <span>Subsidi Silang</span>
+                                        <span className="text-emerald-600">-Rp {totalSubsidi.toLocaleString('id-ID')}</span>
+                                    </div>
+                                )}
+                                {selisih > 0 && (
+                                    <div className={`flex justify-between items-center text-[11px] font-black uppercase tracking-widest pt-2 border-t border-dashed border-slate-100 ${sisaKekurangan > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        <span>Sisa Selisih</span>
+                                        <span>Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-3">
@@ -2143,24 +2194,100 @@ export default function BuatRealisasiPage() {
                                 )}
                             </div>
 
-                            {/* Variance Logic Box */}
+                            {/* Variance Logic Box & Cross-Subsidy Allocation */}
                             {selisih !== 0 && (
-                                <div className={`rounded-3xl p-5 border-2 animate-in slide-in-from-right-4 duration-500 ${selisih > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                                    <div className="flex gap-3">
-                                        <div className={`p-2 rounded-xl h-fit ${selisih > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>
-                                            <AlertTriangle className="w-4 h-4" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className={`text-[10px] font-black uppercase tracking-widest ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                {selisih > 0 ? 'Over Budget Detected' : 'Under Budget Detected'}
-                                            </p>
-                                            <p className={`text-[11px] leading-relaxed font-bold ${selisih > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                                {selisih > 0 
-                                                    ? `Terdapat selisih lebih sebesar Rp ${selisih.toLocaleString('id-ID')}. Mohon lampirkan alasan di subsidi silang.` 
-                                                    : `Hemat anggaran sebesar Rp ${Math.abs(selisih).toLocaleString('id-ID')}.`}
-                                            </p>
+                                <div className="space-y-4">
+                                    <div className={`rounded-3xl p-5 border-2 animate-in slide-in-from-right-4 duration-500 ${selisih > 0 ? 'bg-rose-50/50 border-rose-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                                        <div className="flex gap-3">
+                                            <div className={`p-2 rounded-xl h-fit ${selisih > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                                                <AlertTriangle className="w-4 h-4" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className={`text-[10px] font-black uppercase tracking-widest ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                    {selisih > 0 ? 'Over Budget Detected' : 'Under Budget Detected'}
+                                                </p>
+                                                <p className={`text-[11px] leading-relaxed font-bold ${selisih > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                                    {selisih > 0 
+                                                        ? `Terdapat selisih lebih sebesar Rp ${selisih.toLocaleString('id-ID')}. Silakan alokasikan Subsidi Silang di bawah ini untuk menutup kekurangan sebesar Rp ${sisaKekurangan.toLocaleString('id-ID')}.` 
+                                                        : `Hemat anggaran sebesar Rp ${Math.abs(selisih).toLocaleString('id-ID')}.`}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {selisih > 0 && (
+                                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                    <Percent className="w-3.5 h-3.5 text-rose-500" /> Alokasi Subsidi Silang <span className="text-rose-500">*</span>
+                                                </label>
+                                                <button 
+                                                    onClick={addSubsidi}
+                                                    className="text-[9px] font-black text-rose-600 hover:text-rose-700 transition-colors uppercase tracking-widest flex items-center gap-1"
+                                                >
+                                                    + Tambah Alokasi Subsidi
+                                                </button>
+                                            </div>
+
+                                            {subsidiSources.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center gap-1.5">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Belum Ada Subsidi</span>
+                                                    <span className="text-[9px] font-medium text-slate-400 max-w-[200px]">Alokasikan sumber dana tambahan untuk menutup kekurangan anggaran LPJ.</span>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {subsidiSources.map((sub, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                                                            <div className="flex-1">
+                                                                <select
+                                                                    value={sub.source}
+                                                                    onChange={(e) => updateSubsidi(idx, 'source', e.target.value)}
+                                                                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-rose-500"
+                                                                >
+                                                                    <option value="">Pilih Sumber Dana...</option>
+                                                                    {availableFundSources.map((src) => (
+                                                                        <option key={src} value={src}>{src}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div className="w-20 relative">
+                                                                <input
+                                                                    type="number"
+                                                                    value={sub.percent || ''}
+                                                                    onChange={(e) => updateSubsidi(idx, 'percent', e.target.value)}
+                                                                    className="w-full pl-2 pr-6 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-rose-500 text-right"
+                                                                    placeholder="0"
+                                                                />
+                                                                <Percent className="absolute right-2 top-2.5 w-3 h-3 text-slate-400" />
+                                                            </div>
+                                                            <div className="w-28 relative">
+                                                                <span className="absolute left-2 top-2.5 text-[9px] font-bold text-slate-400">Rp</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={sub.amount || ''}
+                                                                    onChange={(e) => updateSubsidi(idx, 'amount', e.target.value)}
+                                                                    className="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-rose-500 text-right"
+                                                                    placeholder="0"
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeSubsidi(idx)}
+                                                                className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex justify-between items-center px-2 pt-2 border-t border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <span>Total Terdistribusi</span>
+                                                        <span className={sisaKekurangan === 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                                                            Rp {totalSubsidi.toLocaleString('id-ID')} / Rp {selisih.toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
