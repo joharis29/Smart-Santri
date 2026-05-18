@@ -239,7 +239,7 @@ export async function deletePengajuan(id: string) {
   return { success: true }
 }
 
-export async function revisiPengajuan(id: string, catatan: string) {
+export async function revisiPengajuan(id: string, catatan: string, itemNotes?: Record<string, string>) {
   const supabase = await createClient()
   
   // FETCH USER INFO
@@ -279,6 +279,18 @@ Doc Unit: ${doc?.unit_id || 'none'}
 Doc Jenjang: ${doc?.jenjang_id || 'none'}
 Target Status: DRAFT`
     return { error: diagMsg }
+  }
+
+  // Save specific item notes if provided
+  if (itemNotes) {
+    for (const [itemId, note] of Object.entries(itemNotes)) {
+      if (note !== undefined) {
+        await supabase
+          .from('item_pengajuan')
+          .update({ catatan_revisi: note })
+          .eq('id', itemId);
+      }
+    }
   }
 
   return { success: true }

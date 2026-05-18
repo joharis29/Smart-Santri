@@ -76,6 +76,7 @@ interface RkaRow {
   nominal: number
   details: RkaDetails
   isFilled: boolean
+  catatan_revisi?: string
 }
 
 interface DapurRow {
@@ -547,7 +548,8 @@ function BuatPengajuanContent() {
                 sasaran: it.sasaran || '-',
                 nominal: it.nominal,
                 details: it.rincian_json || JSON.parse(JSON.stringify(DEFAULT_DETAILS)),
-                isFilled: true
+                isFilled: true,
+                catatan_revisi: it.catatan_revisi || ''
               };
             })
             setRows(mappedRows)
@@ -1715,7 +1717,8 @@ function BuatPengajuanContent() {
                 {rows.map((row, index) => {
                   const violation = isViolation(row)
                   return (
-                    <tr key={row.id} className={`divide-x divide-slate-100 transition-colors ${violation ? 'bg-rose-50' : 'hover:bg-slate-50/50'}`}>
+                    <React.Fragment key={row.id}>
+                      <tr className={`divide-x divide-slate-100 transition-colors ${violation ? 'bg-rose-50' : 'hover:bg-slate-50/50'}`}>
                       <td className="px-3 py-2 text-center text-xs font-bold text-slate-400">
                         {row.isFilled ? index + 1 : <span className="opacity-20 italic">auto</span>}
                       </td>
@@ -1821,7 +1824,20 @@ function BuatPengajuanContent() {
                         </div>
                       </td>
                     </tr>
-                  )
+                    {row.catatan_revisi && (
+                      <tr className="bg-amber-50/70 divide-x divide-amber-100 border-t border-b border-amber-100/50">
+                        <td colSpan={10} className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-800 uppercase tracking-wider shrink-0">
+                              Catatan Peninjauan
+                            </span>
+                            <p className="text-[10px] font-bold text-amber-900 leading-relaxed italic">{row.catatan_revisi}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
                 })}
               </tbody>
             </table>

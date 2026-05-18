@@ -60,6 +60,7 @@ export default function AdminDashboardPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedTrxForReview, setSelectedTrxForReview] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedTrx, setSelectedTrx] = useState<any>(null);
@@ -149,7 +150,21 @@ export default function AdminDashboardPage() {
             }
             res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus, metode);
         } else {
-            res = await revisiPengajuan(selectedTrxForReview.id, finalNote);
+            let consolidatedNote = '';
+            const noteParts: string[] = [];
+            Object.entries(itemNotes).forEach(([itemId, note]) => {
+                if (note && note.trim()) {
+                    const itemObj = selectedTrxForReview.items?.find((it: any) => it.id === itemId);
+                    const itemTitle = itemObj?.judul_kegiatan || itemObj?.kegiatan || 'Kegiatan';
+                    noteParts.push(`- [${itemTitle}]: ${note.trim()}`);
+                }
+            });
+            if (noteParts.length > 0) {
+                consolidatedNote = noteParts.join('\n');
+            } else {
+                consolidatedNote = 'Butuh revisi pada pengajuan RKA.';
+            }
+            res = await revisiPengajuan(selectedTrxForReview.id, consolidatedNote, itemNotes);
         }
 
         if (res && res.error) {
@@ -790,6 +805,11 @@ export default function AdminDashboardPage() {
                                                             <button 
                                                                  onClick={() => {
                                                                      setSelectedTrxForReview(trx);
+                                                                     const notes: Record<string, string> = {};
+                                                                     trx.items?.forEach((it: any) => {
+                                                                         notes[it.id] = it.catatan_revisi || '';
+                                                                     });
+                                                                     setItemNotes(notes);
                                                                      setReviewNote(trx.note || '');
                                                                      setIsReviewModalOpen(true);
                                                                  }}
@@ -1051,6 +1071,24 @@ export default function AdminDashboardPage() {
                                                         ));
                                                     })()}
                                                 </div>
+
+                                                {/* Catatan Peninjauan per Program/Kegiatan */}
+                                                {canReview && (
+                                                    <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                            <Edit3 className="w-2.5 h-2.5 text-emerald-600" /> Catatan Peninjauan Kegiatan
+                                                        </p>
+                                                        <textarea 
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-700 focus:bg-white focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[50px] italic placeholder:text-slate-300 shadow-sm"
+                                                            placeholder="Tambahkan catatan khusus untuk Program/Kegiatan ini..."
+                                                            value={itemNotes[it.id] || ''}
+                                                            onChange={(e) => setItemNotes(prev => ({
+                                                                ...prev,
+                                                                [it.id]: e.target.value
+                                                            }))}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -1059,19 +1097,6 @@ export default function AdminDashboardPage() {
                         </tbody>
                     </table>
                 </div>
-
-                {/* Note Field - Only visible for users with review authority */}
-                {canReview && (
-                    <div className="space-y-1.5">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Edit3 className="w-3 h-3" /> Catatan Peninjauan</p>
-                        <textarea 
-                            className="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-xs font-bold text-slate-700 focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[80px] italic placeholder:text-slate-300 shadow-inner"
-                            placeholder="Tambahkan catatan jika perlu..."
-                            value={reviewNote}
-                            onChange={(e) => setReviewNote(e.target.value)}
-                        />
-                    </div>
-                )}
             </div>
 
             {/* Footer Actions - Fixed Bottom */}
