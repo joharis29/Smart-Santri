@@ -533,6 +533,12 @@ export default function BuatRealisasiPage() {
         subsidiSources.reduce((acc, curr) => acc + curr.amount, 0), 
     [subsidiSources]);
 
+    const totalSubsidiPercent = useMemo(() => 
+        subsidiSources.reduce((acc, curr) => acc + (curr.percent || 0), 0), 
+    [subsidiSources]);
+
+    const isSubsidiComplete = totalSubsidiPercent >= 100;
+
     const sisaKekurangan = useMemo(() => {
         if (selisih <= 0) return 0;
         return Math.max(0, selisih - totalSubsidi);
@@ -571,9 +577,9 @@ export default function BuatRealisasiPage() {
             }
         }
 
-        // 4. If over budget, require cross-subsidy coverage to fully cover it
+        // 4. If over budget, require cross-subsidy coverage to fully cover it and be exactly 100%
         if (selisih > 0) {
-            if (sisaKekurangan > 0) {
+            if (Math.abs(totalSubsidiPercent - 100) > 0.01 || sisaKekurangan > 0) {
                 return true;
             }
             for (const sub of subsidiSources) {
@@ -584,7 +590,7 @@ export default function BuatRealisasiPage() {
         }
 
         return false;
-    }, [unit, bidang, bulan, tahunAjaran, selectedRkaId, attachments, lpjRows, selisih, sisaKekurangan, subsidiSources]);
+    }, [unit, bidang, bulan, tahunAjaran, selectedRkaId, attachments, lpjRows, selisih, sisaKekurangan, subsidiSources, totalSubsidiPercent]);
 
     const rkaFundingAggregated = useMemo(() => {
         if (!selectedRkaData) return [];
@@ -734,10 +740,20 @@ export default function BuatRealisasiPage() {
         if (field === 'source') {
             item.source = value;
         } else if (field === 'amount') {
-            item.amount = Number(value);
+            let amt = Math.max(0, Number(value));
+            const otherAmount = news.reduce((acc, curr, idx) => idx === index ? acc : acc + (curr.amount || 0), 0);
+            if (selisih > 0 && otherAmount + amt > selisih) {
+                amt = Math.max(0, selisih - otherAmount);
+            }
+            item.amount = amt;
             item.percent = selisih > 0 ? (item.amount / selisih) * 100 : 0;
         } else if (field === 'percent') {
-            item.percent = Number(value);
+            let pct = Math.max(0, Number(value));
+            const otherPercent = news.reduce((acc, curr, idx) => idx === index ? acc : acc + (curr.percent || 0), 0);
+            if (otherPercent + pct > 100) {
+                pct = Math.max(0, 100 - otherPercent);
+            }
+            item.percent = pct;
             item.amount = selisih > 0 ? (item.percent / 100) * selisih : 0;
         }
 
@@ -1500,6 +1516,13 @@ export default function BuatRealisasiPage() {
     const handleSimpanDraft = async () => {
         if (!selectedRkaId) { alert('Rencana Kegiatan & Anggaran (RKA) wajib dipilih!'); return; }
         
+        if (selisih > 0) {
+            if (Math.abs(totalSubsidiPercent - 100) > 0.01) {
+                alert(`Akumulasi Alokasi Subsidi Silang baru mencapai ${totalSubsidiPercent.toFixed(0)}%. Silakan lengkapi alokasi Subsidi Silang Anda hingga tepat 100% untuk menutupi seluruh overbudget sebesar Rp ${selisih.toLocaleString('id-ID')} sebelum menyimpan draf!`);
+                return;
+            }
+        }
+        
         setIsSaving(true);
         try {
             const processedAttachments = [];
@@ -1596,8 +1619,8 @@ export default function BuatRealisasiPage() {
 
         // Validate Subsidi Silang if over budget
         if (selisih > 0) {
-            if (sisaKekurangan > 0) {
-                alert(`Realisasi melebihi anggaran sebesar Rp ${selisih.toLocaleString('id-ID')}. Anda harus mengalokasikan Subsidi Silang sampai seluruh kekurangan tersebut tertutupi (sisa kekurangan harus Rp 0)!`);
+            if (Math.abs(totalSubsidiPercent - 100) > 0.01 || sisaKekurangan > 0) {
+                alert(`Realisasi melebihi anggaran sebesar Rp ${selisih.toLocaleString('id-ID')}. Anda harus mengalokasikan Subsidi Silang sampai tepat 100% untuk menutupi seluruh overbudget (sisa kekurangan harus Rp 0, akumulasi subsidi silang harus 100%)!`);
                 return;
             }
             for (let sIdx = 0; sIdx < subsidiSources.length; sIdx++) {
@@ -2394,12 +2417,24 @@ export default function BuatRealisasiPage() {
                                                     <Percent className="w-3.5 h-3.5 text-rose-500" /> Alokasi Subsidi Silang <span className="text-rose-500">*</span>
                                                 </label>
                                                 <button 
-                                                    onClick={addSubsidi}
-                                                    className="text-[9px] font-black text-rose-600 hover:text-rose-700 transition-colors uppercase tracking-widest flex items-center gap-1"
+                                                    onClick={isSubsidiComplete ? undefined : addSubsidi}
+                                                    disabled={isSubsidiComplete}
+                                                    className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-colors ${
+                                                        isSubsidiComplete 
+                                                            ? 'text-slate-300 cursor-not-allowed' 
+                                                            : 'text-rose-600 hover:text-rose-700'
+                                                    }`}
                                                 >
                                                     + Tambah Alokasi Subsidi
                                                 </button>
                                             </div>
+
+                                            {totalSubsidiPercent < 100 && (
+                                                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl animate-pulse text-amber-800 text-[10px] font-bold leading-relaxed">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                    <span>Akumulasi Alokasi Subsidi Silang baru <strong>{totalSubsidiPercent.toFixed(0)}%</strong>. Silakan lengkapi alokasi Subsidi Silang Anda hingga tepat <strong>100%</strong> untuk menutupi seluruh overbudget sebesar Rp {selisih.toLocaleString('id-ID')}!</span>
+                                                </div>
+                                            )}
 
                                             {subsidiSources.length === 0 ? (
                                                 <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center gap-1.5">
