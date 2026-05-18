@@ -1404,9 +1404,31 @@ export default function AdminDashboardPage() {
                                                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Lampiran Bukti Fisik:</span>
                                                                                     <div className="flex flex-wrap gap-2 mt-1">
                                                                                         {files.map((f: any, fIdx: number) => (
-                                                                                            <a key={fIdx} href={f.url || f} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-[8px] font-black text-blue-600 transition-all shadow-sm">
-                                                                                                📄 Bukti {fIdx + 1}
-                                                                                            </a>
+                                                                                            <button 
+                                                                                                key={fIdx} 
+                                                                                                onClick={() => {
+                                                                                                    const fileUrl = f.url || f.base64 || (typeof f === 'string' ? f : '');
+                                                                                                    if (!fileUrl) return;
+                                                                                                    if (fileUrl.startsWith('data:')) {
+                                                                                                        const newWindow = window.open();
+                                                                                                        if (newWindow) {
+                                                                                                            newWindow.document.write(`<iframe src="${fileUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                                                                                        } else {
+                                                                                                            const link = document.createElement('a');
+                                                                                                            link.href = fileUrl;
+                                                                                                            link.download = f.customName || `bukti-${fIdx + 1}`;
+                                                                                                            document.body.appendChild(link);
+                                                                                                            link.click();
+                                                                                                            document.body.removeChild(link);
+                                                                                                        }
+                                                                                                    } else {
+                                                                                                        window.open(fileUrl, '_blank');
+                                                                                                    }
+                                                                                                }} 
+                                                                                                className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-[8px] font-black text-blue-600 transition-all shadow-sm cursor-pointer"
+                                                                                            >
+                                                                                                📄 {f.customName || `Bukti ${fIdx + 1}`}
+                                                                                            </button>
                                                                                         ))}
                                                                                     </div>
                                                                                 </div>
