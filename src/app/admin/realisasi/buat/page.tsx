@@ -1246,6 +1246,7 @@ export default function BuatRealisasiPage() {
             setBulan('');
             setTahunAjaran('');
             setSelectedRkaId('');
+            setActiveItemId(null);
             setSelectedRkaData(null);
             setLpjRows([
                 { 
@@ -1452,10 +1453,17 @@ export default function BuatRealisasiPage() {
                                 <Search className="w-3 h-3 text-emerald-600" /> Pilih Rencana Kegiatan & Anggaran (RKA) <span className="text-rose-600">*</span>
                             </label>
                             <select 
-                                value={selectedRkaId}
+                                value={selectedRkaId && activeItemId ? `${selectedRkaId}##${activeItemId}` : selectedRkaId}
                                 onChange={(e) => {
-                                    setSelectedRkaId(e.target.value);
-                                    setActiveItemId(null);
+                                    const val = e.target.value;
+                                    if (val) {
+                                        const [docId, itemId] = val.split('##');
+                                        setSelectedRkaId(docId);
+                                        setActiveItemId(itemId);
+                                    } else {
+                                        setSelectedRkaId('');
+                                        setActiveItemId(null);
+                                    }
                                     if (typeof window !== 'undefined') {
                                         window.history.replaceState({}, '', window.location.pathname);
                                     }
@@ -1464,11 +1472,27 @@ export default function BuatRealisasiPage() {
                                 className="w-full bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                             >
                                 <option value="">-- Pilih RKA yang sudah diterima --</option>
-                                {approvedRkas.map(doc => (
-                                    <option key={doc.id} value={doc.id}>
-                                        [{doc.created_at?.split('T')[0]}] {doc.item_pengajuan?.[0]?.judul_kegiatan || doc.catatan_revisi || 'Tanpa Judul'}
-                                    </option>
-                                ))}
+                                {(() => {
+                                    const flatItems: any[] = [];
+                                    approvedRkas
+                                        .filter(doc => !unit || doc.unit === unit)
+                                        .forEach(doc => {
+                                            const items = doc.item_pengajuan || [];
+                                            items.forEach((it: any) => {
+                                                flatItems.push({
+                                                    docId: doc.id,
+                                                    itemId: it.id,
+                                                    dateStr: doc.created_at?.split('T')[0] || '',
+                                                    judul: it.judul_kegiatan || it.kegiatan || 'Tanpa Judul'
+                                                });
+                                            });
+                                        });
+                                    return flatItems.map(item => (
+                                        <option key={`${item.docId}##${item.itemId}`} value={`${item.docId}##${item.itemId}`}>
+                                            [{item.dateStr}] {item.judul}
+                                        </option>
+                                    ));
+                                })()}
                             </select>
                         </div>
 
