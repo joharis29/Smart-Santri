@@ -37,6 +37,7 @@ import {
     Banknote
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { saveLPJ } from '@/app/admin/pengajuan/buat/actions';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 
@@ -200,7 +201,7 @@ export default function BuatRealisasiPage() {
     const [selectedRkaId, setSelectedRkaId] = useState('');
     const [selectedRkaData, setSelectedRkaData] = useState<any>(null);
     const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-    const [attachments, setAttachments] = useState<Array<{ file: File; customName: string }>>([]);
+    const [attachments, setAttachments] = useState<Array<{ file?: File; url?: string; base64?: string; customName: string }>>([]);
     const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([]);
     const importRef = useRef<HTMLInputElement>(null);
     const [unit, setUnit] = useState('');
@@ -209,6 +210,21 @@ export default function BuatRealisasiPage() {
     const [tahunAjaran, setTahunAjaran] = useState('');
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
     const urlParsedRef = useRef(false);
+    
+    const [editId, setEditId] = useState<string | null>(null);
+    const [docStatus, setDocStatus] = useState<string>('DRAFT');
+    const [catatanRevisi, setCatatanRevisi] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+    const isLoadingEditRef = useRef(false);
+
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    };
     
     const [lpjRows, setLpjRows] = useState<LPJRow[]>([
         { 
@@ -265,8 +281,98 @@ export default function BuatRealisasiPage() {
         fetchApproved();
     }, []);
 
+    // Detect edit ID from URL
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const idParam = params.get('id');
+            if (idParam) {
+                setEditId(idParam);
+            }
+        }
+    }, []);
+
+    // Load LPJ Draft if editId is set
+    useEffect(() => {
+        const loadLpjDraft = async () => {
+            if (!editId) return;
+            isLoadingEditRef.current = true;
+            const supabase = createClient();
+            
+            const { data: d, error } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, item_pengajuan(*)')
+                .eq('id', editId)
+                .single();
+                
+            if (error) {
+                console.error("Gagal memuat draf LPJ:", error);
+                isLoadingEditRef.current = false;
+                return;
+            }
+            
+            if (d) {
+                setDocStatus(d.status);
+                setCatatanRevisi(d.catatan_revisi || '');
+                
+                const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                const bulanVal = monthNames[d.periode_bulan] || String(d.periode_bulan);
+                setBulan(bulanVal);
+                
+                const tahunVal = d.periode_tahun ? `${d.periode_tahun}/${Number(d.periode_tahun) + 1}` : '';
+                setTahunAjaran(tahunVal);
+                setUnit(d.unit || '');
+                setBidang(d.bidang || '');
+                
+                const items = d.item_pengajuan || [];
+                if (items.length > 0) {
+                    const firstItem = items[0];
+                    const details = firstItem.rincian_json || {};
+                    
+                    if (details.rka_id) {
+                        setSelectedRkaId(details.rka_id);
+                    }
+                    
+                    setNarasi(details.narasi || '');
+                    setSubsidiSources(details.subsidiSources || []);
+                    
+                    const savedAttachments = details.attachments || [];
+                    setAttachments(savedAttachments);
+                    setAttachmentPreviews(savedAttachments.map((att: any) => att.url || att.base64 || ''));
+                    
+                    const mappedRows = items.map((it: any, index: number) => {
+                        const itemDetails = it.rincian_json || {};
+                        return {
+                            id: String(index + 1),
+                            program: it.judul_kegiatan,
+                            operasional: it.kategori_coa,
+                            jumlah: itemDetails.jumlah_kegiatan || '1x',
+                            waktu: it.waktu || '',
+                            tempat: it.tempat || '',
+                            pic: it.pic || '',
+                            sasaran: it.sasaran || '',
+                            nominal: it.nominal,
+                            details: {
+                                items: itemDetails.items || [],
+                                fundingSplits: itemDetails.fundingSplits || []
+                            },
+                            isFilled: true
+                        };
+                    });
+                    setLpjRows(mappedRows);
+                }
+            }
+            // Keep isLoadingEditRef.current true for a brief period so RKA sync doesn't overwrite
+            setTimeout(() => {
+                isLoadingEditRef.current = false;
+            }, 800);
+        };
+        loadLpjDraft();
+    }, [editId]);
+
     // SYNC SELECTED RKA & AUTOFILL METADATA
     useEffect(() => {
+        if (isLoadingEditRef.current) return;
         // Step 1: Detect if there is a redirect query param (?itemId=...)
         let targetRkaId = selectedRkaId;
         let targetItemIdParam = activeItemId || '';
@@ -1246,14 +1352,39 @@ export default function BuatRealisasiPage() {
             let imgRow = currentRow;
 
             for (const att of attachments) {
-                const { file, customName } = att;
-                if (file.type.startsWith('image/')) {
+                const { file, url, base64, customName } = att as any;
+                
+                // Determine extension and base64/buffer
+                let extension: 'png' | 'jpeg' | 'gif' = 'png';
+                let imageInput: { buffer: ArrayBuffer } | { base64: string } | null = null;
+                
+                if (file) {
+                    if (file.type.startsWith('image/')) {
+                        try {
+                            const buffer = await file.arrayBuffer();
+                            imageInput = { buffer };
+                            extension = (file.name.split('.').pop() as any) || 'png';
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                } else if (base64 || url) {
+                    const sourceString = base64 || url || '';
+                    if (sourceString.startsWith('data:image/')) {
+                        const matches = sourceString.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+                        if (matches && matches.length === 3) {
+                            extension = matches[1] as any;
+                            imageInput = { base64: matches[2] };
+                        }
+                    }
+                }
+                
+                if (imageInput) {
                     try {
-                        const buffer = await file.arrayBuffer();
                         const imageId = workbook.addImage({
-                            buffer: buffer,
-                            extension: file.name.split('.').pop() as any || 'png',
-                        });
+                            ...imageInput,
+                            extension: extension
+                        } as any);
                         
                         // Add Image First
                         worksheet.addImage(imageId, {
@@ -1367,7 +1498,67 @@ export default function BuatRealisasiPage() {
         window.print();
     };
 
-    const handleKirim = () => {
+    const handleSimpanDraft = async () => {
+        if (!selectedRkaId) { alert('Rencana Kegiatan & Anggaran (RKA) wajib dipilih!'); return; }
+        
+        setIsSaving(true);
+        try {
+            const processedAttachments = [];
+            for (const att of attachments) {
+                if (att.file) {
+                    try {
+                        const b64 = await fileToBase64(att.file);
+                        processedAttachments.push({
+                            customName: att.customName,
+                            base64: b64
+                        });
+                    } catch (err) {
+                        console.error("Failed to convert file to base64:", err);
+                        processedAttachments.push({
+                            customName: att.customName,
+                            url: att.url || ''
+                        });
+                    }
+                } else {
+                    processedAttachments.push({
+                        customName: att.customName,
+                        url: att.url || '',
+                        base64: att.base64 || ''
+                    });
+                }
+            }
+
+            const payload = {
+                id: editId || undefined,
+                rka_id: selectedRkaId,
+                unit,
+                bidang,
+                bulan,
+                tahun_ajaran: tahunAjaran,
+                status: 'DRAFT' as const,
+                total_nominal: realisasiTotal,
+                lpjRows,
+                narasi,
+                subsidiSources,
+                attachments: processedAttachments
+            };
+
+            const res = await saveLPJ(payload);
+            if (res.error) {
+                alert("Gagal menyimpan draf: " + res.error);
+            } else {
+                alert("Draf LPJ berhasil disimpan!");
+                window.location.href = '/admin/pengajuan/draft-saya';
+            }
+        } catch (err: any) { 
+            console.error("Error saving draft:", err);
+            alert("Terjadi kesalahan: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleKirim = async () => {
         // Validate unit, bidang, bulan, tahunAjaran
         if (!unit) { alert('Unit wajib dipilih!'); return; }
         if (!bidang) { alert('Bidang wajib dipilih!'); return; }
@@ -1423,8 +1614,61 @@ export default function BuatRealisasiPage() {
             }
         }
 
-        alert('Berhasil dikirim ke Bendahara Unit!');
-        window.location.href = '/admin/realisasi/rekap';
+        setIsSaving(true);
+        try {
+            const processedAttachments = [];
+            for (const att of attachments) {
+                if (att.file) {
+                    try {
+                        const b64 = await fileToBase64(att.file);
+                        processedAttachments.push({
+                            customName: att.customName,
+                            base64: b64
+                        });
+                    } catch (err) {
+                        console.error("Failed to convert file to base64:", err);
+                        processedAttachments.push({
+                            customName: att.customName,
+                            url: att.url || ''
+                        });
+                    }
+                } else {
+                    processedAttachments.push({
+                        customName: att.customName,
+                        url: att.url || '',
+                        base64: att.base64 || ''
+                    });
+                }
+            }
+
+            const payload = {
+                id: editId || undefined,
+                rka_id: selectedRkaId,
+                unit,
+                bidang,
+                bulan,
+                tahun_ajaran: tahunAjaran,
+                status: 'MENUNGGU_VERIFIKASI' as const,
+                total_nominal: realisasiTotal,
+                lpjRows,
+                narasi,
+                subsidiSources,
+                attachments: processedAttachments
+            };
+
+            const res = await saveLPJ(payload);
+            if (res.error) {
+                alert("Gagal mengirim realisasi: " + res.error);
+            } else {
+                alert('Berhasil dikirim ke Bendahara Unit!');
+                window.location.href = '/admin/realisasi/rekap';
+            }
+        } catch (err: any) { 
+            console.error("Error submitting LPJ:", err);
+            alert("Terjadi kesalahan: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -2127,21 +2371,23 @@ export default function BuatRealisasiPage() {
                             <div className="space-y-3">
                                 <button 
                                     onClick={handleKirim}
-                                    disabled={isSubmitDisabled}
+                                    disabled={isSubmitDisabled || isSaving}
                                     className="w-full bg-slate-900 hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed disabled:shadow-none text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex flex-col items-center justify-center gap-0.5 group relative overflow-hidden active:scale-95"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-emerald-400" />
-                                        <span className="text-xs uppercase tracking-widest">Kirim Realisasi</span>
+                                        <span className="text-xs uppercase tracking-widest">{isSaving ? 'Memproses...' : 'Kirim Realisasi'}</span>
                                     </div>
                                     <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Finalisasi LPJ Unit</span>
                                 </button>
 
                                 <button 
+                                    onClick={handleSimpanDraft}
+                                    disabled={isSaving}
                                     className="w-full bg-amber-400 hover:bg-amber-500 disabled:bg-slate-100 disabled:text-slate-300 text-amber-900 font-black py-3 px-6 rounded-2xl shadow-lg shadow-amber-100 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest active:scale-95 border-b-4 border-amber-600"
                                 >
                                     <Save className="w-3.5 h-3.5" />
-                                    Simpan Draft
+                                    {isSaving ? 'Menyimpan...' : 'Simpan Draft'}
                                 </button>
                             </div>
                         </div>
@@ -2195,7 +2441,7 @@ export default function BuatRealisasiPage() {
                                                     </div>
                                                     <div className="overflow-hidden">
                                                         <p className="text-[10px] font-bold text-slate-700 truncate">{att.customName}</p>
-                                                        <p className="text-[8px] text-slate-400">{(att.file.size / 1024).toFixed(1)} KB</p>
+                                                        <p className="text-[8px] text-slate-400">{att.file ? `${(att.file.size / 1024).toFixed(1)} KB` : 'Draf tersimpan'}</p>
                                                     </div>
                                                 </div>
                                                 <button 
@@ -2486,7 +2732,7 @@ export default function BuatRealisasiPage() {
                                 {attachments.map((att, idx) => (
                                     <div key={idx} className="space-y-2 text-center break-inside-avoid">
                                         <img 
-                                            src={URL.createObjectURL(att.file)} 
+                                            src={att.file ? URL.createObjectURL(att.file) : (att.base64 || att.url || '')} 
                                             alt={att.customName}
                                             className="w-full h-64 object-contain border border-slate-300 rounded shadow-sm"
                                         />

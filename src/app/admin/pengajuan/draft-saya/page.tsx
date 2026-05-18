@@ -77,6 +77,7 @@ export default function DraftSayaPage() {
                     status, 
                     created_at,
                     catatan_revisi,
+                    jenis,
                     item_pengajuan(judul_kegiatan, nominal, rincian_json)
                 `)
                 .eq('pembuat_id', user.id)
@@ -114,7 +115,7 @@ export default function DraftSayaPage() {
                     return {
                         id: String(d.id).slice(0, 8).toUpperCase(),
                         realId: d.id,
-                        type: 'RKA', 
+                        type: d.jenis || 'RKA', 
                         name: displayName,
                         bidang: d.bidang || 'Tanpa Bidang', 
                         period: `${monthName} ${d.periode_tahun}`,

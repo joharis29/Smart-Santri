@@ -344,3 +344,139 @@ Target Status: ${nextStatus}`
 
   return { success: true }
 }
+
+export async function saveLPJ(payload: {
+  id?: string,
+  rka_id: string,
+  unit: string,
+  bidang: string,
+  bulan: string,
+  tahun_ajaran: string,
+  status: 'DRAFT' | 'MENUNGGU_VERIFIKASI' | 'REVISI',
+  total_nominal: number,
+  lpjRows: any[],
+  narasi: string,
+  subsidiSources: any[],
+  attachments: Array<{ customName: string; base64?: string; url?: string }>
+}) {
+  const supabase = await createClient()
+
+  // 1. Get Real Authenticated User
+  const { data: userData, error: authError } = await supabase.auth.getUser()
+  if (authError || !userData?.user) {
+    return { error: 'Anda harus login untuk melakukan aksi ini.' }
+  }
+  const pembuat_id = userData.user.id
+
+  // Helper to convert month name to integer
+  const monthMap: Record<string, number> = {
+    'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+    'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+  }
+  const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
+  const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
+
+  // Resolve Unit Name to unit_id and jenjang_id
+  let unit_id: string | null = null
+  let jenjang_id: string | null = null
+  
+  if (payload.unit) {
+    const { data: unitData } = await supabase
+      .from('unit')
+      .select('id, jenjang_id')
+      .eq('name', payload.unit)
+      .maybeSingle()
+      
+    if (unitData) {
+      unit_id = unitData.id
+      jenjang_id = unitData.jenjang_id
+    }
+  }
+
+  let docId = payload.id;
+  
+  if (docId) {
+    // Update existing LPJ Document Header
+    const { error: upError } = await supabase
+      .from('dokumen_pengajuan')
+      .update({
+        periode_bulan: bulanInt,
+        periode_tahun: tahunInt,
+        status: payload.status,
+        unit: payload.unit,
+        unit_id: unit_id,
+        jenjang_id: jenjang_id,
+        bidang: payload.bidang,
+        jenis: 'LPJ',
+        total_nominal: payload.total_nominal
+      })
+      .eq('id', docId);
+    
+    if (upError) return { error: 'Gagal update dokumen LPJ: ' + upError.message };
+
+    // Delete old items to replace them
+    await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+  } else {
+    // Create new LPJ Document Header
+    const { data: dokumen, error: docError } = await supabase
+      .from('dokumen_pengajuan')
+      .insert({
+        pembuat_id,
+        periode_bulan: bulanInt,
+        periode_tahun: tahunInt,
+        status: payload.status,
+        unit: payload.unit,
+        unit_id: unit_id,
+        jenjang_id: jenjang_id,
+        bidang: payload.bidang,
+        jenis: 'LPJ',
+        total_nominal: payload.total_nominal
+      })
+      .select('id')
+      .single();
+
+    if (docError) {
+      console.error('Doc Error:', docError);
+      return { error: 'Gagal membuat dokumen LPJ: ' + docError.message };
+    }
+    docId = dokumen.id;
+  }
+
+  // Save Items (Typically 1 item representing the realized activity in LPJ)
+  const firstRow = payload.lpjRows[0] || {};
+  const firstSource = firstRow.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana Pesantren/Yayasan';
+
+  const finalDetails = {
+    ...(firstRow.details || {}),
+    rka_id: payload.rka_id,
+    narasi: payload.narasi,
+    subsidiSources: payload.subsidiSources,
+    attachments: payload.attachments,
+    jumlah_kegiatan: firstRow.jumlah || '1x'
+  };
+
+  const itemToInsert = {
+    dokumen_id: docId,
+    judul_kegiatan: firstRow.program || 'Realisasi Kegiatan',
+    kategori_coa: firstRow.operasional || 'Lainnya',
+    nominal: Number(payload.total_nominal) || 0,
+    sumber_dana: firstSource,
+    pic: firstRow.pic || '',
+    waktu: firstRow.waktu || '',
+    tempat: firstRow.tempat || '',
+    sasaran: firstRow.sasaran || '',
+    rincian_json: finalDetails
+  };
+
+  const { error: itemError } = await supabase
+    .from('item_pengajuan')
+    .insert(itemToInsert);
+
+  if (itemError) {
+    console.error('Item Error:', itemError);
+    return { error: 'Gagal menyimpan rincian LPJ: ' + itemError.message };
+  }
+
+  return { success: true, id: docId }
+}
+
