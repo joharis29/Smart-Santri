@@ -659,7 +659,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Integrated Audit Trail with Working Filter */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
         <div className="px-5 py-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="flex items-center gap-3">
                 <div className="bg-slate-900 p-2 rounded-lg text-white">
@@ -737,7 +737,7 @@ export default function AdminDashboardPage() {
             </div>
         </div>
 
-        <div className="p-2 lg:p-3 space-y-1.5 bg-slate-50/20">
+        <div className="p-2 lg:p-3 space-y-1.5 bg-slate-50/20 rounded-b-2xl">
             {unitsToRender.map(unit => {
                 const unitTrx = filteredTransactions.filter(t => t.unit === unit);
                 const isExpanded = expandedUnit === unit;
