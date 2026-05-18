@@ -740,7 +740,7 @@ export default function RiwayatPengajuanPage() {
                                                     'BENDAHARA_JENJANG'
                                                 ].includes(userRole) && (
                                                     <Link 
-                                                        href={`/admin/realisasi/buat?itemId=${item.id}`}
+                                                        href={`/admin/realisasi/buat?itemId=${item.itemId}`}
                                                         className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
                                                         title="Buat Laporan Realisasi"
                                                     >

@@ -175,7 +175,7 @@ export default function BuatRealisasiPage() {
                 .from('dokumen_pengajuan')
                 .select('*, item_pengajuan(*)')
                 .in('status', ['CAIR', 'SUDAH_DITERIMA', 'SELESAI'])
-                .eq('type', 'RKA')
+                .eq('jenis', 'RKA')
                 .order('created_at', { ascending: false });
             
             if (data) setApprovedRkas(data);
@@ -205,15 +205,27 @@ export default function BuatRealisasiPage() {
             const params = new URLSearchParams(window.location.search);
             const itemIdParam = params.get('itemId');
             if (itemIdParam) {
-                // Find the document that contains this itemIdParam
-                const foundDoc = approvedRkas.find(doc => 
+                // Find target document and target item
+                let foundDoc = approvedRkas.find(doc => 
                     doc.item_pengajuan?.some((it: any) => it.id === itemIdParam)
                 );
+                let targetItem: any = null;
+
                 if (foundDoc) {
+                    targetItem = foundDoc.item_pengajuan?.find((it: any) => it.id === itemIdParam);
+                } else {
+                    // Fallback: Check if itemIdParam matches document ID directly
+                    foundDoc = approvedRkas.find(doc => doc.id === itemIdParam);
+                    if (foundDoc && foundDoc.item_pengajuan?.length > 0) {
+                        targetItem = foundDoc.item_pengajuan[0];
+                    }
+                }
+
+                if (foundDoc && targetItem) {
                     setSelectedRkaId(foundDoc.id);
                     
                     // Filter item_pengajuan to contain ONLY the specific clicked item
-                    const filteredItems = (foundDoc.item_pengajuan || []).filter((it: any) => it.id === itemIdParam);
+                    const filteredItems = [targetItem];
                     
                     // Update setSelectedRkaData with a new object having only the filtered items!
                     setSelectedRkaData({
@@ -235,39 +247,36 @@ export default function BuatRealisasiPage() {
                     setTahunAjaran(tahunVal);
 
                     // Autofill the LPJ input table (Tabel Realisasi Anggaran) using details from this item!
-                    if (filteredItems.length > 0) {
-                        const targetItem = filteredItems[0];
-                        let details: any = {};
-                        try {
-                            details = typeof targetItem.rincian_json === 'string' 
-                                ? JSON.parse(targetItem.rincian_json) 
-                                : (targetItem.rincian_json || {});
-                        } catch (e) {
-                            details = {};
-                        }
-
-                        const defaultItems = details.items || [{ name: targetItem.judul_kegiatan || '', unit: 'Pcs', price: Number(targetItem.nominal || 0), qty: 1, total: Number(targetItem.nominal || 0) }];
-                        const defaultSplits = details.fundingSplits || [{ source: targetItem.sumber_dana || 'Yayasan', percent: 100, nominal: targetItem.nominal }];
-
-                        setLpjRows([
-                            {
-                                id: '1',
-                                program: targetItem.judul_kegiatan || '',
-                                operasional: targetItem.kategori_coa || '',
-                                jumlah: details.jumlah_kegiatan || '1x',
-                                waktu: targetItem.waktu || '',
-                                tempat: targetItem.tempat || '',
-                                pic: targetItem.pic || '',
-                                sasaran: targetItem.sasaran || '',
-                                nominal: Number(targetItem.nominal || 0),
-                                details: {
-                                    items: defaultItems,
-                                    fundingSplits: defaultSplits
-                                },
-                                isFilled: true
-                            }
-                        ]);
+                    let details: any = {};
+                    try {
+                        details = typeof targetItem.rincian_json === 'string' 
+                            ? JSON.parse(targetItem.rincian_json) 
+                            : (targetItem.rincian_json || {});
+                    } catch (e) {
+                        details = {};
                     }
+
+                    const defaultItems = details.items || [{ name: targetItem.judul_kegiatan || '', unit: 'Pcs', price: Number(targetItem.nominal || 0), qty: 1, total: Number(targetItem.nominal || 0) }];
+                    const defaultSplits = details.fundingSplits || [{ source: targetItem.sumber_dana || 'Yayasan', percent: 100, nominal: targetItem.nominal }];
+
+                    setLpjRows([
+                        {
+                            id: '1',
+                            program: targetItem.judul_kegiatan || '',
+                            operasional: targetItem.kategori_coa || '',
+                            jumlah: details.jumlah_kegiatan || '1x',
+                            waktu: targetItem.waktu || '',
+                            tempat: targetItem.tempat || '',
+                            pic: targetItem.pic || '',
+                            sasaran: targetItem.sasaran || '',
+                            nominal: Number(targetItem.nominal || 0),
+                            details: {
+                                items: defaultItems,
+                                fundingSplits: defaultSplits
+                            },
+                            isFilled: true
+                        }
+                    ]);
                 }
             }
         }
