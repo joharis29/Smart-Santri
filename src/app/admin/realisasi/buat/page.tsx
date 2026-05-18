@@ -141,6 +141,8 @@ export default function BuatRealisasiPage() {
     const [bidang, setBidang] = useState('');
     const [bulan, setBulan] = useState('');
     const [tahunAjaran, setTahunAjaran] = useState('');
+    const [activeItemId, setActiveItemId] = useState<string | null>(null);
+    const urlParsedRef = useRef(false);
     
     const [lpjRows, setLpjRows] = useState<LPJRow[]>([
         { 
@@ -187,13 +189,14 @@ export default function BuatRealisasiPage() {
     useEffect(() => {
         // Step 1: Detect if there is a redirect query param (?itemId=...)
         let targetRkaId = selectedRkaId;
-        let targetItemIdParam = '';
+        let targetItemIdParam = activeItemId || '';
         
-        if (typeof window !== 'undefined' && approvedRkas.length > 0) {
+        if (typeof window !== 'undefined' && approvedRkas.length > 0 && !urlParsedRef.current) {
             const params = new URLSearchParams(window.location.search);
             const itemIdParam = params.get('itemId');
             if (itemIdParam) {
                 targetItemIdParam = itemIdParam;
+                setActiveItemId(itemIdParam);
                 // Find matching document for this itemIdParam (either as item ID or document ID)
                 let foundDoc = approvedRkas.find(doc => 
                     doc.item_pengajuan?.some((it: any) => it.id === itemIdParam)
@@ -202,11 +205,14 @@ export default function BuatRealisasiPage() {
                     foundDoc = approvedRkas.find(doc => doc.id === itemIdParam);
                 }
                 
+                urlParsedRef.current = true; // Mark as parsed so we don't repeat URL checking
                 if (foundDoc && selectedRkaId !== foundDoc.id) {
                     targetRkaId = foundDoc.id;
                     setSelectedRkaId(foundDoc.id);
                     return; // Let the state update trigger the next run of this effect
                 }
+            } else {
+                urlParsedRef.current = true;
             }
         }
 
@@ -297,7 +303,7 @@ export default function BuatRealisasiPage() {
         } else {
             setSelectedRkaData(null);
         }
-    }, [selectedRkaId, approvedRkas]);
+    }, [selectedRkaId, approvedRkas, activeItemId]);
     
     const budgetTotal = useMemo(() => {
         if (!selectedRkaData) return 0;
@@ -1311,6 +1317,10 @@ export default function BuatRealisasiPage() {
                                 value={selectedRkaId}
                                 onChange={(e) => {
                                     setSelectedRkaId(e.target.value);
+                                    setActiveItemId(null);
+                                    if (typeof window !== 'undefined') {
+                                        window.history.replaceState({}, '', window.location.pathname);
+                                    }
                                     setSubsidiSources([]);
                                 }}
                                 className="w-full bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
