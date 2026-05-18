@@ -1192,16 +1192,30 @@ export default function BuatRealisasiPage() {
             worksheet.getCell(r, 7).font = { bold: true };
         }
 
-        // RIGHT SIDEBAR: Selisih & Catatan
+        // RIGHT SIDEBAR: Selisih, Subsidi Silang, & Catatan
         worksheet.mergeCells(`K${lpjStartRow}:L${lpjStartRow+1}`);
         const selisihBox = worksheet.getCell(`K${lpjStartRow}`);
-        selisihBox.value = `Selisih\nRp ${(Number(rkaItem?.nominal || 0) - Number(lpjData.nominal)).toLocaleString()}`;
+        const rawSelisih = Number(rkaItem?.nominal || 0) - Number(lpjData.nominal);
+        selisihBox.value = `Selisih\nRp ${rawSelisih.toLocaleString('id-ID')}`;
         selisihBox.font = { bold: true };
         selisihBox.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         selisihBox.border = thickBorder;
 
-        worksheet.mergeCells(`K${lpjStartRow+3}:L${lpjEndRow}`);
-        const catatanBox = worksheet.getCell(`K${lpjStartRow+3}`);
+        let nextSidebarRow = lpjStartRow + 3;
+
+        if (selisih > 0) {
+            worksheet.mergeCells(`K${nextSidebarRow}:L${nextSidebarRow+2}`);
+            const subsidiBox = worksheet.getCell(`K${nextSidebarRow}`);
+            const subsidiText = subsidiSources.map(s => `- ${s.source}: Rp ${s.amount.toLocaleString('id-ID')} (${s.percent.toFixed(0)}%)`).join('\n');
+            subsidiBox.value = `Subsidi Silang:\n${subsidiText || '-'}`;
+            subsidiBox.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+            subsidiBox.border = thickBorder;
+            nextSidebarRow += 4;
+        }
+
+        const catatanEndRow = Math.max(lpjEndRow, nextSidebarRow + 4);
+        worksheet.mergeCells(`K${nextSidebarRow}:L${catatanEndRow}`);
+        const catatanBox = worksheet.getCell(`K${nextSidebarRow}`);
         catatanBox.value = `Catatan:\n${narasi || '-'}`;
         catatanBox.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
         catatanBox.border = thickBorder;
@@ -1213,6 +1227,8 @@ export default function BuatRealisasiPage() {
                 cell.font.name = 'Times New Roman';
             });
         });
+
+        currentRow = Math.max(currentRow, catatanEndRow);
 
         // SECTION: Bukti Nota / Kuitansi (Moved to Bottom)
         if (attachments.length > 0) {
