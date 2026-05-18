@@ -1041,7 +1041,14 @@ export default function AdminDashboardPage() {
                     </div>
                     
                     {selectedTrxForReview.type === 'LPJ' && parentRkaData && (() => {
-                        const totalRka = parentRkaData.item_pengajuan?.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
+                        const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
+                        const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
+                            const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                            return rkaActivityName === lpjActivityName;
+                        }) || [];
+                        const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
+
+                        const totalRka = rkaItemsToRender.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
                         const totalLpj = selectedTrxForReview.nominal || 0;
                         const selisih = totalRka - totalLpj;
                         const isOverBudget = selisih < 0;
@@ -1109,68 +1116,77 @@ export default function AdminDashboardPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {parentRkaData.item_pengajuan?.map((it: any, idx: number) => (
-                                                <Fragment key={idx}>
-                                                    <tr className="bg-white">
-                                                        <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
-                                                        <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
-                                                        <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
-                                                        <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
-                                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
-                                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
-                                                        <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
-                                                            <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
-                                                                <div className="flex items-center gap-2 mb-1 px-1">
-                                                                    <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
-                                                                    <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
-                                                                </div>
-                                                                <table className="w-full text-[9px]">
-                                                                    <thead>
-                                                                        <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
-                                                                            <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
-                                                                            <th className="py-1.5 text-center">Satuan</th>
-                                                                            <th className="py-1.5 text-right">Harga Satuan</th>
-                                                                            <th className="py-1.5 text-center">Qty</th>
-                                                                            <th className="py-1.5 text-right">Total (Rp)</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody className="divide-y divide-slate-50">
+                                            {(() => {
+                                                const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
+                                                const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
+                                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                    return rkaActivityName === lpjActivityName;
+                                                }) || [];
+                                                const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
+                                                
+                                                return rkaItemsToRender.map((it: any, idx: number) => (
+                                                    <Fragment key={idx}>
+                                                        <tr className="bg-white">
+                                                            <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                            <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                                            <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                                            <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                                            <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
+                                                                <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
+                                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                                        <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                                                        <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
+                                                                    </div>
+                                                                    <table className="w-full text-[9px]">
+                                                                        <thead>
+                                                                            <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                                <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                                <th className="py-1.5 text-center">Satuan</th>
+                                                                                <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                                <th className="py-1.5 text-center">Qty</th>
+                                                                                <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-slate-50">
+                                                                            {(() => {
+                                                                                let details: any = {};
+                                                                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                                let rincian = details.items || (Array.isArray(details) ? details : []);
+                                                                                return rincian.map((rin: any, rIdx: number) => (
+                                                                                    <tr key={rIdx}>
+                                                                                        <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
+                                                                                        <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
+                                                                                        <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                                        <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
+                                                                                        <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                                                    </tr>
+                                                                                ));
+                                                                            })()}
+                                                                        </tbody>
+                                                                    </table>
+                                                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
                                                                         {(() => {
                                                                             let details: any = {};
                                                                             try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                                            let rincian = details.items || (Array.isArray(details) ? details : []);
-                                                                            return rincian.map((rin: any, rIdx: number) => (
-                                                                                <tr key={rIdx}>
-                                                                                    <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
-                                                                                    <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
-                                                                                    <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
-                                                                                    <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
-                                                                                    <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
-                                                                                </tr>
+                                                                            let sd = details.fundingSplits || [];
+                                                                            return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
+                                                                                <span key={sIdx} className="text-[8px] font-black text-amber-800 uppercase bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
+                                                                                    {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                                                </span>
                                                                             ));
                                                                         })()}
-                                                                    </tbody>
-                                                                </table>
-                                                                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                                                                    {(() => {
-                                                                        let details: any = {};
-                                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                                        let sd = details.fundingSplits || [];
-                                                                        return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
-                                                                            <span key={sIdx} className="text-[8px] font-black text-amber-800 uppercase bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
-                                                                                {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
-                                                                            </span>
-                                                                        ));
-                                                                    })()}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                </Fragment>
-                                            ))}
+                                                            </td>
+                                                        </tr>
+                                                    </Fragment>
+                                                ));
+                                            })()}
                                         </tbody>
                                     </table>
                                 </div>
