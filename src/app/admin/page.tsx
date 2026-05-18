@@ -1052,6 +1052,18 @@ export default function AdminDashboardPage() {
                         const totalLpj = selectedTrxForReview.nominal || 0;
                         const selisih = totalRka - totalLpj;
                         const isOverBudget = selisih < 0;
+
+                        let details: any = {};
+                        try {
+                            const firstItem = selectedTrxForReview.items?.[0];
+                            if (firstItem) {
+                                details = typeof firstItem.rincian_json === 'string' 
+                                    ? JSON.parse(firstItem.rincian_json) 
+                                    : (firstItem.rincian_json || {});
+                            }
+                        } catch(e) {}
+                        const subsidi = details.subsidiSources || [];
+                        const isOverBudgetSolved = isOverBudget && subsidi.length > 0;
                         
                         return (
                             <div className="flex flex-wrap items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner animate-in fade-in zoom-in duration-300">
@@ -1063,9 +1075,16 @@ export default function AdminDashboardPage() {
                                     Total Realisasi: <span className="font-black text-slate-800">Rp {totalLpj.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="w-[1px] h-3 bg-slate-200"></div>
-                                <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                    {isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:'}
-                                    <span className="italic font-extrabold">Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
+                                <div className="flex items-center gap-2">
+                                    <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        {isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:'}
+                                        <span className="italic font-extrabold">Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
+                                    </div>
+                                    {isOverBudgetSolved && (
+                                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                            Subsidi Silang Aktif (Kekurangan Rp 0)
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -1283,12 +1302,37 @@ export default function AdminDashboardPage() {
                                                             {(() => {
                                                                 let details: any = {};
                                                                 try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                                const note = details.note || details.catatan || '';
+                                                                const note = details.note || details.catatan || details.narasi || '';
                                                                 const files = details.files || details.attachments || [];
                                                                 
-                                                                if (note || (Array.isArray(files) && files.length > 0)) {
+                                                                const subsidi = details.subsidiSources || [];
+                                                                 if (note || (Array.isArray(files) && files.length > 0) || (Array.isArray(subsidi) && subsidi.length > 0)) {
                                                                     return (
-                                                                        <div className="pt-2.5 mt-2.5 border-t border-slate-100 space-y-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                                                                        <div className="pt-2.5 mt-2.5 border-t border-slate-100 space-y-3 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                                                                             {Array.isArray(subsidi) && subsidi.length > 0 && (
+                                                                                 <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 space-y-2 animate-in fade-in slide-in-from-left-3 duration-300">
+                                                                                     <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1.5">
+                                                                                         <span className="flex h-2 w-2 relative">
+                                                                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                                                         </span>
+                                                                                         Alokasi Subsidi Silang (Over-Budget Terselesaikan):
+                                                                                     </span>
+                                                                                     <div className="flex flex-wrap gap-2">
+                                                                                         {subsidi.map((sub: any, sIdx: number) => (
+                                                                                             <div key={sIdx} className="inline-flex items-center gap-1.5 bg-white border border-emerald-200/50 px-2 py-1 rounded-lg text-[9px] font-black text-slate-700 shadow-sm animate-in zoom-in-95 duration-200">
+                                                                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                                                                 <span>{sub.source}</span>
+                                                                                                 <span className="text-[8px] text-slate-400">({sub.percent}%)</span>
+                                                                                                 <span className="text-emerald-700 font-extrabold italic">Rp {Number(sub.amount || 0).toLocaleString('id-ID')}</span>
+                                                                                             </div>
+                                                                                         ))}
+                                                                                     </div>
+                                                                                     <p className="text-[8px] font-bold text-emerald-600/90 leading-tight">
+                                                                                         ✅ Over-budget telah diselesaikan dan ditutupi sepenuhnya melalui alokasi dana tambahan di atas.
+                                                                                     </p>
+                                                                                 </div>
+                                                                             )}
                                                                             {note && (
                                                                                 <div>
                                                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Catatan Realisasi (Staff):</span>
