@@ -1379,7 +1379,7 @@ export default function BuatRealisasiPage() {
                             {/* Detail Table Section for RKA */}
                             <div className="p-5 bg-slate-50/50 border-t border-slate-100">
                                 <div className="flex flex-col lg:flex-row gap-8">
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1 w-full space-y-3">
                                         <div className="flex items-center gap-2">
                                             <Info className="w-3.5 h-3.5 text-emerald-600" />
                                             <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest italic">Rincian Detail & Budgeting Plan:</p>
@@ -1426,7 +1426,7 @@ export default function BuatRealisasiPage() {
                                             </table>
                                         </div>
                                     </div>
-                                    <div className="w-56 shrink-0 space-y-3">
+                                    <div className="w-full lg:w-56 shrink-0 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                                             <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Alokasi Sumber Dana:</p>
@@ -1611,7 +1611,7 @@ export default function BuatRealisasiPage() {
                             {/* Detail Table Section for Realisasi */}
                             <div className="p-5 bg-slate-50/50 border-t border-slate-100">
                                 <div className="flex flex-col lg:flex-row gap-8">
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1 w-full space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Info className="w-3.5 h-3.5 text-emerald-600" />
@@ -1711,7 +1711,7 @@ export default function BuatRealisasiPage() {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="md:col-span-2 space-y-6">
+                                    <div className="w-full lg:flex-1 space-y-6">
                                          {lpjRows.map((row) => (
                                              <div key={row.id} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-slate-100">
                                                  {/* Visual Summary */}
