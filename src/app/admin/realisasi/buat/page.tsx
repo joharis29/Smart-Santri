@@ -106,6 +106,72 @@ const RKA_PROGRAMS = [
 
 const FUND_SOURCES = ['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS'];
 
+const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
+    'Pusat (Yayasan)': [
+        'Dana SPP', 
+        'Dana Zakat', 
+        'Dana Wakaf', 
+        'Dana Infaq', 
+        'Laba Usaha Koperasi', 
+        'Laba Usaha Poskestren', 
+        'Tabungan Wajib', 
+        'Tabungan Siswa', 
+        'Uang Saku'
+    ],
+    'TK': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa', 
+        'Iuran Non-Wajib'
+    ],
+    'SDIT 1': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'SDIT 2': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'MTs': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'MA': [
+        'Dana BOS', 
+        'Dana Pesantren/Yayasan', 
+        'Tabungan Siswa'
+    ],
+    'Diniyah': [
+        'Dana Pesantren/Yayasan', 
+        'Subsidi Pesantren', 
+        'Infaq Siswa'
+    ],
+    'Asrama Putra': [
+        'Dana Pesantren/Yayasan', 
+        'Kas Internal', 
+        'Uang Saku'
+    ],
+    'Asrama Putri': [
+        'Dana Pesantren/Yayasan', 
+        'Kas Internal', 
+        'Uang Saku'
+    ],
+    'THQ': [
+        'Dana Pesantren/Yayasan', 
+        'Uang Saku', 
+        'Tabungan Siswa'
+    ],
+    'Dapur Asrama Putra': [
+        'Kas Internal'
+    ],
+    'Dapur Asrama Putri': [
+        'Kas Internal'
+    ]
+};
+
 interface SubsidiSource {
     source: string;
     amount: number;
@@ -327,6 +393,17 @@ export default function BuatRealisasiPage() {
     const realisasiTotal = useMemo(() => 
         lpjRows.reduce((acc, curr) => acc + curr.nominal, 0),
     [lpjRows]);
+
+    const availableFundSources = useMemo(() => {
+        let normalizedUnit = unit || '';
+        if (normalizedUnit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+        
+        const unitSources = FUNDING_SOURCES_BY_UNIT[normalizedUnit] || [];
+        if (unitSources.length > 0) {
+            return unitSources;
+        }
+        return ['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS'];
+    }, [unit]);
 
     const selisih = useMemo(() => {
         if (!selectedRkaData) return 0;
@@ -1841,7 +1918,7 @@ export default function BuatRealisasiPage() {
                                                                          className="w-full px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
                                                                      >
                                                                          <option value="">Pilih Sumber...</option>
-                                                                         {FUND_SOURCES.map(source => (
+                                                                         {availableFundSources.map(source => (
                                                                              <option key={source} value={source}>{source}</option>
                                                                          ))}
                                                                      </select>
