@@ -330,7 +330,7 @@ export default function AdminDashboardPage() {
 
             return {
                 id: doc.id,
-                type: doc.mode || 'RKA',
+                type: doc.jenis || 'RKA',
                 title: doc.kegiatan || items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Tanpa Judul',
                 unit: doc.unit || 'SDIT 1', 
                 desc: doc.bidang || 'Tanpa Bidang',
@@ -822,6 +822,13 @@ export default function AdminDashboardPage() {
                                                     <td className="px-2 py-2">
                                                         <div className="flex items-center gap-2">
                                                             <p className="font-black text-slate-800 tracking-tight leading-none">{trx.title}</p>
+                                                            <span className={`px-1.5 py-0.5 text-[6px] rounded-sm font-black uppercase tracking-widest border ${
+                                                                trx.type === 'RKA' 
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-200/50' 
+                                                                : 'bg-blue-50 text-blue-700 border-blue-200/50'
+                                                            }`}>
+                                                                {trx.type}
+                                                            </span>
                                                             {trx.isRevised && (
                                                                 <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[6px] rounded-sm font-black uppercase tracking-widest border border-indigo-200">Revisi</span>
                                                             )}
