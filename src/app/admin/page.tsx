@@ -61,6 +61,55 @@ export default function AdminDashboardPage() {
   const [selectedTrxForReview, setSelectedTrxForReview] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [parentRkaData, setParentRkaData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchParentRka = async () => {
+      if (!selectedTrxForReview || selectedTrxForReview.type !== 'LPJ') {
+        setParentRkaData(null);
+        return;
+      }
+      
+      let parentRkaId = null;
+      if (selectedTrxForReview.items) {
+        for (const item of selectedTrxForReview.items) {
+          let details: any = {};
+          try {
+            details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
+          } catch (e) {}
+          if (details.rka_id) {
+            parentRkaId = details.rka_id;
+            break;
+          }
+        }
+      }
+      
+      if (!parentRkaId) {
+        setParentRkaData(null);
+        return;
+      }
+      
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('dokumen_pengajuan')
+          .select('*, item_pengajuan(*)')
+          .eq('id', parentRkaId)
+          .single();
+          
+        if (!error && data) {
+          setParentRkaData(data);
+        } else {
+          setParentRkaData(null);
+        }
+      } catch (e) {
+        console.error("Gagal mengambil referensi RKA:", e);
+        setParentRkaData(null);
+      }
+    };
+    
+    fetchParentRka();
+  }, [selectedTrxForReview]);
   
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedTrx, setSelectedTrx] = useState<any>(null);
@@ -974,123 +1023,399 @@ export default function AdminDashboardPage() {
             )}
 
             {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-50/30">
                 {/* Status & Summary Bar */}
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm">
+                <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                     <div className="flex items-center gap-2">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status:</span>
                         <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${selectedTrxForReview.statusColor}`}>
                             {selectedTrxForReview.status}
                         </span>
                     </div>
+                    
+                    {selectedTrxForReview.type === 'LPJ' && parentRkaData && (() => {
+                        const totalRka = parentRkaData.item_pengajuan?.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
+                        const totalLpj = selectedTrxForReview.nominal || 0;
+                        const selisih = totalRka - totalLpj;
+                        const isOverBudget = selisih < 0;
+                        
+                        return (
+                            <div className="flex flex-wrap items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner animate-in fade-in zoom-in duration-300">
+                                <div className="text-[9px] font-bold text-slate-500">
+                                    Total RKA: <span className="font-black text-slate-800">Rp {totalRka.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="w-[1px] h-3 bg-slate-200"></div>
+                                <div className="text-[9px] font-bold text-slate-500">
+                                    Total Realisasi: <span className="font-black text-slate-800">Rp {totalLpj.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="w-[1px] h-3 bg-slate-200"></div>
+                                <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                    {isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:'}
+                                    <span className="italic font-extrabold">Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                    
                     <div className="text-right flex flex-col items-end">
                         <div className="flex items-center gap-2">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Pengajuan:</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                {selectedTrxForReview.type === 'LPJ' ? 'Total Realisasi LPJ:' : 'Total Pengajuan:'}
+                            </span>
                             <span className="text-sm font-black text-slate-800 italic">Rp {selectedTrxForReview.nominal.toLocaleString('id-ID')}</span>
                         </div>
                     </div>
                 </div>
-                
-                {/* Unified Data Table */}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                    <table className="w-full text-left text-[9px] border-collapse">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">No</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Program/Kegiatan</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Operasional</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-center">Jml Kegiatan</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Waktu/Tempat</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
-                                <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-right">Nominal</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {selectedTrxForReview.items?.map((it: any, idx: number) => (
-                                <Fragment key={idx}>
-                                    <tr className="bg-white">
-                                        <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
-                                        <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
-                                        <td className="px-3 py-2"><span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
-                                        <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
-                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
-                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
-                                        <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
-                                    </tr>
-                                    {/* Nested Item Breakdown Row */}
-                                    <tr>
-                                        <td colSpan={7} className="px-8 pb-4 bg-slate-50/50">
-                                            <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
-                                                <div className="flex items-center gap-2 mb-1 px-1">
-                                                    <div className="w-1 h-3 bg-emerald-600 rounded-full"></div>
-                                                    <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Rincian Detail & Budgeting</p>
-                                                </div>
-                                                <table className="w-full text-[9px]">
-                                                    <thead>
-                                                        <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
-                                                            <th className="py-1.5">Nama Item / Spesifikasi</th>
-                                                            <th className="py-1.5 text-center">Satuan</th>
-                                                            <th className="py-1.5 text-right">Harga Satuan</th>
-                                                            <th className="py-1.5 text-center">Qty</th>
-                                                            <th className="py-1.5 text-right">Total (Rp)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-50">
+
+                {selectedTrxForReview.type === 'LPJ' ? (
+                    // DUAL PANE COMPARISON FOR LPJ
+                    <div className="space-y-6">
+                        {/* SECTION 1: RKA (Target/Rencana) */}
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-3 duration-300">
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-4 bg-amber-500 rounded-full shadow-md shadow-amber-100"></div>
+                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">1. Rencana Kegiatan & Anggaran (RKA) - Target/Rencana</h4>
+                                </div>
+                                <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    Rujukan Utama
+                                </span>
+                            </div>
+                            
+                            {!parentRkaData ? (
+                                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-500 mx-auto mb-2"></div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Memuat Referensi RKA...</p>
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <table className="w-full text-left text-[9px] border-collapse">
+                                        <thead className="bg-amber-50/50 border-b border-amber-100">
+                                            <tr>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">No</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Program/Kegiatan</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Operasional</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Waktu/Tempat</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-right">Nominal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {parentRkaData.item_pengajuan?.map((it: any, idx: number) => (
+                                                <Fragment key={idx}>
+                                                    <tr className="bg-white">
+                                                        <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                        <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                                        <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                                        <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                                        <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                                        <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
+                                                            <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
+                                                                <div className="flex items-center gap-2 mb-1 px-1">
+                                                                    <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                                                    <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
+                                                                </div>
+                                                                <table className="w-full text-[9px]">
+                                                                    <thead>
+                                                                        <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                            <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                            <th className="py-1.5 text-center">Satuan</th>
+                                                                            <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                            <th className="py-1.5 text-center">Qty</th>
+                                                                            <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-slate-50">
+                                                                        {(() => {
+                                                                            let details: any = {};
+                                                                            try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                            let rincian = details.items || (Array.isArray(details) ? details : []);
+                                                                            return rincian.map((rin: any, rIdx: number) => (
+                                                                                <tr key={rIdx}>
+                                                                                    <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
+                                                                                    <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
+                                                                                    <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                                    <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
+                                                                                    <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                                                </tr>
+                                                                            ));
+                                                                        })()}
+                                                                    </tbody>
+                                                                </table>
+                                                                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                                                    {(() => {
+                                                                        let details: any = {};
+                                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                        let sd = details.fundingSplits || [];
+                                                                        return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
+                                                                            <span key={sIdx} className="text-[8px] font-black text-amber-800 uppercase bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
+                                                                                {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                                            </span>
+                                                                        ));
+                                                                    })()}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </Fragment>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* SECTION 2: LPJ (Aktual/Realisasi) */}
+                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-4 bg-blue-600 rounded-full shadow-md shadow-blue-100"></div>
+                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">2. Realisasi Anggaran (LPJ) - Aktual/Realisasi</h4>
+                                </div>
+                                <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                    Butuh Peninjauan
+                                </span>
+                            </div>
+                            
+                            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                <table className="w-full text-left text-[9px] border-collapse">
+                                    <thead className="bg-blue-50/50 border-b border-blue-100">
+                                        <tr>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">No</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Program/Kegiatan</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Operasional</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Waktu/Tempat</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                            <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest text-right">Nominal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {selectedTrxForReview.items?.map((it: any, idx: number) => (
+                                            <Fragment key={idx}>
+                                                <tr className="bg-white">
+                                                    <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                    <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                                    <td className="px-3 py-2"><span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                                    <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                    <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                                    <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                                    <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colSpan={7} className="px-8 pb-4 bg-blue-50/10">
+                                                        <div className="bg-white rounded-xl border border-blue-100 p-3 space-y-3 shadow-sm">
+                                                            <div className="flex items-center justify-between mb-1 px-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1 h-3 bg-blue-600 rounded-full"></div>
+                                                                    <p className="text-[9px] font-black text-blue-800 uppercase tracking-widest">Detail Realisasi LPJ & Bukti Fisik</p>
+                                                                </div>
+                                                            </div>
+                                                            <table className="w-full text-[9px]">
+                                                                <thead>
+                                                                    <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                        <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                        <th className="py-1.5 text-center">Satuan</th>
+                                                                        <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                        <th className="py-1.5 text-center">Qty</th>
+                                                                        <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-50">
+                                                                    {(() => {
+                                                                        let details: any = {};
+                                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                        let rincian = details.items || (Array.isArray(details) ? details : []);
+                                                                        return rincian.map((rin: any, rIdx: number) => (
+                                                                            <tr key={rIdx}>
+                                                                                <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
+                                                                                <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
+                                                                                <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                                <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
+                                                                                <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
+                                                                </tbody>
+                                                            </table>
+                                                            
+                                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                                                {(() => {
+                                                                    let details: any = {};
+                                                                    try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                    let sd = details.fundingSplits || [];
+                                                                    return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
+                                                                        <span key={sIdx} className="text-[8px] font-black text-blue-800 uppercase bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
+                                                                            {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                                        </span>
+                                                                    ));
+                                                                })()}
+                                                            </div>
+
+                                                            {(() => {
+                                                                let details: any = {};
+                                                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                const note = details.note || details.catatan || '';
+                                                                const files = details.files || details.attachments || [];
+                                                                
+                                                                if (note || (Array.isArray(files) && files.length > 0)) {
+                                                                    return (
+                                                                        <div className="pt-2.5 mt-2.5 border-t border-slate-100 space-y-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                                                                            {note && (
+                                                                                <div>
+                                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Catatan Realisasi (Staff):</span>
+                                                                                    <p className="text-[9px] font-bold text-slate-700 italic mt-0.5">"{note}"</p>
+                                                                                </div>
+                                                                            )}
+                                                                            {Array.isArray(files) && files.length > 0 && (
+                                                                                <div>
+                                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Lampiran Bukti Fisik:</span>
+                                                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                                                        {files.map((f: any, fIdx: number) => (
+                                                                                            <a key={fIdx} href={f.url || f} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-[8px] font-black text-blue-600 transition-all shadow-sm">
+                                                                                                📄 Bukti {fIdx + 1}
+                                                                                            </a>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+
+                                                            {canReview && (
+                                                                <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                                                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                                        <Edit3 className="w-2.5 h-2.5 text-blue-600" /> Catatan Peninjauan Realisasi LPJ
+                                                                    </p>
+                                                                    <textarea 
+                                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-700 focus:bg-white focus:border-blue-500 focus:ring-0 outline-none transition-all min-h-[50px] italic placeholder:text-slate-300 shadow-sm"
+                                                                        placeholder="Tambahkan catatan khusus untuk Realisasi Program/Kegiatan ini..."
+                                                                        value={itemNotes[it.id] || ''}
+                                                                        onChange={(e) => setItemNotes(prev => ({
+                                                                            ...prev,
+                                                                            [it.id]: e.target.value
+                                                                        }))}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </Fragment>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    // STANDARD SINGLE PANEL FOR RKA
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                        <table className="w-full text-left text-[9px] border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">No</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Program/Kegiatan</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Operasional</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Waktu/Tempat</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                    <th className="px-3 py-2 font-black text-slate-700 uppercase tracking-widest text-right">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {selectedTrxForReview.items?.map((it: any, idx: number) => (
+                                    <Fragment key={idx}>
+                                        <tr className="bg-white">
+                                            <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                            <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                            <td className="px-3 py-2"><span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                            <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                            <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colSpan={7} className="px-8 pb-4 bg-slate-50/50">
+                                                <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
+                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                        <div className="w-1 h-3 bg-emerald-600 rounded-full"></div>
+                                                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Rincian Detail & Budgeting</p>
+                                                    </div>
+                                                    <table className="w-full text-[9px]">
+                                                        <thead>
+                                                            <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                <th className="py-1.5 text-center">Satuan</th>
+                                                                <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                <th className="py-1.5 text-center">Qty</th>
+                                                                <th className="py-1.5 text-right">Total (Rp)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-50">
+                                                            {(() => {
+                                                                let details: any = {};
+                                                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                let rincian = details.items || (Array.isArray(details) ? details : []);
+                                                                return rincian.map((rin: any, rIdx: number) => (
+                                                                    <tr key={rIdx}>
+                                                                        <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
+                                                                        <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
+                                                                        <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                        <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
+                                                                        <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
+                                                                    </tr>
+                                                                ));
+                                                            })()}
+                                                        </tbody>
+                                                    </table>
+                                                    
+                                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
                                                         {(() => {
                                                             let details: any = {};
                                                             try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                            let rincian = details.items || (Array.isArray(details) ? details : []);
-                                                            return rincian.map((rin: any, rIdx: number) => (
-                                                                <tr key={rIdx}>
-                                                                    <td className="py-1.5 font-bold text-slate-800 italic">{rin.name || rin.item}</td>
-                                                                    <td className="py-1.5 text-center text-slate-600 font-bold">{rin.unit || rin.satuan || '-'}</td>
-                                                                    <td className="py-1.5 text-right text-slate-700 font-black">Rp {(rin.price || rin.harga_satuan || 0).toLocaleString('id-ID')}</td>
-                                                                    <td className="py-1.5 text-center font-black text-slate-900">{rin.qty || rin.jumlah || 1}</td>
-                                                                    <td className="py-1.5 text-right font-black text-slate-950">Rp {( (rin.price || rin.harga_satuan || 0) * (rin.qty || rin.jumlah || 1) ).toLocaleString('id-ID')}</td>
-                                                                </tr>
+                                                            let sd = details.fundingSplits || [];
+                                                            return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
+                                                                <span key={sIdx} className="text-[8px] font-black text-emerald-800 uppercase bg-emerald-100/50 px-2 py-1 rounded-md border border-emerald-200/50">
+                                                                    {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
+                                                                </span>
                                                             ));
                                                         })()}
-                                                    </tbody>
-                                                </table>
-                                                {/* Line Funding info */}
-                                                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                                                    {(() => {
-                                                        let details: any = {};
-                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                        let sd = details.fundingSplits || [];
-                                                        return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
-                                                            <span key={sIdx} className="text-[8px] font-black text-emerald-800 uppercase bg-emerald-100/50 px-2 py-1 rounded-md border border-emerald-200/50">
-                                                                {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
-                                                            </span>
-                                                        ));
-                                                    })()}
-                                                </div>
-
-                                                {/* Catatan Peninjauan per Program/Kegiatan */}
-                                                {canReview && (
-                                                    <div className="space-y-1.5 pt-3 border-t border-slate-100">
-                                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                                            <Edit3 className="w-2.5 h-2.5 text-emerald-600" /> Catatan Peninjauan Kegiatan
-                                                        </p>
-                                                        <textarea 
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-700 focus:bg-white focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[50px] italic placeholder:text-slate-300 shadow-sm"
-                                                            placeholder="Tambahkan catatan khusus untuk Program/Kegiatan ini..."
-                                                            value={itemNotes[it.id] || ''}
-                                                            onChange={(e) => setItemNotes(prev => ({
-                                                                ...prev,
-                                                                [it.id]: e.target.value
-                                                            }))}
-                                                        />
                                                     </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </Fragment>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+
+                                                    {canReview && (
+                                                        <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                                                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                                <Edit3 className="w-2.5 h-2.5 text-emerald-600" /> Catatan Peninjauan Kegiatan
+                                                            </p>
+                                                            <textarea 
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-700 focus:bg-white focus:border-emerald-500 focus:ring-0 outline-none transition-all min-h-[50px] italic placeholder:text-slate-300 shadow-sm"
+                                                                placeholder="Tambahkan catatan khusus untuk Program/Kegiatan ini..."
+                                                                value={itemNotes[it.id] || ''}
+                                                                onChange={(e) => setItemNotes(prev => ({
+                                                                    ...prev,
+                                                                    [it.id]: e.target.value
+                                                                }))}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Footer Actions - Fixed Bottom */}
