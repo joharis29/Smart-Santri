@@ -1674,7 +1674,7 @@ export default function BuatRealisasiPage() {
                 alert("Gagal mengirim realisasi: " + res.error);
             } else {
                 alert('Berhasil dikirim ke Bendahara Unit!');
-                window.location.href = '/admin/realisasi/rekap';
+                window.location.href = '/admin/pengajuan/draft-saya';
             }
         } catch (err: any) { 
             console.error("Error submitting LPJ:", err);
