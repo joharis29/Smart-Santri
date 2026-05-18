@@ -1297,10 +1297,10 @@ export default function BuatRealisasiPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start w-full">
+                <div className="flex flex-col gap-6 w-full">
                     
                     {/* Main Content Area (Tables) */}
-                    <div className="space-y-6 min-w-0">
+                    <div className="space-y-6 w-full">
                         
                         {/* Selector for RKA */}
                         <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
@@ -1379,13 +1379,13 @@ export default function BuatRealisasiPage() {
                             {/* Detail Table Section for RKA */}
                             <div className="p-5 bg-slate-50/50 border-t border-slate-100">
                                 <div className="flex flex-col lg:flex-row gap-8">
-                                    <div className="flex-1 w-full space-y-3">
+                                    <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <Info className="w-3.5 h-3.5 text-emerald-600" />
                                             <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest italic">Rincian Detail & Budgeting Plan:</p>
                                         </div>
-                                        <div className="border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
-                                            <table className="w-full border-collapse bg-white text-[10px] min-w-[550px]">
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px]">
                                                 <thead className="bg-slate-50 border-b border-slate-200">
                                                     <tr className="divide-x divide-slate-200">
                                                         <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
@@ -1426,7 +1426,7 @@ export default function BuatRealisasiPage() {
                                             </table>
                                         </div>
                                     </div>
-                                    <div className="w-full lg:w-56 shrink-0 space-y-3">
+                                    <div className="w-56 shrink-0 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                                             <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Alokasi Sumber Dana:</p>
@@ -1611,7 +1611,7 @@ export default function BuatRealisasiPage() {
                             {/* Detail Table Section for Realisasi */}
                             <div className="p-5 bg-slate-50/50 border-t border-slate-100">
                                 <div className="flex flex-col lg:flex-row gap-8">
-                                    <div className="flex-1 w-full space-y-3">
+                                    <div className="flex-1 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Info className="w-3.5 h-3.5 text-emerald-600" />
@@ -1624,8 +1624,8 @@ export default function BuatRealisasiPage() {
                                                 <PlusCircle className="w-3.5 h-3.5" /> Tambah Item Rincian
                                             </button>
                                         </div>
-                                        <div className="border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
-                                            <table className="w-full border-collapse bg-white text-[10px] min-w-[600px]">
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px]">
                                                 <thead className="bg-slate-50 border-b border-slate-200">
                                                     <tr className="divide-x divide-slate-200">
                                                         <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
@@ -1711,7 +1711,7 @@ export default function BuatRealisasiPage() {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="w-full lg:flex-1 space-y-6">
+                                    <div className="md:col-span-2 space-y-6">
                                          {lpjRows.map((row) => (
                                              <div key={row.id} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-slate-100">
                                                  {/* Visual Summary */}
@@ -1806,8 +1806,8 @@ export default function BuatRealisasiPage() {
                         </div>
                     </div>
 
-                    {/* Sidebar Area (Fixed Right) */}
-                    <div className="space-y-4 sticky top-24 w-full lg:w-80">
+                    {/* Bottom Action & Attachment Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full pt-4 items-start">
                         {/* Summary Box */}
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-6">
                             <div className="space-y-4">
@@ -1847,75 +1847,78 @@ export default function BuatRealisasiPage() {
                             </div>
                         </div>
 
-                        {/* File Upload / Bukti Nota */}
-                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Bukti Nota / Lampiran
-                                </label>
-                                <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-full">{attachments.length} File</span>
-                            </div>
+                        {/* File Upload / Bukti Nota & Variance Box */}
+                        <div className="space-y-4">
+                            {/* File Upload / Bukti Nota */}
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Bukti Nota / Lampiran
+                                    </label>
+                                    <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-full">{attachments.length} File</span>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <button 
-                                    onClick={() => setIsCameraOpen(true)}
-                                    className="flex flex-col items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 border-dashed rounded-2xl transition-all group"
-                                >
-                                    <CameraIcon className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
-                                    <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Ambil Foto</span>
-                                </button>
-                                <label className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-2xl cursor-pointer transition-all group">
-                                    <Upload className="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform" />
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Upload File</span>
-                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-                                </label>
-                            </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => setIsCameraOpen(true)}
+                                        className="flex flex-col items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 border-dashed rounded-2xl transition-all group"
+                                    >
+                                        <CameraIcon className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Ambil Foto</span>
+                                    </button>
+                                    <label className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-2xl cursor-pointer transition-all group">
+                                        <Upload className="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Upload File</span>
+                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                                    </label>
+                                </div>
 
-                            {attachments.length > 0 && (
-                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
-                                    {attachments.map((att, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-100 group">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-emerald-600 shrink-0">
-                                                    <FileIcon className="w-4 h-4" />
+                                {attachments.length > 0 && (
+                                    <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                        {attachments.map((att, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-100 group">
+                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-emerald-600 shrink-0">
+                                                        <FileIcon className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <p className="text-[10px] font-bold text-slate-700 truncate">{att.customName}</p>
+                                                        <p className="text-[8px] text-slate-400">{(att.file.size / 1024).toFixed(1)} KB</p>
+                                                    </div>
                                                 </div>
-                                                <div className="overflow-hidden">
-                                                    <p className="text-[10px] font-bold text-slate-700 truncate">{att.customName}</p>
-                                                    <p className="text-[8px] text-slate-400">{(att.file.size / 1024).toFixed(1)} KB</p>
-                                                </div>
+                                                <button 
+                                                    onClick={() => removeAttachment(idx)}
+                                                    className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
-                                            <button 
-                                                onClick={() => removeAttachment(idx)}
-                                                className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Variance Logic Box */}
+                            {selisih !== 0 && (
+                                <div className={`rounded-3xl p-5 border-2 animate-in slide-in-from-right-4 duration-500 ${selisih > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                                    <div className="flex gap-3">
+                                        <div className={`p-2 rounded-xl h-fit ${selisih > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                                            <AlertTriangle className="w-4 h-4" />
                                         </div>
-                                    ))}
+                                        <div className="space-y-1">
+                                            <p className={`text-[10px] font-black uppercase tracking-widest ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                {selisih > 0 ? 'Over Budget Detected' : 'Under Budget Detected'}
+                                            </p>
+                                            <p className={`text-[11px] leading-relaxed font-bold ${selisih > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
+                                                {selisih > 0 
+                                                    ? `Terdapat selisih lebih sebesar Rp ${selisih.toLocaleString('id-ID')}. Mohon lampirkan alasan di subsidi silang.` 
+                                                    : `Hemat anggaran sebesar Rp ${Math.abs(selisih).toLocaleString('id-ID')}.`}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
-
-                        {/* Variance Logic Box */}
-                        {selisih !== 0 && (
-                            <div className={`rounded-3xl p-5 border-2 animate-in slide-in-from-right-4 duration-500 ${selisih > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                                <div className="flex gap-3">
-                                    <div className={`p-2 rounded-xl h-fit ${selisih > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>
-                                        <AlertTriangle className="w-4 h-4" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className={`text-[10px] font-black uppercase tracking-widest ${selisih > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                            {selisih > 0 ? 'Over Budget Detected' : 'Under Budget Detected'}
-                                        </p>
-                                        <p className={`text-[11px] leading-relaxed font-bold ${selisih > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>
-                                            {selisih > 0 
-                                                ? `Terdapat selisih lebih sebesar Rp ${selisih.toLocaleString('id-ID')}. Mohon lampirkan alasan di subsidi silang.` 
-                                                : `Hemat anggaran sebesar Rp ${Math.abs(selisih).toLocaleString('id-ID')}.`}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
