@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/utils/supabase/server'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
 
 export async function batchSavePengajuan(payload: {
   id?: string, // Optional ID for updates
@@ -230,16 +230,42 @@ export async function submitPengajuan(id: string) {
 export async function deletePengajuan(id: string) {
   const supabase = await createClient()
   
-  // 1. Delete items first
-  await supabase.from('item_pengajuan').delete().eq('dokumen_id', id)
+  // 1. Get current authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized: User not logged in' }
 
-  // 2. Delete document header
-  const { error } = await supabase
+  // 2. Fetch the document using standard client first to ensure RLS access / check ownership
+  const { data: doc, error: fetchError } = await supabase
     .from('dokumen_pengajuan')
-    .delete()
+    .select('pembuat_id, status')
     .eq('id', id)
+    .maybeSingle()
 
-  if (error) return { error: error.message }
+  if (fetchError || !doc) {
+    return { error: 'Dokumen tidak ditemukan atau Anda tidak memiliki akses: ' + (fetchError?.message || '') }
+  }
+
+  // 3. Otoritas: Pembuat dokumen hanya dapat menghapus jika status 'DRAFT', 'REVISI', atau 'MENUNGGU_VERIFIKASI'
+  // Atau jika user adalah ADMINISTRATOR / BENDAHARA_PUSAT
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  const isCreator = doc.pembuat_id === user.id
+  const isAllowedStatus = ['DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI'].includes(doc.status)
+  const isAdminOrPusat = ['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(profile?.role || '')
+
+  if (!isAdminOrPusat && !(isCreator && isAllowedStatus)) {
+    return { error: 'Anda tidak memiliki wewenang untuk menghapus dokumen dengan status ini.' }
+  }
+
+  // 4. Perform the deletion using the admin client (which bypasses RLS)
+  const adminSupabase = createAdminClient()
+  
+  // Delete items first
+  const { error: itemError } = await adminSupabase.from('item_pengajuan').delete().eq('dokumen_id', id)
+  if (itemError) return { error: 'Gagal menghapus item: ' + itemError.message }
+
+  // Delete document header
+  const { error: docError } = await adminSupabase.from('dokumen_pengajuan').delete().eq('id', id)
+  if (docError) return { error: 'Gagal menghapus dokumen: ' + docError.message }
 
   return { success: true }
 }
