@@ -169,7 +169,7 @@ export default function BuatRealisasiPage() {
     const [stream, setStream] = useState<MediaStream | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    // FETCH APPROVED RKAs
+    // FETCH APPROVED RKAs & USER PROFILE UNIT
     useEffect(() => {
         const fetchApproved = async () => {
             const supabase = createClient();
@@ -181,6 +181,20 @@ export default function BuatRealisasiPage() {
                 .order('created_at', { ascending: false });
             
             if (data) setApprovedRkas(data);
+
+            // Fetch user profile unit
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*, unit:unit_id(name)')
+                    .eq('id', user.id)
+                    .single() as any;
+                
+                if (profile?.unit?.name) {
+                    setUnit(profile.unit.name);
+                }
+            }
         };
         fetchApproved();
     }, []);
@@ -1256,8 +1270,8 @@ export default function BuatRealisasiPage() {
                                     </label>
                                     <select 
                                         value={unit}
-                                        onChange={(e) => setUnit(e.target.value)}
-                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                        disabled
+                                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 outline-none cursor-not-allowed transition-all opacity-75"
                                     >
                                         <option value="">Pilih Unit...</option>
                                         <option value="SDIT 1">SDIT 1</option>
@@ -1265,6 +1279,17 @@ export default function BuatRealisasiPage() {
                                         <option value="SMPIT">SMPIT</option>
                                         <option value="SMAIT">SMAIT</option>
                                         <option value="Pesantren">Pesantren</option>
+                                        <option value="TK">TK</option>
+                                        <option value="MTs">MTs</option>
+                                        <option value="MA">MA</option>
+                                        <option value="Diniyah">Diniyah</option>
+                                        <option value="Asrama Putra">Asrama Putra</option>
+                                        <option value="Asrama Putri">Asrama Putri</option>
+                                        <option value="THQ">THQ</option>
+                                        <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
+                                        {unit && !["SDIT 1", "SDIT 2", "SMPIT", "SMAIT", "Pesantren", "TK", "MTs", "MA", "Diniyah", "Asrama Putra", "Asrama Putri", "THQ", "Pusat (Yayasan)"].includes(unit) && (
+                                            <option value={unit}>{unit}</option>
+                                        )}
                                     </select>
                                 </div>
                                 <div className="space-y-1">
