@@ -1310,18 +1310,7 @@ export default function AdminDashboardPage() {
                                                                 </tbody>
                                                             </table>
                                                             
-                                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                                                                {(() => {
-                                                                    let details: any = {};
-                                                                    try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                                    let sd = details.fundingSplits || [];
-                                                                    return (Array.isArray(sd) ? sd : []).map((s: any, sIdx: number) => (
-                                                                        <span key={sIdx} className="text-[8px] font-black text-blue-800 uppercase bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
-                                                                            {s.source || s.sumber}: {s.percentage}% (Rp {Number(s.amount || s.nominal || 0).toLocaleString('id-ID')})
-                                                                        </span>
-                                                                    ));
-                                                                })()}
-                                                            </div>
+                                                            {/* Removed funding splits for LPJ to align with LPJ creation page */}
 
                                                             {(() => {
                                                                 let details: any = {};
