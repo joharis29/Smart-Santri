@@ -1384,8 +1384,8 @@ export default function BuatRealisasiPage() {
                                             <Info className="w-3.5 h-3.5 text-emerald-600" />
                                             <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest italic">Rincian Detail & Budgeting Plan:</p>
                                         </div>
-                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                            <table className="w-full border-collapse bg-white text-[10px]">
+                                        <div className="border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px] min-w-[550px]">
                                                 <thead className="bg-slate-50 border-b border-slate-200">
                                                     <tr className="divide-x divide-slate-200">
                                                         <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
@@ -1624,8 +1624,8 @@ export default function BuatRealisasiPage() {
                                                 <PlusCircle className="w-3.5 h-3.5" /> Tambah Item Rincian
                                             </button>
                                         </div>
-                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                            <table className="w-full border-collapse bg-white text-[10px]">
+                                        <div className="border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
+                                            <table className="w-full border-collapse bg-white text-[10px] min-w-[600px]">
                                                 <thead className="bg-slate-50 border-b border-slate-200">
                                                     <tr className="divide-x divide-slate-200">
                                                         <th className="px-2 py-2 w-10 text-center font-black text-slate-600 uppercase tracking-widest">No</th>
