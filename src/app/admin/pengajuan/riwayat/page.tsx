@@ -109,7 +109,7 @@ export default function RiwayatPengajuanPage() {
         fetchRiwayat();
     }, []);
 
-    const handleExportDocumentToExcel = async (docId: string) => {
+    const handleExportDocumentToExcel = async (docId: string, itemId: string) => {
         const supabase = createClient();
         
         // 1. Fetch document and all its items
@@ -164,6 +164,32 @@ export default function RiwayatPengajuanPage() {
             cell.font = { bold: true, name: 'Times New Roman' };
             cell.alignment = { horizontal: 'right' };
         });
+
+        // Row 3: Additional Metadata (Metode Pencairan & Status)
+        const metaRow2 = worksheet.getRow(3);
+        metaRow2.values = [
+            'Metode Pencairan:', doc.metode_pencairan || 'CASH',
+            '',
+            'Status:', 'SUDAH DICAIRKAN',
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
+        ];
+        metaRow2.font = { name: 'Times New Roman', size: 10 };
+        
+        ;['A3', 'D3'].forEach(ref => {
+            const cell = worksheet.getCell(ref);
+            cell.font = { bold: true, name: 'Times New Roman' };
+            cell.alignment = { horizontal: 'right' };
+        });
+        
+        // Highlight Status and Metode
+        worksheet.getCell('B3').font = { bold: true, color: { argb: 'FF0284C7' }, name: 'Times New Roman' }; // Sky-600
+        worksheet.getCell('E3').font = { bold: true, color: { argb: 'FF059669' }, name: 'Times New Roman' }; // Emerald-600
+
         worksheet.addRow([]); 
 
         // 3. Table Headers
@@ -204,7 +230,7 @@ export default function RiwayatPengajuanPage() {
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
 
-        const items = doc.item_pengajuan || [];
+        const items = (doc.item_pengajuan || []).filter((it: any) => it.id === itemId);
         let totalPengajuan = 0;
         const summary: Record<string, number> = {};
 
@@ -698,7 +724,7 @@ export default function RiwayatPengajuanPage() {
                                         <td className="px-6 py-4 align-middle text-center whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
-                                                    onClick={() => handleExportDocumentToExcel(item.id)}
+                                                    onClick={() => handleExportDocumentToExcel(item.id, item.itemId)}
                                                     className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
                                                     title="Ekspor Excel (RKA)"
                                                 >
