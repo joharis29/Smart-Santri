@@ -286,6 +286,7 @@ export default function AdminDashboardPage() {
                 unit: doc.unit || 'SDIT 1', 
                 desc: doc.bidang || 'Tanpa Bidang',
                 date: new Date(doc.created_at).toLocaleDateString('id-ID'),
+                month: new Date(doc.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
                 nominal: total,
                 items: items, 
                 status: statusDisplay,
@@ -474,10 +475,7 @@ export default function AdminDashboardPage() {
   }
 
   const availableMonths = Array.from(new Set(
-    transactions.map(t => {
-        const parts = t.date.split(' ');
-        return parts.length === 3 ? `${parts[1]} ${parts[2]}` : t.date;
-    })
+    transactions.map(t => t.month || 'Lainnya')
   ));
 
   const filteredTransactions = transactions.filter(t => {
@@ -486,11 +484,7 @@ export default function AdminDashboardPage() {
     // 2. Status Filter
     if (selectedStatuses.length > 0 && !selectedStatuses.includes(t.status)) return false;
     // 3. Month Filter
-    if (selectedMonths.length > 0) {
-      const parts = t.date.split(' ');
-      const tMonth = parts.length === 3 ? `${parts[1]} ${parts[2]}` : t.date;
-      if (!selectedMonths.includes(tMonth)) return false;
-    }
+    if (selectedMonths.length > 0 && !selectedMonths.includes(t.month || 'Lainnya')) return false;
 
     // 4. Role-Based Visibility (Workflow Logic Simulation)
     if (userRole === 'BENDAHARA_PUSAT') {
