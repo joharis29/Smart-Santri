@@ -910,9 +910,11 @@ export default function RiwayatPengajuanPage() {
                                         const summary: Record<string, number> = {};
                                         
                                         if (detailRkaDoc) {
-                                            const rkaItems = (detailRkaDoc.item_pengajuan || []).filter(
-                                                (it: any) => it.id === selectedItemForDetail?.itemId
-                                            );
+                                            const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                            const rkaItems = (detailRkaDoc.item_pengajuan || []).filter((it: any) => {
+                                                const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                return itemTitle === targetTitle;
+                                            });
                                             const itemsToUse = rkaItems.length > 0 ? rkaItems : (detailRkaDoc.item_pengajuan || []);
                                             itemsToUse.forEach((it: any) => {
                                                 let rkaDetails: any = {};
@@ -997,6 +999,17 @@ export default function RiwayatPengajuanPage() {
                                                             const totalVal = itemsToSum.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
                                                             return totalVal.toLocaleString('id-ID');
                                                         }
+                                                        if (detailRkaDoc) {
+                                                            const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                            const rkaItems = (detailRkaDoc.item_pengajuan || []).filter((it: any) => {
+                                                                const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                                return itemTitle === targetTitle;
+                                                            });
+                                                            if (rkaItems.length > 0) {
+                                                                const totalVal = rkaItems.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
+                                                                return totalVal.toLocaleString('id-ID');
+                                                            }
+                                                        }
                                                         return (selectedItemForDetail?.nominal || 0).toLocaleString('id-ID');
                                                     })()}
                                                 </span>
@@ -1044,9 +1057,11 @@ export default function RiwayatPengajuanPage() {
                                                                     rkaItemsToRender = selectedRevisionSnapshot.items || [];
                                                                 }
                                                             } else if (detailRkaDoc) {
-                                                                rkaItemsToRender = (detailRkaDoc.item_pengajuan || []).filter(
-                                                                    (it: any) => it.id === selectedItemForDetail?.itemId
-                                                                );
+                                                                const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                                rkaItemsToRender = (detailRkaDoc.item_pengajuan || []).filter((it: any) => {
+                                                                    const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                                    return itemTitle === targetTitle;
+                                                                });
                                                                 if (rkaItemsToRender.length === 0 && detailRkaDoc.item_pengajuan?.length > 0) {
                                                                     rkaItemsToRender = [detailRkaDoc.item_pengajuan[0]];
                                                                 }
