@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
             if (noteParts.length > 0) {
                 consolidatedNote = noteParts.join('\n');
             } else {
-                consolidatedNote = 'Butuh revisi pada pengajuan RKA.';
+                consolidatedNote = selectedTrxForReview.type === 'LPJ' ? 'Butuh revisi pada pengajuan LPJ.' : 'Butuh revisi pada pengajuan RKA.';
             }
             res = await revisiPengajuan(selectedTrxForReview.id, consolidatedNote, itemNotes);
         }
@@ -540,13 +540,13 @@ export default function AdminDashboardPage() {
     // 4. Role-Based Visibility (Workflow Logic Simulation)
     if (userRole === 'BENDAHARA_PUSAT') {
       // Pusat hanya melihat yang sudah disetujui Kepala Unit (MENUNGGU PUSAT) ke atas
-      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'KEPALA_UNIT') {
       // Kepala Unit melihat yang butuh persetujuannya (MENUNGGU KEPALA) atau yang sudah berjalan lebih lanjut
-      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'BENDAHARA_UNIT') {
       // Bendahara Unit melihat progres, tapi DRAFT hanya muncul di halaman Rekap Draft
-      if (t.status === 'DRAFT') return false;
+      if (t.status === 'DRAFT' || t.status === 'REVISI') return false;
     }
     
     // SEMUA ROLE: Sembunyikan status akhir (Sudah Diterima / Selesai) dari Dasbor
