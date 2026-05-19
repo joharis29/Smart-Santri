@@ -194,10 +194,12 @@ export default function AdminDashboardPage() {
 
         // PERSIST TO DATABASE
         let res;
+        let chosenMetode = 'Transfer';
         if (action === 'APPROVE') {
             let metode: string | undefined = undefined;
             if (finalNote && finalNote.startsWith('Dicairkan melalui ')) {
                 metode = finalNote.replace('Dicairkan melalui ', ''); // 'Transfer' or 'Cash'
+                chosenMetode = metode;
             }
             res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus, metode);
         } else {
@@ -223,30 +225,56 @@ export default function AdminDashboardPage() {
             return;
         }
 
-        // UPDATE LOCAL STATE
-        let yayasanAdd = 0;
-
-        if (calculatedNextStatus === 'SUDAH_DITERIMA' || calculatedNextStatus === 'SELESAI') {
-            selectedTrxForReview.items?.forEach((item: any) => {
+        // UPDATE DATABASE TRANS_PENDAPATAN AND AUTO UPDATE DOMPET_DANA & LOCAL STATE
+        if (action === 'APPROVE' && (calculatedNextStatus === 'SUDAH_DITERIMA' || calculatedNextStatus === 'SELESAI')) {
+            const supabase = createClient();
+            for (const item of (selectedTrxForReview.items || [])) {
                 try {
-                    const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
+                    let itemYayasanAmount = 0;
+                    const details = typeof item.rincian_json === 'string' 
+                        ? JSON.parse(item.rincian_json) 
+                        : (item.rincian_json || {});
                     const splits = details.fundingSplits || [];
-                    if (Array.isArray(splits)) {
+                    
+                    if (Array.isArray(splits) && splits.length > 0) {
                         splits.forEach((s: any) => {
                             const source = (s.source || s.sumber || '').toLowerCase();
                             const amount = Number(s.amount || s.nominal || 0);
-                            if (source.includes('yayasan') || source.includes('pesantren')) yayasanAdd += amount;
+                            if (source.includes('yayasan') || source.includes('pesantren')) {
+                                itemYayasanAmount += amount;
+                            }
                         });
+                    } else {
+                        const source = (item.sumber_dana || '').toLowerCase();
+                        if (source.includes('yayasan') || source.includes('pesantren')) {
+                            itemYayasanAmount = Number(item.nominal || 0);
+                        }
                     }
-                } catch (e) {}
-            });
-        }
 
-        if (yayasanAdd > 0) {
-            setBalances(b => ({
-                ...b,
-                yayasan: b.yayasan + yayasanAdd
-            }));
+                    if (itemYayasanAmount > 0) {
+                        const { error: insErr } = await supabase
+                            .from('transaksi_pendapatan')
+                            .insert([{
+                                tanggal: new Date().toISOString().split('T')[0],
+                                unit: selectedTrxForReview.unit || 'SDIT 1',
+                                sumber_dana: 'Dana Pesantren/Yayasan',
+                                nominal: itemYayasanAmount,
+                                jenis_penerimaan: chosenMetode,
+                                nama_bank: '-',
+                                keterangan: `Alokasi RKA Otomatis: ${item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA'} (ID RKA: ${selectedTrxForReview.id})`,
+                                created_by: userId || null
+                            }]);
+                        
+                        if (insErr) {
+                            console.error("Error inserting RKA allocation:", insErr);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error processing split item:", e);
+                }
+            }
+            // Trigger asynchronous refresh of balances to reflect live state instantly
+            fetchLiveBalances();
         }
 
         setTransactions(prev => prev.map(t => {
