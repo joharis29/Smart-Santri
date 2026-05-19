@@ -180,7 +180,9 @@ export default function AdminDashboardPage() {
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
-                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'SELESAI' : 'MENUNGGU_CAIR';
+                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'DISETUJUI' : 'MENUNGGU_CAIR';
+            } else if (selectedTrxForReview.rawStatus === 'DISETUJUI') {
+                calculatedNextStatus = 'SELESAI';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_CAIR') {
                 calculatedNextStatus = 'CAIR';
             } else if (selectedTrxForReview.rawStatus === 'CAIR') {
@@ -567,6 +569,9 @@ export default function AdminDashboardPage() {
     if (status === 'MENUNGGU PUSAT') {
       return userRole === 'BENDAHARA_PUSAT';
     }
+    if (status === 'DISETUJUI') {
+      return selectedTrxForReview.type === 'LPJ' && userRole === 'BENDAHARA_PUSAT';
+    }
     if (status === 'MENUNGGU CAIR') {
       return userRole === 'BENDAHARA_PUSAT';
     }
@@ -581,6 +586,7 @@ export default function AdminDashboardPage() {
     if (status === 'MENUNGGU VERIFIKASI') return 'Bendahara Unit/Jenjang';
     if (status === 'MENUNGGU KEPALA') return 'Kepala Unit/Jenjang';
     if (status === 'MENUNGGU PUSAT') return 'Bendahara Pusat';
+    if (status === 'DISETUJUI') return 'Bendahara Pusat';
     if (status === 'MENUNGGU CAIR') return 'Bendahara Pusat';
     if (status === 'CAIR') return 'Bendahara Unit/Pusat';
     return 'Pusat';
