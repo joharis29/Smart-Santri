@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { 
     History, 
     Download, 
@@ -13,7 +13,12 @@ import {
     CheckCircle2,
     Building2,
     Calendar,
-    Wallet
+    Wallet,
+    X,
+    ClipboardCheck,
+    Paperclip,
+    AlertTriangle,
+    Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import ExcelJS from 'exceljs';
@@ -48,6 +53,60 @@ export default function RiwayatDokumenPage() {
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
     const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+
+    // Detail Modal States
+    const [selectedItemForDetail, setSelectedItemForDetail] = useState<RiwayatDokumen | null>(null);
+    const [detailLpjDoc, setDetailLpjDoc] = useState<any>(null);
+    const [detailRkaDoc, setDetailRkaDoc] = useState<any>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+
+    const handleViewDetail = async (item: RiwayatDokumen) => {
+        setSelectedItemForDetail(item);
+        setLoadingDetail(true);
+        try {
+            // Fetch full LPJ Document and its items
+            const { data: lpjDoc, error: lpjError } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, item_pengajuan(*)')
+                .eq('id', item.id)
+                .maybeSingle();
+
+            if (lpjError || !lpjDoc) {
+                console.error("Gagal mengambil data detail LPJ:", lpjError);
+                return;
+            }
+
+            setDetailLpjDoc(lpjDoc);
+
+            const lpjItem = lpjDoc.item_pengajuan?.find((it: any) => it.id === item.itemId) || lpjDoc.item_pengajuan?.[0];
+            let lpjDetails: any = {};
+            if (lpjItem?.rincian_json) {
+                try {
+                    lpjDetails = typeof lpjItem.rincian_json === 'string'
+                        ? JSON.parse(lpjItem.rincian_json)
+                        : lpjItem.rincian_json;
+                } catch (e) {
+                    lpjDetails = {};
+                }
+            }
+
+            const rkaId = lpjDetails?.rka_id;
+            if (rkaId) {
+                const { data: rkaDoc } = await supabase
+                    .from('dokumen_pengajuan')
+                    .select('*, item_pengajuan(*)')
+                    .eq('id', rkaId)
+                    .maybeSingle();
+                setDetailRkaDoc(rkaDoc);
+            } else {
+                setDetailRkaDoc(null);
+            }
+        } catch (err) {
+            console.error("Error fetching detail:", err);
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
 
     // Handle outside click for filter
     useEffect(() => {
@@ -885,7 +944,11 @@ export default function RiwayatDokumenPage() {
                                                 >
                                                     <FileSpreadsheet className="w-4.5 h-4.5" />
                                                 </button>
-                                                <button className="p-2 text-slate-300 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all" title="Detail Audit">
+                                                <button 
+                                                    onClick={() => handleViewDetail(item)}
+                                                    className="p-2 text-slate-300 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all" 
+                                                    title="Lihat Detail & Perbandingan RKA"
+                                                >
                                                     <ArrowUpRight className="w-4.5 h-4.5" />
                                                 </button>
                                             </div>
@@ -904,6 +967,481 @@ export default function RiwayatDokumenPage() {
                     </p>
                 </div>
             </div>
+
+            {/* DETAIL MODAL - DUAL COMPARISON & AUDIT TRAIL */}
+            {selectedItemForDetail && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+                        
+                        {/* Header */}
+                        <div className="px-6 py-4 text-white flex justify-between items-start shrink-0 bg-blue-600">
+                            <div className="flex gap-3">
+                                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                                    <ClipboardCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <h3 className="text-sm font-black italic leading-tight uppercase tracking-tight">
+                                            {selectedItemForDetail.kegiatan}
+                                        </h3>
+                                        <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[8px] font-black uppercase tracking-widest text-emerald-200">
+                                            SELESAI
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] font-bold opacity-90 uppercase tracking-tighter">
+                                        {selectedItemForDetail.unit} / {selectedItemForDetail.bidang} • ID: {selectedItemForDetail.id}
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setSelectedItemForDetail(null);
+                                    setDetailLpjDoc(null);
+                                    setDetailRkaDoc(null);
+                                }} 
+                                className="p-1.5 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {loadingDetail ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
+                                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memuat Detail Realisasi...</p>
+                            </div>
+                        ) : (
+                            <Fragment>
+                                {/* Funding Accumulation Summary */}
+                                <div className="bg-slate-100/50 border-b border-slate-200 px-6 py-2 flex flex-wrap gap-3 items-center shrink-0">
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Akumulasi Dana:</span>
+                                    {(() => {
+                                        const summary: Record<string, number> = {};
+                                        const subsidiSummary: Record<string, number> = {};
+                                        
+                                        // LPJ: Alokasi dari RKA Rujukan
+                                        if (detailRkaDoc) {
+                                            const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                            const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
+                                            const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
+                                                const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                return rkaActivityName === lpjActivityName;
+                                            }) || [];
+                                            const rkaItems = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
+
+                                            rkaItems.forEach((it: any) => {
+                                                let rkaDetails: any = {};
+                                                try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                
+                                                const splits = rkaDetails.fundingSplits || [];
+                                                if (Array.isArray(splits)) {
+                                                    splits.forEach((s: any) => {
+                                                        const source = s.source || s.sumber || 'Lainnya';
+                                                        const amount = Number(s.nominal || s.amount || 0);
+                                                        if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                                    });
+                                                }
+                                            });
+                                        }
+
+                                        // LPJ: Subsidi Silang
+                                        const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                        let lpjDetails: any = {};
+                                        try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
+                                        
+                                        const subsidi = lpjDetails.subsidiSources || [];
+                                        if (Array.isArray(subsidi)) {
+                                            subsidi.forEach((s: any) => {
+                                                const source = s.source || s.sumber || 'Lainnya';
+                                                const amount = Number(s.nominal || s.amount || 0);
+                                                if (amount > 0) subsidiSummary[source] = (subsidiSummary[source] || 0) + amount;
+                                            });
+                                        }
+
+                                        return (
+                                            <Fragment>
+                                                {Object.entries(summary).map(([source, amount], idx) => (
+                                                    <div key={`main-${idx}`} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                                        <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">{source}:</span>
+                                                        <span className="text-[9px] font-black text-slate-950 italic font-bold">Rp {amount.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                ))}
+                                                {Object.entries(subsidiSummary).map(([source, amount], idx) => (
+                                                    <div key={`subsidi-${idx}`} className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                        <span className="text-[9px] font-black text-emerald-800 uppercase tracking-tighter">{source} (Subsidi):</span>
+                                                        <span className="text-[9px] font-black text-emerald-950 italic font-bold">Rp {amount.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                ))}
+                                            </Fragment>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Scrollable Body */}
+                                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-50/30">
+                                    {/* Status & Summary Bar */}
+                                    <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status LPJ:</span>
+                                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                SELESAI & DIARSIPKAN
+                                            </span>
+                                        </div>
+                                        
+                                        {detailRkaDoc && (() => {
+                                            const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                            const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
+                                            const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
+                                                const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                return rkaActivityName === lpjActivityName;
+                                            }) || [];
+                                            const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
+
+                                            const totalRka = rkaItemsToRender.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
+                                            const totalLpj = selectedItemForDetail.nominal || 0;
+                                            const selisih = totalRka - totalLpj;
+                                            const isOverBudget = selisih < 0;
+
+                                            let lpjDetails: any = {};
+                                            try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
+                                            const subsidi = lpjDetails.subsidiSources || [];
+                                            const isOverBudgetSolved = isOverBudget && subsidi.length > 0;
+                                            
+                                            return (
+                                                <div className="flex flex-wrap items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner">
+                                                    <div className="text-[9px] font-bold text-slate-500">
+                                                        Total RKA: <span className="font-black text-slate-800">Rp {totalRka.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                    <div className="w-[1px] h-3 bg-slate-200"></div>
+                                                    <div className="text-[9px] font-bold text-slate-500">
+                                                        Total Realisasi: <span className="font-black text-slate-800">Rp {totalLpj.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                    <div className="w-[1px] h-3 bg-slate-200"></div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                            {isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:'}
+                                                            <span className="italic font-extrabold">Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
+                                                        </div>
+                                                        {isOverBudgetSolved && (
+                                                            <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                                Subsidi Silang Aktif
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                        
+                                        <div className="text-right flex flex-col items-end">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                                    Total Realisasi:
+                                                </span>
+                                                <span className="text-sm font-black text-slate-800 italic">Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Dual Pane Tables */}
+                                    <div className="space-y-6">
+                                        {/* SECTION 1: RKA (Target/Rencana) */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-4 bg-amber-500 rounded-full shadow-md"></div>
+                                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">1. Rencana Kegiatan & Anggaran (RKA) - Target/Rencana</h4>
+                                                </div>
+                                                <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Rujukan Utama
+                                                </span>
+                                            </div>
+                                            
+                                            {!detailRkaDoc ? (
+                                                <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                    ⚠️ Referensi RKA tidak terhubung / tidak ditemukan
+                                                </div>
+                                            ) : (
+                                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                    <table className="w-full text-left text-[9px] border-collapse">
+                                                        <thead className="bg-amber-50/50 border-b border-amber-100">
+                                                            <tr>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">No</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Program/Kegiatan</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Operasional</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Waktu/Tempat</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-right">Nominal</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {(() => {
+                                                                const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                                                const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
+                                                                const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
+                                                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                                    return rkaActivityName === lpjActivityName;
+                                                                }) || [];
+                                                                const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
+                                                                
+                                                                return rkaItemsToRender.map((it: any, idx: number) => {
+                                                                    let rkaDetails: any = {};
+                                                                    try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                    const rkaItems = rkaDetails.items || [];
+                                                                    
+                                                                    return (
+                                                                        <Fragment key={idx}>
+                                                                            <tr className="bg-white">
+                                                                                <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                                                <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                                                                <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                                                                <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                                                <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                                                                <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                                                                <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
+                                                                                    <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
+                                                                                        <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                            <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                                                                            <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
+                                                                                        </div>
+                                                                                        <table className="w-full text-[9px]">
+                                                                                            <thead>
+                                                                                                <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                                                    <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                                                    <th className="py-1.5 text-center">Satuan</th>
+                                                                                                    <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                                                    <th className="py-1.5 text-center">Qty</th>
+                                                                                                    <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-slate-100 text-slate-800">
+                                                                                                {rkaItems.map((sub: any, sIdx: number) => (
+                                                                                                    <tr key={sIdx}>
+                                                                                                        <td className="py-1.5 font-bold italic">{sub.name}</td>
+                                                                                                        <td className="py-1.5 text-center font-bold">{sub.unit}</td>
+                                                                                                        <td className="py-1.5 text-right font-black">Rp {Number(sub.price || 0).toLocaleString('id-ID')}</td>
+                                                                                                        <td className="py-1.5 text-center font-black">{sub.qty}</td>
+                                                                                                        <td className="py-1.5 text-right font-black text-slate-950">Rp {Number(sub.total || 0).toLocaleString('id-ID')}</td>
+                                                                                                    </tr>
+                                                                                                ))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </Fragment>
+                                                                    );
+                                                                });
+                                                            })()}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* SECTION 2: LPJ (Realisasi Aktual) */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-1.5 h-4 bg-blue-600 rounded-full shadow-md"></div>
+                                                <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">2. Laporan Realisasi Anggaran (LPJ) - Aktual/Realisasi</h4>
+                                            </div>
+                                            
+                                            {(() => {
+                                                const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                                let lpjDetails: any = {};
+                                                try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
+                                                const lpjItems = lpjDetails.items || [];
+                                                
+                                                return (
+                                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                        <table className="w-full text-left text-[9px] border-collapse">
+                                                            <thead className="bg-blue-50/50 border-b border-blue-100">
+                                                                <tr>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">No</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Program/Kegiatan</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Operasional</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest text-center">Jml Realisasi</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Waktu/Tempat</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest">Penanggung Jawab / Sasaran</th>
+                                                                    <th className="px-3 py-2 font-black text-blue-800 uppercase tracking-widest text-right">Total Realisasi</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                <tr className="bg-white">
+                                                                    <td className="px-3 py-2 text-slate-500 font-bold">1</td>
+                                                                    <td className="px-3 py-2 font-black text-slate-900 italic">{lpjItem?.judul_kegiatan || 'Realisasi Anggaran'}</td>
+                                                                    <td className="px-3 py-2"><span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded-md font-black uppercase text-[8px]">{lpjItem?.kategori_coa || 'Lainnya'}</span></td>
+                                                                    <td className="px-3 py-2 text-center font-black text-slate-800">{lpjDetails?.jumlah_kegiatan || '1x'}</td>
+                                                                    <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{lpjItem?.waktu || '-'} / {lpjItem?.tempat || '-'}</td>
+                                                                    <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{lpjItem?.pic || '-'} / {lpjItem?.sasaran || '-'}</td>
+                                                                    <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {Number(lpjItem?.nominal || 0).toLocaleString('id-ID')}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td colSpan={7} className="px-8 pb-4 bg-blue-50/10">
+                                                                        <div className="bg-white rounded-xl border border-blue-100 p-3 space-y-3 shadow-sm">
+                                                                            <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                <div className="w-1.5 h-3 bg-blue-600 rounded-full"></div>
+                                                                                <p className="text-[9px] font-black text-blue-800 uppercase tracking-widest">Rincian Realisasi Pengeluaran</p>
+                                                                            </div>
+                                                                            <table className="w-full text-[9px]">
+                                                                                <thead>
+                                                                                    <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                                        <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                                        <th className="py-1.5 text-center">Satuan</th>
+                                                                                        <th className="py-1.5 text-right">Harga Satuan LPJ</th>
+                                                                                        <th className="py-1.5 text-center">Qty Realisasi</th>
+                                                                                        <th className="py-1.5 text-right">Total Realisasi (Rp)</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody className="divide-y divide-slate-100 text-slate-800">
+                                                                                    {lpjItems.map((sub: any, sIdx: number) => (
+                                                                                        <tr key={sIdx}>
+                                                                                            <td className="py-1.5 font-bold italic">{sub.name}</td>
+                                                                                            <td className="py-1.5 text-center font-bold">{sub.unit}</td>
+                                                                                            <td className="py-1.5 text-right font-black">Rp {Number(sub.price || 0).toLocaleString('id-ID')}</td>
+                                                                                            <td className="py-1.5 text-center font-black">{sub.qty}</td>
+                                                                                            <td className="py-1.5 text-right font-black text-slate-950">Rp {Number(sub.total || 0).toLocaleString('id-ID')}</td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 3: Catatan & Narasi */}
+                                    {(() => {
+                                        const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                        let lpjDetails: any = {};
+                                        try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
+                                        
+                                        return (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {/* Left: Notes */}
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2 shadow-sm">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Catatan & Penjelasan LPJ:</p>
+                                                    <p className="text-xs text-slate-700 italic leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold">
+                                                        {lpjDetails.narasi || 'Tidak ada catatan khusus yang disertakan.'}
+                                                    </p>
+                                                </div>
+
+                                                {/* Right: Bukti Lampiran Nota / Kuitansi */}
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2 shadow-sm">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lampiran Bukti Kuitansi ({lpjDetails.attachments?.length || 0}):</p>
+                                                    
+                                                    {!lpjDetails.attachments || lpjDetails.attachments.length === 0 ? (
+                                                        <p className="text-xs text-slate-400 font-bold italic py-4 text-center">Tidak ada berkas bukti kuitansi yang dilampirkan.</p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {lpjDetails.attachments.map((att: any, attIdx: number) => (
+                                                                <a 
+                                                                    key={attIdx} 
+                                                                    href={att.base64 || att.url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="group relative flex flex-col items-center bg-slate-50 border border-slate-200 rounded-xl p-2 hover:border-blue-400 hover:shadow-md transition-all overflow-hidden text-center cursor-pointer"
+                                                                    title="Buka / Unduh Lampiran"
+                                                                >
+                                                                    {/* Image Preview or Icon */}
+                                                                    {(att.base64 || att.url) && (att.base64?.startsWith('data:image/') || att.url?.match(/\.(jpeg|jpg|gif|png)/i) || !att.url?.includes('.')) ? (
+                                                                        <img 
+                                                                            src={att.base64 || att.url} 
+                                                                            alt={att.customName || 'Lampiran'} 
+                                                                            className="w-full h-20 object-cover rounded-lg mb-1 group-hover:scale-105 transition-transform" 
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-full h-20 bg-slate-100 flex items-center justify-center rounded-lg mb-1 text-slate-400">
+                                                                            <Paperclip className="w-6 h-6" />
+                                                                        </div>
+                                                                    )}
+                                                                    <span className="text-[9px] font-black text-slate-600 truncate w-full px-1">{att.customName || 'Lampiran Bukti'}</span>
+                                                                    <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                        <span className="bg-white/90 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm">UNDUH BUKTI</span>
+                                                                    </div>
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* SECTION 4: Jejak Audit (Workflow History) */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-4 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="w-4 h-4 text-emerald-600" />
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Jejak Audit & Otorisasi Alur Dokumen LPJ:</p>
+                                        </div>
+                                        
+                                        <div className="relative pl-6 space-y-4 font-bold">
+                                            <div className="absolute left-[9px] top-1 bottom-1 w-[1px] bg-slate-200 font-bold"></div>
+                                            
+                                            <div className="relative flex items-start gap-3 font-bold">
+                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                <div>
+                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">1. Pengajuan Laporan LPJ</h5>
+                                                    <p className="text-[9px] font-bold text-slate-400">Diajukan oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit} dengan nominal realisasi Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="relative flex items-start gap-3 font-bold">
+                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                <div>
+                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">2. Otorisasi Kepala Unit/Jenjang</h5>
+                                                    <p className="text-[9px] font-bold text-slate-400">Diverifikasi, disetujui, dan diteruskan oleh Kepala Unit/Jenjang {selectedItemForDetail.unit}.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="relative flex items-start gap-3 font-bold">
+                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                <div>
+                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">3. Verifikasi Akhir Bendahara Pusat</h5>
+                                                    <p className="text-[9px] font-bold text-slate-400">Diperiksa kelengkapan kuitansi bukti pertanggungjawaban oleh Bendahara Pusat (Yayasan).</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="relative flex items-start gap-3 font-bold">
+                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                <div>
+                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">4. Selesai & Diarsipkan</h5>
+                                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Dokumen dinyatakan sah, saldo unit disesuaikan secara permanen, dan arsip riwayat aman tersimpan.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer - Fixed Height */}
+                                <div className="bg-slate-50 px-6 py-4 flex justify-end shrink-0 border-t border-slate-100">
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedItemForDetail(null);
+                                            setDetailLpjDoc(null);
+                                            setDetailRkaDoc(null);
+                                        }}
+                                        className="px-5 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-md"
+                                    >
+                                        Tutup Detail
+                                    </button>
+                                </div>
+                            </Fragment>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
