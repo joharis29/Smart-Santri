@@ -726,27 +726,23 @@ export default function RiwayatPengajuanPage() {
                             <Download className="w-4 h-4" /> Export Data
                         </button>
                     </div>
-                </div>
-
-                {/* Table Container */}
+                </div>                {/* Table Container */}
                 <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <table className="w-full text-left border-collapse min-w-[750px] lg:min-w-0 table-fixed lg:table-auto">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Tgl Pencairan</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Bulan / T.A</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Unit / Bidang</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest w-1/4">Program / Kegiatan</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Sumber Dana</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Metode</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Nominal</th>
-                                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Aksi</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap lg:w-[15%]">Periode / Tgl</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap lg:w-[15%]">Unit / Bidang</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest lg:w-[40%]">Program / Kegiatan</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap lg:w-[15%]">Sumber / Metode</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap lg:w-[10%]">Nominal</th>
+                                <th className="px-3 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap lg:w-[5%]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={8} className="px-6 py-16 text-center">
+                                    <td colSpan={6} className="px-3 py-12 text-center">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                                             <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Memuat Riwayat Pengajuan...</p>
@@ -755,77 +751,76 @@ export default function RiwayatPengajuanPage() {
                                 </tr>
                             ) : filteredRiwayat.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="px-6 py-12 text-center">
-                                        <p className="text-slate-500 font-medium text-sm italic">Tidak ada riwayat pengajuan yang cocok dengan filter saat ini.</p>
+                                    <td colSpan={6} className="px-3 py-12 text-center">
+                                        <p className="text-slate-500 font-medium text-xs italic">Tidak ada riwayat pengajuan yang cocok dengan filter saat ini.</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredRiwayat.map((item) => (
                                     <tr key={item.itemId} className="hover:bg-slate-50/80 transition-colors group">
-                                        {/* 1. Tgl Pencairan */}
-                                        <td className="px-6 py-4 align-middle text-xs font-bold text-slate-600 whitespace-nowrap">
-                                            {item.tanggal_pencairan || item.tanggal}
+                                        {/* 1. Periode & Tanggal */}
+                                        <td className="px-3 py-2.5 align-middle">
+                                            <div className="text-xs font-bold text-slate-800 whitespace-nowrap">
+                                                {item.tanggal_pencairan || item.tanggal}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap leading-none mt-0.5">
+                                                {item.bulan || '-'} ({item.tahun_ajaran || '-'})
+                                            </div>
                                         </td>
                                         
-                                        {/* 2. Bulan / T.A */}
-                                        <td className="px-6 py-4 align-middle whitespace-nowrap">
-                                            <p className="text-xs font-bold text-slate-800">{item.bulan || '-'}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.tahun_ajaran || '-'}</p>
+                                        {/* 2. Unit / Bidang */}
+                                        <td className="px-3 py-2.5 align-middle">
+                                            <p className="text-xs font-bold text-emerald-700 whitespace-nowrap">{item.unit}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap leading-none mt-0.5">{item.bidang || '-'}</p>
                                         </td>
  
-                                        {/* 3. Unit / Bidang */}
-                                        <td className="px-6 py-4 align-middle whitespace-nowrap">
-                                            <p className="text-xs font-bold text-emerald-700">{item.unit}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.bidang || '-'}</p>
+                                        {/* 3. Program / Kegiatan */}
+                                        <td className="px-3 py-2.5 align-middle">
+                                            <p className="text-xs font-extrabold text-slate-800 leading-tight">{item.kegiatan || item.program}</p>
                                         </td>
  
-                                        {/* 4. Program / Kegiatan */}
-                                        <td className="px-6 py-4 align-middle">
-                                            <p className="text-xs font-bold text-slate-800 leading-relaxed">{item.kegiatan || item.program}</p>
+                                        {/* 4. Sumber & Metode */}
+                                        <td className="px-3 py-2.5 align-middle whitespace-nowrap">
+                                            <div className="flex flex-col gap-1 items-start">
+                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 uppercase tracking-tighter max-w-[150px] truncate" title={item.sumber || 'Dana Yayasan'}>
+                                                    {(item.sumber || 'Dana Yayasan').replace(/Dana\s+/gi, '')}
+                                                </span>
+                                                {item.metode_pencairan === 'Transfer' ? (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-tight">
+                                                        Transfer
+                                                    </span>
+                                                ) : item.metode_pencairan === 'Cash' ? (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-50 text-amber-700 border border-amber-100 uppercase tracking-tight">
+                                                        Cash
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
+                                                        -
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
  
-                                        {/* 5. Sumber Dana */}
-                                        <td className="px-6 py-4 align-middle whitespace-nowrap">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-tighter">
-                                                {item.sumber || 'Dana Yayasan'}
+                                        {/* 5. Nominal */}
+                                        <td className="px-3 py-2.5 align-middle text-right whitespace-nowrap">
+                                            <span className="text-xs font-black text-slate-900">
+                                                Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
                                             </span>
                                         </td>
-
-                                        {/* 5.5 Metode Pencairan */}
-                                        <td className="px-6 py-4 align-middle text-center whitespace-nowrap">
-                                            {item.metode_pencairan === 'Transfer' ? (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-tight">
-                                                    Transfer
-                                                </span>
-                                            ) : item.metode_pencairan === 'Cash' ? (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100 uppercase tracking-tight">
-                                                    Cash
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
-                                                    -
-                                                </span>
-                                            )}
-                                        </td>
  
-                                        {/* 6. Nominal */}
-                                        <td className="px-6 py-4 align-middle text-xs font-black text-slate-900 text-right whitespace-nowrap">
-                                            Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
-                                        </td>
-
-                                        {/* 7. Aksi */}
-                                        <td className="px-6 py-4 align-middle text-center whitespace-nowrap">
-                                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {/* 6. Aksi */}
+                                        <td className="px-3 py-2.5 align-middle text-center whitespace-nowrap">
+                                            <div className="flex items-center justify-center gap-0.5">
                                                 <button 
                                                     onClick={() => handleExportDocumentToExcel(item.id, item.itemId)}
-                                                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                                                    className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
                                                     title="Ekspor Excel (RKA)"
                                                 >
                                                     <FileSpreadsheet className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button 
                                                     onClick={() => handleViewDetail(item)}
-                                                    className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer" 
+                                                    className="p-1 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer" 
                                                     title="Detail Riwayat"
                                                 >
                                                     <Eye className="w-3.5 h-3.5" />
@@ -838,7 +833,7 @@ export default function RiwayatPengajuanPage() {
                                                 ].includes(userRole) && (
                                                     <Link 
                                                         href={`/admin/realisasi/buat?itemId=${item.itemId}`}
-                                                        className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
+                                                        className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
                                                         title="Buat Laporan Realisasi"
                                                     >
                                                         <ArrowUpRight className="w-3.5 h-3.5" />
