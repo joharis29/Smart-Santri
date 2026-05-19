@@ -910,8 +910,11 @@ export default function RiwayatPengajuanPage() {
                                         const summary: Record<string, number> = {};
                                         
                                         if (detailRkaDoc) {
-                                            const rkaItems = detailRkaDoc.item_pengajuan || [];
-                                            rkaItems.forEach((it: any) => {
+                                            const rkaItems = (detailRkaDoc.item_pengajuan || []).filter(
+                                                (it: any) => it.id === selectedItemForDetail?.itemId
+                                            );
+                                            const itemsToUse = rkaItems.length > 0 ? rkaItems : (detailRkaDoc.item_pengajuan || []);
+                                            itemsToUse.forEach((it: any) => {
                                                 let rkaDetails: any = {};
                                                 try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
                                                 
@@ -984,10 +987,17 @@ export default function RiwayatPengajuanPage() {
                                                 </span>
                                                 <span className="text-sm font-black text-slate-800 italic">
                                                     Rp {(() => {
-                                                        const totalVal = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA'
-                                                            ? selectedRevisionSnapshot.total_nominal || selectedRevisionSnapshot.items?.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0
-                                                            : selectedItemForDetail.nominal || 0;
-                                                        return totalVal.toLocaleString('id-ID');
+                                                        if (selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA') {
+                                                            const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                            const filteredSnapshotItems = (selectedRevisionSnapshot.items || []).filter((it: any) => {
+                                                                const itemTitle = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                                return itemTitle === targetTitle;
+                                                            });
+                                                            const itemsToSum = filteredSnapshotItems.length > 0 ? filteredSnapshotItems : (selectedRevisionSnapshot.items || []);
+                                                            const totalVal = itemsToSum.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0);
+                                                            return totalVal.toLocaleString('id-ID');
+                                                        }
+                                                        return (selectedItemForDetail?.nominal || 0).toLocaleString('id-ID');
                                                     })()}
                                                 </span>
                                             </div>
@@ -1010,81 +1020,91 @@ export default function RiwayatPengajuanPage() {
                                         ) : (
                                             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                                                 <table className="w-full text-left text-[9px] border-collapse">
-                                                    <table className="w-full text-left text-[9px] border-collapse">
-                                                        <thead className="bg-amber-50/50 border-b border-amber-100">
-                                                            <tr>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">No</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Program / Kegiatan</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Operasional</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Waktu / Tempat</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">PIC / Sasaran</th>
-                                                                <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-right">Nominal Rencana</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100">
-                                                            {(() => {
-                                                                let rkaItemsToRender = [];
-                                                                if (selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA') {
-                                                                    rkaItemsToRender = selectedRevisionSnapshot.items || [];
-                                                                } else if (detailRkaDoc) {
-                                                                    rkaItemsToRender = detailRkaDoc.item_pengajuan || [];
-                                                                }
-                                                                
-                                                                return rkaItemsToRender.map((it: any, idx: number) => {
-                                                                    let rkaDetails: any = {};
-                                                                    try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                                                    const rkaItems = rkaDetails.items || [];
-                                                                    
-                                                                    return (
-                                                                        <Fragment key={idx}>
-                                                                            <tr className="bg-white">
-                                                                                <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
-                                                                                <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
-                                                                                <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
-                                                                                <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
-                                                                                <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
-                                                                                <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
-                                                                                <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
-                                                                                    <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
-                                                                                        <div className="flex items-center gap-2 mb-1 px-1">
-                                                                                            <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
-                                                                                            <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
-                                                                                        </div>
-                                                                                        <table className="w-full text-[9px]">
-                                                                                            <thead>
-                                                                                                <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
-                                                                                                    <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
-                                                                                                    <th className="py-1.5 text-center">Satuan</th>
-                                                                                                    <th className="py-1.5 text-right">Harga Satuan</th>
-                                                                                                    <th className="py-1.5 text-center">Qty</th>
-                                                                                                    <th className="py-1.5 text-right">Total (Rp)</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody className="divide-y divide-slate-100 text-slate-800">
-                                                                                                {rkaItems.map((sub: any, sIdx: number) => (
-                                                                                                    <tr key={sIdx}>
-                                                                                                        <td className="py-1.5 font-bold italic">{sub.name}</td>
-                                                                                                        <td className="py-1.5 text-center font-bold">{sub.unit}</td>
-                                                                                                        <td className="py-1.5 text-right font-black">Rp {Number(sub.price || 0).toLocaleString('id-ID')}</td>
-                                                                                                        <td className="py-1.5 text-center font-black">{sub.qty}</td>
-                                                                                                        <td className="py-1.5 text-right font-black text-slate-950">Rp {Number(sub.total || 0).toLocaleString('id-ID')}</td>
-                                                                                                    </tr>
-                                                                                                ))}
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                    </div>
-                                                                                </td>
-                                                                            </tr>
-                                                                        </Fragment>
-                                                                    );
+                                                    <thead className="bg-amber-50/50 border-b border-amber-100">
+                                                        <tr>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">No</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Program / Kegiatan</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Operasional</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">Waktu / Tempat</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest">PIC / Sasaran</th>
+                                                            <th className="px-3 py-2 font-black text-amber-800 uppercase tracking-widest text-right">Nominal Rencana</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {(() => {
+                                                            let rkaItemsToRender = [];
+                                                            if (selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA') {
+                                                                const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                                rkaItemsToRender = (selectedRevisionSnapshot.items || []).filter((it: any) => {
+                                                                    const itemTitle = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                                    return itemTitle === targetTitle;
                                                                 });
-                                                            })()}
-                                                        </tbody>
-                                                    </table>
+                                                                if (rkaItemsToRender.length === 0) {
+                                                                    rkaItemsToRender = selectedRevisionSnapshot.items || [];
+                                                                }
+                                                            } else if (detailRkaDoc) {
+                                                                rkaItemsToRender = (detailRkaDoc.item_pengajuan || []).filter(
+                                                                    (it: any) => it.id === selectedItemForDetail?.itemId
+                                                                );
+                                                                if (rkaItemsToRender.length === 0 && detailRkaDoc.item_pengajuan?.length > 0) {
+                                                                    rkaItemsToRender = [detailRkaDoc.item_pengajuan[0]];
+                                                                }
+                                                            }
+                                                            
+                                                            return rkaItemsToRender.map((it: any, idx: number) => {
+                                                                let rkaDetails: any = {};
+                                                                try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                const rkaItems = rkaDetails.items || [];
+                                                                
+                                                                return (
+                                                                    <Fragment key={idx}>
+                                                                        <tr className="bg-white">
+                                                                            <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                                            <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || it.item}</td>
+                                                                            <td className="px-3 py-2"><span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional}</span></td>
+                                                                            <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.waktu || '-'} / {it.tempat || '-'}</td>
+                                                                            <td className="px-3 py-2 text-slate-700 font-bold leading-tight">{it.pic || '-'} / {it.sasaran || '-'}</td>
+                                                                            <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td colSpan={7} className="px-8 pb-4 bg-amber-50/10">
+                                                                                <div className="bg-white rounded-xl border border-amber-100 p-3 space-y-3 shadow-sm">
+                                                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                        <div className="w-1.5 h-3 bg-amber-500 rounded-full"></div>
+                                                                                        <p className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Rincian Anggaran RKA</p>
+                                                                                    </div>
+                                                                                    <table className="w-full text-[9px]">
+                                                                                        <thead>
+                                                                                            <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                                                <th className="py-1.5 text-left">Nama Item / Spesifikasi</th>
+                                                                                                <th className="py-1.5 text-center">Satuan</th>
+                                                                                                <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                                                <th className="py-1.5 text-center">Qty</th>
+                                                                                                <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody className="divide-y divide-slate-100 text-slate-800">
+                                                                                            {rkaItems.map((sub: any, sIdx: number) => (
+                                                                                                <tr key={sIdx}>
+                                                                                                    <td className="py-1.5 font-bold italic">{sub.name}</td>
+                                                                                                    <td className="py-1.5 text-center font-bold">{sub.unit}</td>
+                                                                                                    <td className="py-1.5 text-right font-black">Rp {Number(sub.price || 0).toLocaleString('id-ID')}</td>
+                                                                                                    <td className="py-1.5 text-center font-black">{sub.qty}</td>
+                                                                                                    <td className="py-1.5 text-right font-black text-slate-950">Rp {Number(sub.total || 0).toLocaleString('id-ID')}</td>
+                                                                                                </tr>
+                                                                                            ))}
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </Fragment>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </tbody>
                                                 </table>
                                             </div>
                                         )}
