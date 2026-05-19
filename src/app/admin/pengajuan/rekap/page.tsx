@@ -68,7 +68,7 @@ export default function RekapitulasiDraftPage() {
                             const sources = splits
                                 .filter((s: any) => s.source && s.nominal > 0)
                                 .map((s: any) => s.source);
-                            return sources.length > 0 ? sources.join(' / ') : (item.sumber_dana || 'Dana BOS');
+                            return sources.length > 0 ? sources.join(' & ') : (item.sumber_dana || 'Dana BOS');
                         })(),
                         nominal: item.nominal,
                         isRevisi: !!(item.dokumen_pengajuan as any)?.catatan_revisi,

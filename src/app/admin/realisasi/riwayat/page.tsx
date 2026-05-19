@@ -181,7 +181,7 @@ export default function RiwayatDokumenPage() {
                                         .filter((s: any) => s.source && s.nominal > 0)
                                         .map((s: any) => s.source);
                                     const uniqueSources = Array.from(new Set(sources));
-                                    return uniqueSources.length > 0 ? uniqueSources.join(' / ') : (it.sumber_dana || 'Dana Yayasan');
+                                    return uniqueSources.length > 0 ? uniqueSources.join(' & ') : (it.sumber_dana || 'Dana Yayasan');
                                 })(),
                                 nominal: it.nominal || 0,
                                 status: doc.status

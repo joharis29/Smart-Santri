@@ -183,7 +183,7 @@ export default function RiwayatPengajuanPage() {
                                     const sources = splits
                                         .filter((s: any) => s.source && s.nominal > 0)
                                         .map((s: any) => s.source);
-                                    return sources.length > 0 ? sources.join(' / ') : (it.sumber_dana || 'Dana Yayasan');
+                                    return sources.length > 0 ? sources.join(' & ') : (it.sumber_dana || 'Dana Yayasan');
                                 })(),
                                 nominal: it.nominal || 0,
                                 metode_pencairan: doc.metode_pencairan || '-',
