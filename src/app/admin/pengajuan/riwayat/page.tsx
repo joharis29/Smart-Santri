@@ -14,7 +14,12 @@ import {
     Paperclip,
     AlertTriangle,
     Activity,
-    History
+    History,
+    Building2,
+    Calendar,
+    Wallet,
+    Tag,
+    GraduationCap
 } from 'lucide-react';
 import Link from 'next/link';
 import ExcelJS from 'exceljs';
@@ -109,9 +114,10 @@ export default function RiwayatPengajuanPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+    const [selectedBidangs, setSelectedBidangs] = useState<string[]>([]);
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
     const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
-    const [selectedMetode, setSelectedMetode] = useState<string[]>([]);
+    const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<string[]>([]);
 
     // Handle outside click for filter
     useEffect(() => {
@@ -533,12 +539,16 @@ export default function RiwayatPengajuanPage() {
     };
 
     // Extract unique filter options dynamically
-    const availableUnits = Array.from(new Set(riwayatItems.map(i => i.unit)));
-    const availableSumber = Array.from(new Set(riwayatItems.map(i => i.sumber)));
-    const availableMonths = Array.from(new Set(riwayatItems.map(i => {
-        const parts = i.tanggal.split(' ');
-        return parts.length === 3 ? `${parts[1]} ${parts[2]}` : i.tanggal;
-    })));
+    const availableUnits = Array.from(new Set(riwayatItems.map((i: any) => i.unit).filter(Boolean)));
+    const availableBidangs = Array.from(new Set(riwayatItems.map((i: any) => i.bidang).filter(Boolean)));
+    const availableSumber = Array.from(new Set(
+        riwayatItems.flatMap((i: any) => {
+            if (!i.sumber) return [];
+            return i.sumber.split(/\s*&\s*|\s*\/\s*/).map((s: string) => s.trim().replace(/Dana\s+/gi, ''));
+        })
+    )).filter(Boolean);
+    const availableMonths = Array.from(new Set(riwayatItems.map((i: any) => i.bulan).filter(Boolean)));
+    const availableTahunAjaran = Array.from(new Set(riwayatItems.map((i: any) => i.tahun_ajaran).filter(Boolean)));
 
     // Compute filtered items
     const filteredRiwayat = riwayatItems.filter(item => {
@@ -553,19 +563,22 @@ export default function RiwayatPengajuanPage() {
 
         // Filter by Unit
         if (selectedUnits.length > 0 && !selectedUnits.includes(item.unit)) return false;
+
+        // Filter by Bidang
+        if (selectedBidangs.length > 0 && !selectedBidangs.includes(item.bidang)) return false;
         
         // Filter by Sumber Dana
-        if (selectedSumber.length > 0 && !selectedSumber.includes(item.sumber)) return false;
+        if (selectedSumber.length > 0) {
+            const cleanSources = (item.sumber || '').split(/\s*&\s*|\s*\/\s*/).map((s: string) => s.trim().replace(/Dana\s+/gi, ''));
+            const matchesAny = selectedSumber.some(selected => cleanSources.includes(selected));
+            if (!matchesAny) return false;
+        }
         
         // Filter by Month
-        if (selectedMonths.length > 0) {
-            const parts = item.tanggal.split(' ');
-            const tMonth = parts.length === 3 ? `${parts[1]} ${parts[2]}` : item.tanggal;
-            if (!selectedMonths.includes(tMonth)) return false;
-        }
+        if (selectedMonths.length > 0 && !selectedMonths.includes(item.bulan)) return false;
 
-        // Filter by Metode Pencairan
-        if (selectedMetode.length > 0 && !selectedMetode.includes(item.metode_pencairan)) return false;
+        // Filter by Tahun Ajaran
+        if (selectedTahunAjaran.length > 0 && !selectedTahunAjaran.includes(item.tahun_ajaran)) return false;
         
         return true;
     });
@@ -607,117 +620,173 @@ export default function RiwayatPengajuanPage() {
                         {/* -------------------- FILTER DROPDOWN -------------------- */}
                         <div className="relative" ref={filterRef}>
                             <button 
-                              onClick={() => setIsFilterOpen(!isFilterOpen)}
-                              className={`flex-1 lg:flex-none flex items-center justify-center gap-2 border border-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm ${selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-white hover:bg-slate-50 text-slate-600'}`}
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                className={`flex items-center justify-center gap-2 border text-[10px] font-black px-4 py-2.5 rounded-xl transition-all shadow-sm uppercase tracking-widest ${isFilterOpen || selectedUnits.length > 0 || selectedBidangs.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedTahunAjaran.length > 0 ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'}`}
                             >
-                                <Filter className="w-4 h-4" /> Filter
-                                {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0) && (
-                                    <span className="text-[10px] font-bold bg-emerald-600 text-white w-4 h-4 flex items-center justify-center rounded-full leading-none ml-1">
-                                        {selectedUnits.length + selectedSumber.length + selectedMonths.length + selectedMetode.length}
+                                <Filter className="w-3.5 h-3.5" /> Filter
+                                {(selectedUnits.length + selectedBidangs.length + selectedSumber.length + selectedMonths.length + selectedTahunAjaran.length) > 0 && (
+                                    <span className="bg-emerald-500 text-white w-4 h-4 flex items-center justify-center rounded-full text-[8px] ml-1">
+                                        {selectedUnits.length + selectedBidangs.length + selectedSumber.length + selectedMonths.length + selectedTahunAjaran.length}
                                     </span>
                                 )}
                             </button>
 
                             {isFilterOpen && (
-                              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-4 animate-in fade-in slide-in-from-top-2">
-                                  <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Filter Data</h4>
-                                    {(selectedUnits.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedMetode.length > 0) && (
-                                      <button 
-                                        onClick={() => { setSelectedUnits([]); setSelectedSumber([]); setSelectedMonths([]); setSelectedMetode([]); }}
-                                        className="text-[10px] text-rose-500 font-bold hover:underline"
-                                      >
-                                        Reset Semua
-                                      </button>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                                    {/* Unit Filter */}
-                                    <div>
-                                      <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Berdasarkan Unit</p>
-                                      <div className="space-y-2">
-                                        {availableUnits.map(unit => (
-                                          <label key={unit} className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                              type="checkbox" 
-                                              className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                                              checked={selectedUnits.includes(unit)}
-                                              onChange={(e) => {
-                                                if (e.target.checked) setSelectedUnits([...selectedUnits, unit]);
-                                                else setSelectedUnits(selectedUnits.filter(u => u !== unit));
-                                              }}
-                                            />
-                                            <span className="text-xs font-medium text-slate-700 group-hover:text-emerald-700">{unit}</span>
-                                          </label>
-                                        ))}
-                                      </div>
-                                    </div>
+                                <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 z-50 p-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="space-y-5">
+                                        <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                                            <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Filter Arsip</h4>
+                                            {(selectedUnits.length > 0 || selectedBidangs.length > 0 || selectedSumber.length > 0 || selectedMonths.length > 0 || selectedTahunAjaran.length > 0) && (
+                                                <button 
+                                                    onClick={() => { 
+                                                        setSelectedUnits([]); 
+                                                        setSelectedBidangs([]); 
+                                                        setSelectedSumber([]); 
+                                                        setSelectedMonths([]); 
+                                                        setSelectedTahunAjaran([]); 
+                                                    }}
+                                                    className="text-[10px] text-rose-500 font-black hover:underline uppercase"
+                                                >
+                                                    Reset
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                            {/* Unit Filter */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    <Building2 className="w-3 h-3" /> Berdasarkan Unit
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableUnits.length === 0 ? (
+                                                        <span className="text-[10px] text-slate-400 italic">Tidak tersedia</span>
+                                                    ) : (
+                                                        availableUnits.map(unit => (
+                                                            <button 
+                                                                key={unit}
+                                                                onClick={() => {
+                                                                    if (selectedUnits.includes(unit)) setSelectedUnits(selectedUnits.filter(u => u !== unit));
+                                                                    else setSelectedUnits([...selectedUnits, unit]);
+                                                                }}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${selectedUnits.includes(unit) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                            >
+                                                                {unit}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    {/* Sumber Dana Filter */}
-                                    <div>
-                                      <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Berdasarkan Sumber Dana</p>
-                                      <div className="space-y-2">
-                                        {availableSumber.map(sumber => (
-                                          <label key={sumber} className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                              type="checkbox" 
-                                              className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                                              checked={selectedSumber.includes(sumber)}
-                                              onChange={(e) => {
-                                                if (e.target.checked) setSelectedSumber([...selectedSumber, sumber]);
-                                                else setSelectedSumber(selectedSumber.filter(s => s !== sumber));
-                                              }}
-                                            />
-                                            <span className="text-xs font-medium text-slate-700 group-hover:text-emerald-700">{sumber}</span>
-                                          </label>
-                                        ))}
-                                      </div>
-                                    </div>
+                                            {/* Bidang Filter */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    <Tag className="w-3 h-3" /> Berdasarkan Bidang
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableBidangs.length === 0 ? (
+                                                        <span className="text-[10px] text-slate-400 italic">Tidak tersedia</span>
+                                                    ) : (
+                                                        availableBidangs.map(bidang => (
+                                                            <button 
+                                                                key={bidang}
+                                                                onClick={() => {
+                                                                    if (selectedBidangs.includes(bidang)) setSelectedBidangs(selectedBidangs.filter(b => b !== bidang));
+                                                                    else setSelectedBidangs([...selectedBidangs, bidang]);
+                                                                }}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${selectedBidangs.includes(bidang) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                            >
+                                                                {bidang}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    {/* Month Filter */}
-                                    <div>
-                                      <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Berdasarkan Bulan</p>
-                                      <div className="space-y-2">
-                                        {availableMonths.map(mo => (
-                                          <label key={mo} className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                              type="checkbox" 
-                                              className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                                              checked={selectedMonths.includes(mo)}
-                                              onChange={(e) => {
-                                                if (e.target.checked) setSelectedMonths([...selectedMonths, mo]);
-                                                else setSelectedMonths(selectedMonths.filter(m => m !== mo));
-                                              }}
-                                            />
-                                            <span className="text-xs font-medium text-slate-700 group-hover:text-emerald-700">{mo}</span>
-                                          </label>
-                                        ))}
-                                      </div>
-                                    </div>
+                                            {/* Sumber Dana Filter */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    <Wallet className="w-3 h-3" /> Sumber Dana
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableSumber.length === 0 ? (
+                                                        <span className="text-[10px] text-slate-400 italic">Tidak tersedia</span>
+                                                    ) : (
+                                                        availableSumber.map(sumber => (
+                                                            <button 
+                                                                key={sumber}
+                                                                onClick={() => {
+                                                                    if (selectedSumber.includes(sumber)) setSelectedSumber(selectedSumber.filter(s => s !== sumber));
+                                                                    else setSelectedSumber([...selectedSumber, sumber]);
+                                                                }}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${selectedSumber.includes(sumber) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                            >
+                                                                {sumber}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    {/* Metode Filter */}
-                                    <div>
-                                      <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Berdasarkan Metode</p>
-                                      <div className="space-y-2">
-                                        {['Transfer', 'Cash'].map(metode => (
-                                          <label key={metode} className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                              type="checkbox" 
-                                              className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                                              checked={selectedMetode.includes(metode)}
-                                              onChange={(e) => {
-                                                if (e.target.checked) setSelectedMetode([...selectedMetode, metode]);
-                                                else setSelectedMetode(selectedMetode.filter(m => m !== metode));
-                                              }}
-                                            />
-                                            <span className="text-xs font-medium text-slate-700 group-hover:text-emerald-700">{metode}</span>
-                                          </label>
-                                        ))}
-                                      </div>
+                                            {/* Month Filter */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" /> Bulan
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableMonths.length === 0 ? (
+                                                        <span className="text-[10px] text-slate-400 italic">Tidak tersedia</span>
+                                                    ) : (
+                                                        availableMonths.map(mo => (
+                                                            <button 
+                                                                key={mo}
+                                                                onClick={() => {
+                                                                    if (selectedMonths.includes(mo)) setSelectedMonths(selectedMonths.filter(m => m !== mo));
+                                                                    else setSelectedMonths([...selectedMonths, mo]);
+                                                                }}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${selectedMonths.includes(mo) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                            >
+                                                                {mo}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Tahun Ajaran Filter */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    <GraduationCap className="w-3 h-3" /> Tahun Ajaran
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableTahunAjaran.length === 0 ? (
+                                                        <span className="text-[10px] text-slate-400 italic">Tidak tersedia</span>
+                                                    ) : (
+                                                        availableTahunAjaran.map(ta => (
+                                                            <button 
+                                                                key={ta}
+                                                                onClick={() => {
+                                                                    if (selectedTahunAjaran.includes(ta)) setSelectedTahunAjaran(selectedTahunAjaran.filter(t => t !== ta));
+                                                                    else setSelectedTahunAjaran([...selectedTahunAjaran, ta]);
+                                                                }}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${selectedTahunAjaran.includes(ta) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                            >
+                                                                {ta}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => setIsFilterOpen(false)}
+                                            className="w-full bg-slate-900 text-white text-[10px] font-black py-3 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all uppercase tracking-widest"
+                                        >
+                                            Terapkan Filter
+                                        </button>
                                     </div>
-                                  </div>
-                              </div>
+                                </div>
                             )}
                         </div>
                         {/* --------------------------------------------------------- */}
