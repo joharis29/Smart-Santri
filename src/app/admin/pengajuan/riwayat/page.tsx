@@ -600,7 +600,7 @@ export default function RiwayatPengajuanPage() {
             'Program / Kegiatan', 
             'Sumber Dana', 
             'Rencana Anggaran (Rp)', 
-            'Status'
+            'Metode Pencairan'
         ];
         
         const headerRow = worksheet.addRow(headers);
@@ -632,7 +632,7 @@ export default function RiwayatPengajuanPage() {
                 row.kegiatan || '-',
                 row.sumber || '-',
                 Number(row.nominal || 0),
-                row.status || '-'
+                row.metode_pencairan || '-'
             ]);
 
             // Number formatting for Rp nominal
@@ -657,15 +657,9 @@ export default function RiwayatPengajuanPage() {
                     cell.alignment = { horizontal: 'left', vertical: 'middle' };
                 }
 
-                // Highlight status colours
+                // Format Metode Pencairan style
                 if (colNum === 10) {
-                    if (row.status === 'SELESAI' || row.status === 'CAIR' || row.status === 'SUDAH_DICAIRKAN') {
-                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF059669' } };
-                    } else if (row.status === 'DRAF' || row.status === 'DRAFT') {
-                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF64748B' } };
-                    } else {
-                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FFD97706' } };
-                    }
+                    cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF0284C7' } }; // Sky-600 color for method
                 }
             });
         });
