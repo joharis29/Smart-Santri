@@ -1707,11 +1707,26 @@ export default function BuatRealisasiPage() {
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                                        Buat Realisasi Anggaran (LPJ)
+                                        {(docStatus === 'REVISI' || catatanRevisi) ? 'Revisi Realisasi Anggaran (LPJ)' : 'Buat Realisasi Anggaran (LPJ)'}
+                                        {(docStatus === 'REVISI' || catatanRevisi) && (
+                                            <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-md animate-pulse">REVISI</span>
+                                        )}
                                     </h1>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Pencatatan Realisasi Penggunaan Dana Program</p>
                                 </div>
                             </div>
+
+                            {catatanRevisi && (
+                                <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex gap-3 animate-in slide-in-from-top-2">
+                                    <div className="bg-rose-500 text-white p-1.5 rounded-lg h-fit">
+                                        <AlertTriangle className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">Catatan Revisi dari Bendahara:</p>
+                                        <p className="text-xs font-bold text-rose-800 leading-relaxed italic">"{catatanRevisi}"</p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Metadata Row */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
