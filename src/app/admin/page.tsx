@@ -252,6 +252,7 @@ export default function AdminDashboardPage() {
                     }
 
                     if (itemYayasanAmount > 0) {
+                        // 1. Insert into transaksi_pendapatan (increments unit balance via DB trigger)
                         const { error: insErr } = await supabase
                             .from('transaksi_pendapatan')
                             .insert([{
@@ -267,6 +268,28 @@ export default function AdminDashboardPage() {
                         
                         if (insErr) {
                             console.error("Error inserting RKA allocation:", insErr);
+                        }
+
+                        // 2. Decrement Central's SPP wallet balance
+                        const { data: centralWallet, error: getErr } = await supabase
+                            .from('dompet_dana')
+                            .select('*')
+                            .is('unit_id', null)
+                            .eq('kategori', 'SPP')
+                            .maybeSingle();
+
+                        if (centralWallet) {
+                            const { error: updErr } = await supabase
+                                .from('dompet_dana')
+                                .update({
+                                    saldo: Math.max(0, Number(centralWallet.saldo) - itemYayasanAmount),
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', centralWallet.id);
+                            
+                            if (updErr) {
+                                console.error("Error updating central SPP wallet:", updErr);
+                            }
                         }
                     }
                 } catch (e) {

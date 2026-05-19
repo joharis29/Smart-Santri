@@ -15,8 +15,11 @@ import {
     Wallet,
     Info,
     ChevronDown,
-    FileText
+    FileText,
+    Lock
 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import * as XLSX from 'xlsx';
 
 interface LedgerEntry {
     id: string;
@@ -30,36 +33,289 @@ interface LedgerEntry {
     refId: string;
 }
 
-const MOCK_LEDGER: LedgerEntry[] = [];
+const MONTHS = [
+    { value: 1, label: 'Januari' },
+    { value: 2, label: 'Februari' },
+    { value: 3, label: 'Maret' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'Mei' },
+    { value: 6, label: 'Juni' },
+    { value: 7, label: 'Juli' },
+    { value: 8, label: 'Agustus' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'Oktober' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'Desember' }
+];
 
 export default function BukuBesarPage() {
+    // --- AUTHENTICATION & ACCESS STATES ---
+    const [userRole, setUserRole] = useState<string>('');
+    const [userUnit, setUserUnit] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [authorizedUnits, setAuthorizedUnits] = useState<string[]>([]);
+    
+    // --- FILTER & DATA STATES ---
     const [searchQuery, setSearchQuery] = useState('');
     const [filterUnit, setFilterUnit] = useState('');
     const [filterCOA, setFilterCOA] = useState('');
+    const [filterPeriod, setFilterPeriod] = useState<'ALL' | 'MONTHLY'>('ALL');
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+    
+    const [ledgerData, setLedgerData] = useState<LedgerEntry[]>([]);
+    const [isFetching, setIsFetching] = useState<boolean>(false);
+    
     const filterRef = useRef<HTMLDivElement>(null);
+    const periodRef = useRef<HTMLDivElement>(null);
 
-    // Close filter when clicking outside
+    // Close menus when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
                 setIsFilterOpen(false);
+            }
+            if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
+                setIsPeriodOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Check user profile and build list of authorized units
+    useEffect(() => {
+        const checkAccess = async () => {
+            try {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Get primary profile details
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*, unit:unit_id(name)')
+                    .eq('id', user.id)
+                    .maybeSingle() as any;
+
+                if (!profile) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                const role = profile.role || '';
+                const primaryUnit = profile.unit?.name || 'Pusat (Yayasan)';
+                setUserRole(role);
+                setUserUnit(primaryUnit);
+
+                // Load any assigned multi-roles
+                const { data: multiRoles } = await supabase
+                    .from('profiles_multi_role')
+                    .select('*, unit:unit_id(name)')
+                    .eq('user_id', user.id);
+
+                const allowedUnits = new Set<string>();
+                if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_UNIT') {
+                    allowedUnits.add(primaryUnit);
+                }
+                
+                multiRoles?.forEach((mr: any) => {
+                    if (mr.role === 'BENDAHARA_PUSAT' || mr.role === 'BENDAHARA_UNIT') {
+                        if (mr.unit?.name) allowedUnits.add(mr.unit.name);
+                    }
+                });
+
+                const allowedArr = Array.from(allowedUnits);
+                setAuthorizedUnits(allowedArr);
+
+                // Automatically default to the first authorized unit
+                if (allowedArr.length > 0) {
+                    setFilterUnit(allowedArr[0]);
+                } else {
+                    setFilterUnit(primaryUnit);
+                }
+
+            } catch (err) {
+                console.error("Error checking ledger access:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        checkAccess();
+    }, []);
+
+    // --- REAL-TIME SUPABASE FETCH ENGINE ---
+    const fetchLedger = async () => {
+        if (!filterUnit) return;
+        setIsFetching(true);
+        try {
+            const supabase = createClient();
+            const entries: LedgerEntry[] = [];
+
+            // 1. Pemasukan (Debet): Get manual incomes for active filterUnit
+            const { data: incomes, error: incErr } = await supabase
+                .from('transaksi_pendapatan')
+                .select('*')
+                .eq('unit', filterUnit);
+
+            if (incErr) console.error("Error fetching ledger incomes:", incErr);
+
+            incomes?.forEach((item: any) => {
+                entries.push({
+                    id: item.id.substring(0, 8).toUpperCase(),
+                    tanggal: item.tanggal,
+                    keterangan: item.keterangan || `Pemasukan Dana - ${item.sumber_dana}`,
+                    unit: item.unit,
+                    coa: item.sumber_dana,
+                    tipe: 'DEBET',
+                    nominal: Number(item.nominal),
+                    saldo: 0,
+                    refId: item.id.substring(0, 8).toUpperCase()
+                });
+            });
+
+            // 2. Pengeluaran (Kredit): Get approved LPJ item expenses for active filterUnit
+            const { data: lpjDocs, error: lpjErr } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, unit:unit_id(name), item_pengajuan(*)')
+                .eq('jenis', 'LPJ')
+                .eq('status', 'SELESAI');
+
+            if (lpjErr) console.error("Error fetching completed LPJs:", lpjErr);
+
+            lpjDocs?.forEach((doc: any) => {
+                const docUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Pusat (Yayasan)';
+                if (docUnitName === filterUnit) {
+                    doc.item_pengajuan?.forEach((item: any) => {
+                        entries.push({
+                            id: item.id.substring(0, 8).toUpperCase(),
+                            tanggal: doc.tanggal_kebutuhan || doc.created_at.split('T')[0],
+                            keterangan: item.judul_kegiatan || 'Realisasi Pengeluaran LPJ',
+                            unit: docUnitName,
+                            coa: item.sumber_dana || 'Dana Pesantren/Yayasan',
+                            tipe: 'KREDIT',
+                            nominal: Number(item.nominal),
+                            saldo: 0,
+                            refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase()
+                        });
+                    });
+                }
+            });
+
+            // 3. Kredit (Alokasi SPP - Khusus Pusat): Get approved RKAs funded by Central out of SPP
+            if (filterUnit === 'Pusat (Yayasan)') {
+                const { data: approvedRkas, error: rkaErr } = await supabase
+                    .from('dokumen_pengajuan')
+                    .select('*, unit:unit_id(name), item_pengajuan(*)')
+                    .eq('jenis', 'RKA')
+                    .eq('status', 'SUDAH_DITERIMA');
+
+                if (rkaErr) console.error("Error fetching approved RKA outflows:", rkaErr);
+
+                approvedRkas?.forEach((doc: any) => {
+                    const receiverUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Unit';
+                    doc.item_pengajuan?.forEach((item: any) => {
+                        // Extract Yayasan/Pesantren fund split amount
+                        let yayasanAmount = 0;
+                        try {
+                            const details = typeof item.rincian_json === 'string' 
+                                ? JSON.parse(item.rincian_json) 
+                                : (item.rincian_json || {});
+                            const splits = details.fundingSplits || [];
+                            if (Array.isArray(splits) && splits.length > 0) {
+                                splits.forEach((s: any) => {
+                                    const source = (s.source || s.sumber || '').toLowerCase();
+                                    if (source.includes('yayasan') || source.includes('pesantren')) {
+                                        yayasanAmount += Number(s.amount || s.nominal || 0);
+                                    }
+                                });
+                            } else {
+                                const source = (item.sumber_dana || '').toLowerCase();
+                                if (source.includes('yayasan') || source.includes('pesantren')) {
+                                    yayasanAmount = Number(item.nominal || 0);
+                                }
+                            }
+                        } catch (e) {}
+
+                        if (yayasanAmount > 0) {
+                            entries.push({
+                                id: item.id.substring(0, 8).toUpperCase(),
+                                tanggal: doc.created_at.split('T')[0],
+                                keterangan: `Penyaluran RKA ke ${receiverUnitName}: ${item.judul_kegiatan || 'Alokasi Dana'}`,
+                                unit: 'Pusat (Yayasan)',
+                                coa: 'SPP',
+                                tipe: 'KREDIT',
+                                nominal: yayasanAmount,
+                                saldo: 0,
+                                refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase()
+                            });
+                        }
+                    });
+                });
+            }
+
+            // 4. Sort chronologically by date ascending
+            entries.sort((a, b) => {
+                const dateA = new Date(a.tanggal).getTime();
+                const dateB = new Date(b.tanggal).getTime();
+                if (dateA !== dateB) return dateA - dateB;
+                return a.id.localeCompare(b.id);
+            });
+
+            // 5. Compute dynamically running cumulative balance (Debet - Kredit)
+            let runningBalance = 0;
+            const updatedEntries = entries.map(item => {
+                if (item.tipe === 'DEBET') {
+                    runningBalance += item.nominal;
+                } else {
+                    runningBalance -= item.nominal;
+                }
+                return {
+                    ...item,
+                    saldo: runningBalance
+                };
+            });
+
+            setLedgerData(updatedEntries);
+
+        } catch (err) {
+            console.error("Error compiling ledger database:", err);
+        } finally {
+            setIsFetching(false);
+        }
+    };
+
+    // Re-fetch transactions when active filterUnit is updated
+    useEffect(() => {
+        if (filterUnit) {
+            fetchLedger();
+        }
+    }, [filterUnit]);
+
+    // --- DYNAMIC IN-MEMORY QUERY FILTERS ---
     const filteredLedger = useMemo(() => {
-        return MOCK_LEDGER.filter(item => {
+        return ledgerData.filter(item => {
             const matchesSearch = item.keterangan.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                item.refId.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesUnit = filterUnit === '' || item.unit === filterUnit;
+                                 item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 item.refId.toLowerCase().includes(searchQuery.toLowerCase());
+            
             const matchesCOA = filterCOA === '' || item.coa === filterCOA;
-            return matchesSearch && matchesUnit && matchesCOA;
+            
+            if (filterPeriod === 'MONTHLY') {
+                const itemDate = new Date(item.tanggal);
+                const matchesMonth = itemDate.getMonth() + 1 === selectedMonth;
+                const matchesYear = itemDate.getFullYear() === selectedYear;
+                return matchesSearch && matchesCOA && matchesMonth && matchesYear;
+            }
+            return matchesSearch && matchesCOA;
         });
-    }, [searchQuery, filterUnit, filterCOA]);
+    }, [searchQuery, filterCOA, filterPeriod, selectedMonth, selectedYear, ledgerData]);
 
     const stats = useMemo(() => {
         const totalDebet = filteredLedger.filter(i => i.tipe === 'DEBET').reduce((acc, curr) => acc + curr.nominal, 0);
@@ -67,8 +323,94 @@ export default function BukuBesarPage() {
         return { totalDebet, totalKredit };
     }, [filteredLedger]);
 
-    const uniqueUnits = Array.from(new Set(MOCK_LEDGER.map(i => i.unit)));
-    const uniqueCOAs = Array.from(new Set(MOCK_LEDGER.map(i => i.coa)));
+    const uniqueCOAs = useMemo(() => {
+        return Array.from(new Set(ledgerData.map(i => i.coa)));
+    }, [ledgerData]);
+
+    // --- HIGH FIDELITY EXCEL EXPORT ENGINE ---
+    const handleExcelExport = () => {
+        if (filteredLedger.length === 0) {
+            alert("Tidak ada entri Buku Besar untuk diekspor!");
+            return;
+        }
+
+        const dataToExport = filteredLedger.map((item, idx) => ({
+            'No': idx + 1,
+            'Tanggal': item.tanggal,
+            'No. Ref': item.id,
+            'Keterangan Transaksi': item.keterangan,
+            'Unit Kerja': item.unit,
+            'Akun (COA)': item.coa,
+            'Debet (Rp)': item.tipe === 'DEBET' ? item.nominal : 0,
+            'Kredit (Rp)': item.tipe === 'KREDIT' ? item.nominal : 0,
+            'Saldo Berjalan (Rp)': item.saldo
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        
+        // Auto column widths sizing
+        const colWidths = Object.keys(dataToExport[0]).map(key => {
+            let maxLen = key.length;
+            dataToExport.forEach(row => {
+                const str = String((row as any)[key] || '');
+                if (str.length > maxLen) maxLen = str.length;
+            });
+            return { wch: maxLen + 4 };
+        });
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Buku Besar");
+        
+        const periodStr = filterPeriod === 'MONTHLY' 
+            ? `${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}` 
+            : 'Semua_Periode';
+
+        XLSX.writeFile(
+            workbook, 
+            `Buku_Besar_${filterUnit.replace(/[^a-zA-Z0-9]/g, '_')}_${periodStr}.xlsx`
+        );
+    };
+
+    // --- LOADING RENDER ---
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-50">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Memvalidasi Otoritas Keamanan...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // --- ACCESS ENFORCEMENT CONTROL ---
+    const isAuthorized = userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
+
+    if (!isAuthorized) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
+                <div className="bg-white max-w-md w-full p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-100 flex flex-col items-center text-center space-y-6">
+                    <div className="bg-rose-50 p-6 rounded-[2rem] text-rose-600 shadow-inner">
+                        <Lock className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase leading-none">Akses Terkunci & Rahasia</h2>
+                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Dokumen Terbatas Milik Bendahara</p>
+                    </div>
+                    <p className="text-xs font-bold text-slate-400 leading-relaxed">
+                        Maaf, Laporan Buku Besar (Ledger) ini bersifat sangat rahasia. Akses hanya diizinkan untuk peran **Bendahara Unit** dan **Bendahara Pusat**. Peran Anda ({userRole || 'Tamu'}) tidak memiliki izin.
+                    </p>
+                    <button 
+                        onClick={() => window.location.href = '/admin'}
+                        className="w-full bg-slate-900 text-white text-[10px] font-black py-4 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all uppercase tracking-widest"
+                    >
+                        Kembali ke Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-3 md:p-6 space-y-4 md:space-y-6 bg-slate-50/50 min-h-screen">
@@ -84,11 +426,72 @@ export default function BukuBesarPage() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Konsolidasi Jurnal & Mutasi Keuangan Real-time</p>
                     </div>
                 </div>
+                
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black px-5 py-3 rounded-2xl hover:bg-slate-50 transition-all uppercase tracking-widest shadow-sm">
-                        <Calendar className="w-4 h-4" /> Feb 2026
-                    </button>
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 text-white text-[10px] font-black px-6 py-3 rounded-2xl hover:bg-emerald-700 transition-all uppercase tracking-widest shadow-xl shadow-emerald-100">
+                    {/* Period Dropdown Selector */}
+                    <div className="relative flex-1 md:flex-none" ref={periodRef}>
+                        <button 
+                            onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+                            className="w-full md:w-auto flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black px-5 py-3.5 rounded-2xl hover:bg-slate-50 transition-all uppercase tracking-widest shadow-sm"
+                        >
+                            <Calendar className="w-4 h-4 text-slate-400" /> 
+                            {filterPeriod === 'ALL' ? 'Semua Periode' : `${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`}
+                            <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
+                        </button>
+
+                        {isPeriodOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-3xl border border-slate-100 shadow-2xl p-5 z-50 space-y-4">
+                                <h4 className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Filter Periode</h4>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="period" 
+                                            checked={filterPeriod === 'ALL'} 
+                                            onChange={() => setFilterPeriod('ALL')}
+                                            className="accent-emerald-600"
+                                        />
+                                        Tampilkan Semua
+                                    </label>
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="period" 
+                                            checked={filterPeriod === 'MONTHLY'} 
+                                            onChange={() => setFilterPeriod('MONTHLY')}
+                                            className="accent-emerald-600"
+                                        />
+                                        Berdasarkan Bulan
+                                    </label>
+                                </div>
+
+                                {filterPeriod === 'MONTHLY' && (
+                                    <div className="grid grid-cols-2 gap-2 pt-2 animate-in fade-in duration-300">
+                                        <select 
+                                            value={selectedMonth} 
+                                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                            className="bg-slate-50 border border-slate-100 text-[9px] font-bold rounded-xl px-2 py-2 outline-none"
+                                        >
+                                            {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                        </select>
+                                        <select 
+                                            value={selectedYear} 
+                                            onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                            className="bg-slate-50 border border-slate-100 text-[9px] font-bold rounded-xl px-2 py-2 outline-none"
+                                        >
+                                            <option value={2026}>2026</option>
+                                            <option value={2025}>2025</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <button 
+                        onClick={handleExcelExport}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 text-white text-[10px] font-black px-6 py-3.5 rounded-2xl hover:bg-emerald-700 transition-all uppercase tracking-widest shadow-xl shadow-emerald-100"
+                    >
                         <Download className="w-4 h-4" /> Export Report
                     </button>
                 </div>
@@ -105,15 +508,17 @@ export default function BukuBesarPage() {
                         <p className="text-xl font-black text-slate-800 tracking-tighter italic">Rp {stats.totalDebet.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
+                
                 <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-rose-200 transition-all">
                     <div className="bg-rose-50 p-3.5 rounded-2xl text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all">
                         <ArrowUpRightIcon className="w-6 h-6" />
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Pengeluaran (Kredit)</p>
-                        <p className="text-xl font-black text-slate-800 tracking-tighter italic text-rose-600">Rp {stats.totalKredit.toLocaleString('id-ID')}</p>
+                        <p className="text-xl font-black text-rose-600 tracking-tighter italic">Rp {stats.totalKredit.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
+                
                 <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl shadow-slate-200 flex items-center gap-4 border border-slate-800">
                     <div className="bg-white/10 p-3.5 rounded-2xl text-emerald-400">
                         <Wallet className="w-6 h-6" />
@@ -142,19 +547,19 @@ export default function BukuBesarPage() {
                     <div className="flex gap-2 relative" ref={filterRef}>
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest ${isFilterOpen || filterUnit || filterCOA ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                            className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest ${isFilterOpen || filterCOA ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
                             <Filter className="w-4 h-4" /> Filter Laporan
                         </button>
 
                         {isFilterOpen && (
-                            <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
                                 <div className="space-y-5">
                                     <div className="flex items-center justify-between border-b border-slate-50 pb-3">
                                         <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Kriteria Laporan</h3>
-                                        {(filterUnit || filterCOA) && (
+                                        {filterCOA && (
                                             <button 
-                                                onClick={() => { setFilterUnit(''); setFilterCOA(''); }}
+                                                onClick={() => { setFilterCOA(''); }}
                                                 className="text-[9px] font-black text-rose-500 hover:underline uppercase"
                                             >
                                                 Clear
@@ -164,15 +569,15 @@ export default function BukuBesarPage() {
                                     
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                                            <Building2 className="w-3 h-3" /> Filter Unit Kerja
+                                            <Building2 className="w-3 h-3" /> Unit Kerja Aktif
                                         </label>
                                         <select 
                                             value={filterUnit}
                                             onChange={(e) => setFilterUnit(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                            disabled={authorizedUnits.length <= 1}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
-                                            <option value="">Semua Unit</option>
-                                            {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                            {authorizedUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                         </select>
                                     </div>
 
@@ -219,7 +624,7 @@ export default function BukuBesarPage() {
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tgl & ID</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] w-1/4">Keterangan Transaksi</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] w-1/3">Keterangan Transaksi</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Unit Satuan</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Akun (COA)</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Debet (Rp)</th>
@@ -229,47 +634,56 @@ export default function BukuBesarPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredLedger.length === 0 ? (
+                            {isFetching ? (
+                                <tr>
+                                    <td colSpan={8} className="py-24 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Menarik mutasi kas terbaru...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredLedger.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="py-24 text-center">
                                         <div className="flex flex-col items-center gap-2 opacity-20">
                                             <FileText className="w-16 h-16" />
-                                            <p className="text-xs font-black uppercase tracking-[0.3em]">Tidak ada data entri</p>
+                                            <p className="text-xs font-black uppercase tracking-[0.3em]">Tidak ada entri Buku Besar</p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredLedger.map((item, idx) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <p className="text-[11px] font-black text-slate-600 leading-none mb-1.5 uppercase tracking-tighter">{item.tanggal}</p>
+                                    <tr key={`${item.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-3.5">
+                                            <p className="text-[11px] font-black text-slate-600 leading-none mb-1 uppercase tracking-tighter">{item.tanggal}</p>
                                             <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{item.id}</p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-4 py-3.5">
                                             <p className="text-[11px] font-black text-slate-800 leading-tight">{item.keterangan}</p>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-100 px-2 py-1 rounded-lg inline-block">{item.unit}</p>
+                                        <td className="px-4 py-3.5">
+                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-100 px-2 py-0.5 rounded-lg inline-block">{item.unit}</p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-4 py-3.5">
                                             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{item.coa}</p>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
+                                        <td className="px-4 py-3.5 text-right">
                                             <p className={`text-[11px] font-black ${item.tipe === 'DEBET' ? 'text-emerald-600' : 'text-slate-200'}`}>
                                                 {item.tipe === 'DEBET' ? item.nominal.toLocaleString('id-ID') : '-'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
+                                        <td className="px-4 py-3.5 text-right">
                                             <p className={`text-[11px] font-black ${item.tipe === 'KREDIT' ? 'text-rose-600' : 'text-slate-200'}`}>
                                                 {item.tipe === 'KREDIT' ? item.nominal.toLocaleString('id-ID') : '-'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4 text-right bg-slate-50/30">
+                                        <td className="px-4 py-3.5 text-right bg-slate-50/30">
                                             <p className="text-[11px] font-black text-slate-900 italic tracking-tighter">
                                                 {item.saldo.toLocaleString('id-ID')}
                                             </p>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-6 py-3.5 text-center">
                                             <button className="p-2 text-slate-300 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-xl transition-all" title="Lihat Dokumen Referensi">
                                                 <ArrowUpRight className="w-4 h-4" />
                                             </button>
