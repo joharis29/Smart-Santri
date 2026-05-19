@@ -1363,36 +1363,106 @@ export default function RiwayatPengajuanPage() {
                                     {/* SECTION 4: Jejak Audit (Workflow History) */}
                                     <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-4 shadow-sm">
                                         <div className="flex items-center gap-2">
-                                            <Activity className="w-4 h-4 text-emerald-600" />
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Jejak Audit & Alur Otorisasi Proposal:</p>
+                                            <Activity className="w-4 h-4 text-emerald-600 animate-pulse" />
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Jejak Audit & Alur Otorisasi Proposal RKA:</p>
                                         </div>
                                         
-                                        <div className="relative pl-6 space-y-4 font-bold">
-                                            <div className="absolute left-[9px] top-1 bottom-1 w-[1px] bg-slate-200 font-bold"></div>
+                                        <div className="relative pl-6 space-y-5 font-bold">
+                                            <div className="absolute left-[9px] top-1.5 bottom-1.5 w-[1px] bg-slate-200 font-bold"></div>
                                             
-                                            <div className="relative flex items-start gap-3 font-bold">
-                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                <div>
-                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">1. Pengajuan Anggaran RKA</h5>
-                                                    <p className="text-[9px] font-bold text-slate-400">Diajukan oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit} dengan nominal rencana Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}.</p>
-                                                </div>
-                                            </div>
+                                            {(() => {
+                                                const formatFullDate = (dateStr: string) => {
+                                                    if (!dateStr) return '';
+                                                    return new Date(dateStr).toLocaleString('id-ID', {
+                                                        day: 'numeric',
+                                                        month: 'long',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit'
+                                                    }) + ' WIB';
+                                                };
 
-                                            <div className="relative flex items-start gap-3 font-bold">
-                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                <div>
-                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">2. Otorisasi Kepala Unit/Jenjang</h5>
-                                                    <p className="text-[9px] font-bold text-slate-400">Diverifikasi dan disetujui secara resmi oleh Kepala Unit/Jenjang {selectedItemForDetail.unit}.</p>
-                                                </div>
-                                            </div>
+                                                const rkaHistory = detailRkaDoc?.riwayat_revisi || [];
+                                                const finalUpdateDate = detailRkaDoc?.updated_at || detailRkaDoc?.created_at;
 
-                                            <div className="relative flex items-start gap-3 font-bold">
-                                                <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                <div>
-                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">3. Persetujuan Akhir & Pencairan</h5>
-                                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Telah disetujui, dana dicairkan secara resmi oleh Bendahara Pusat (Yayasan), dan siap dilaksanakan.</p>
-                                                </div>
-                                            </div>
+                                                return (
+                                                    <Fragment>
+                                                        {/* 1. Pengajuan Awal */}
+                                                        <div className="relative flex items-start gap-3 font-bold">
+                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">1. Pengajuan Anggaran RKA</h5>
+                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
+                                                                        {formatFullDate(detailRkaDoc?.created_at)}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[9px] font-bold text-slate-400">Diajukan oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit} dengan nominal rencana Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}.</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Revisions (if any) */}
+                                                        {rkaHistory.map((rev: any, rIdx: number) => (
+                                                            <Fragment key={`rev-${rIdx}`}>
+                                                                <div className="relative flex items-start gap-3 font-bold">
+                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm font-bold animate-pulse"></div>
+                                                                    <div className="space-y-0.5">
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <h5 className="text-[10px] font-black text-rose-600 uppercase tracking-tight">Revisi Dikembalikan oleh Bendahara</h5>
+                                                                            <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[8px] font-bold border border-rose-100">
+                                                                                {formatFullDate(rev.tanggal_revisi)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[9px] font-bold text-slate-600 italic">"Catatan Penolakan: {rev.catatan_revisi || 'Tanpa catatan'}"</p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="relative flex items-start gap-3 font-bold">
+                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                                    <div className="space-y-0.5">
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Pengajuan Kembali Proposal RKA</h5>
+                                                                            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
+                                                                                {formatFullDate(rev.tanggal_revisi)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[9px] font-bold text-slate-400">Berkas diperbaiki dan diajukan ulang oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit}.</p>
+                                                                    </div>
+                                                                </div>
+                                                            </Fragment>
+                                                        ))}
+
+                                                        {/* 2. Otorisasi Kepala Unit */}
+                                                        <div className="relative flex items-start gap-3 font-bold">
+                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">2. Otorisasi Kepala Unit/Jenjang</h5>
+                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
+                                                                        {formatFullDate(finalUpdateDate)}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[9px] font-bold text-slate-400">Diverifikasi dan disetujui secara resmi oleh Kepala Unit/Jenjang {selectedItemForDetail.unit}.</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 3. Persetujuan Akhir & Pencairan */}
+                                                        <div className="relative flex items-start gap-3 font-bold">
+                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">3. Persetujuan Akhir & Pencairan</h5>
+                                                                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[8px] font-bold border border-emerald-100">
+                                                                        {formatFullDate(finalUpdateDate)}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Telah disetujui, dana dicairkan secara resmi oleh Bendahara Pusat (Yayasan), dan siap dilaksanakan.</p>
+                                                            </div>
+                                                        </div>
+                                                    </Fragment>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
