@@ -33,8 +33,10 @@ export default function RekapitulasiDraftPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedBidang, setSelectedBidang] = useState<string[]>([]);
     const [selectedSumber, setSelectedSumber] = useState<string[]>([]);
-    const [selectedUnit, setSelectedUnit] = useState<string[]>([]);
+    const [selectedBulan, setSelectedBulan] = useState<string[]>([]);
+    const [selectedTahun, setSelectedTahun] = useState<string[]>([]);
 
     // Fetch real data from Supabase
     useEffect(() => {
@@ -79,7 +81,16 @@ export default function RekapitulasiDraftPage() {
                         waktu: item.waktu || '-',
                         sasaran: item.sasaran || '-',
                         selected: false,
-                        type: 'RKA' // Default
+                        type: 'RKA', // Default
+                        bulan: (() => {
+                            const m = (item.dokumen_pengajuan as any)?.periode_bulan;
+                            const monthNames: Record<number, string> = {
+                                1: 'Januari', 2: 'Februari', 3: 'Maret', 4: 'April', 5: 'Mei', 6: 'Juni',
+                                7: 'Juli', 8: 'Agustus', 9: 'September', 10: 'Oktober', 11: 'November', 12: 'Desember'
+                            };
+                            return monthNames[Number(m)] || String(m || 'Januari');
+                        })(),
+                        tahunAjaran: (item.dokumen_pengajuan as any)?.periode_tahun || '2025/2026'
                     };
 
                     if (mapped.type === 'RKA') rka.push(mapped);
@@ -109,14 +120,35 @@ export default function RekapitulasiDraftPage() {
     const activeQueue = activeTab === 'RKA' ? rkaQueue : lpjQueue;
     const setActiveQueue = activeTab === 'RKA' ? setRkaQueue : setLpjQueue;
 
+    // Dynamic Filter Options Sourced from activeQueue
+    const availableBidang = Array.from(new Set(activeQueue.map((i: any) => i.bidang).filter(Boolean)));
+    const availableSumber = Array.from(new Set(
+        activeQueue.flatMap((i: any) => {
+            if (!i.sumber) return [];
+            return i.sumber.split('&').map((s: string) => s.trim());
+        }).filter(Boolean)
+    ));
+    const availableBulan = Array.from(new Set(activeQueue.map((i: any) => i.bulan).filter(Boolean)));
+    const availableTahun = Array.from(new Set(activeQueue.map((i: any) => i.tahunAjaran).filter(Boolean)));
+
     // Filter Logic
     const filteredItems = activeQueue.filter(item => {
         const matchesSearch = item.pengaju.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              item.kegiatan.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             item.unit.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesSumber = selectedSumber.length === 0 || selectedSumber.includes(item.sumber);
-        const matchesUnit = selectedUnit.length === 0 || selectedUnit.includes(item.unit);
-        return matchesSearch && matchesSumber && matchesUnit;
+                             item.unit.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             item.bidang.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesBidang = selectedBidang.length === 0 || selectedBidang.includes(item.bidang);
+        
+        const matchesSumber = selectedSumber.length === 0 || (() => {
+            const itemSources = item.sumber.split('&').map((s: string) => s.trim());
+            return selectedSumber.some(s => itemSources.includes(s));
+        })();
+
+        const matchesBulan = selectedBulan.length === 0 || selectedBulan.includes(item.bulan);
+        const matchesTahun = selectedTahun.length === 0 || selectedTahun.includes(item.tahunAjaran);
+
+        return matchesSearch && matchesBidang && matchesSumber && matchesBulan && matchesTahun;
     });
 
     const totalSelectedNominal = filteredItems.filter(i => i.selected).reduce((acc, curr) => acc + curr.nominal, 0);
@@ -251,19 +283,24 @@ export default function RekapitulasiDraftPage() {
                     <div className="relative" ref={filterRef}>
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`p-2.5 rounded-2xl border transition-all shadow-sm ${isFilterOpen || selectedSumber.length > 0 || selectedUnit.length > 0 ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                            className={`p-2.5 rounded-2xl border transition-all shadow-sm ${isFilterOpen || selectedBidang.length > 0 || selectedSumber.length > 0 || selectedBulan.length > 0 || selectedTahun.length > 0 ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
                             <Filter className="w-5 h-5" />
                         </button>
 
                         {isFilterOpen && (
-                            <div className="absolute right-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="space-y-5">
-                                    <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                            <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                                         <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Filter Antrean</h3>
-                                        {(selectedSumber.length > 0 || selectedUnit.length > 0) && (
+                                        {(selectedBidang.length > 0 || selectedSumber.length > 0 || selectedBulan.length > 0 || selectedTahun.length > 0) && (
                                             <button 
-                                                onClick={() => { setSelectedSumber([]); setSelectedUnit([]); }}
+                                                onClick={() => { 
+                                                    setSelectedBidang([]); 
+                                                    setSelectedSumber([]); 
+                                                    setSelectedBulan([]); 
+                                                    setSelectedTahun([]); 
+                                                }}
                                                 className="text-[10px] font-black text-rose-500 hover:underline uppercase"
                                             >
                                                 Reset
@@ -271,11 +308,34 @@ export default function RekapitulasiDraftPage() {
                                         )}
                                     </div>
 
-                                    {/* Sumber Dana Filter */}
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Sumber Dana</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {['Kas Operasional', 'Zakat Maal', 'Dana BOS', 'Kas Internal'].map(s => (
+                                    {/* 1. Bidang Filter */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Bidang</label>
+                                        <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {availableBidang.map(b => (
+                                                <button
+                                                    key={b}
+                                                    onClick={() => {
+                                                        setSelectedBidang(prev => 
+                                                            prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]
+                                                        );
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-xl text-[9px] font-bold transition-all border ${selectedBidang.includes(b) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    {b}
+                                                </button>
+                                            ))}
+                                            {availableBidang.length === 0 && (
+                                                <span className="text-[9px] font-bold text-slate-300 italic">Tidak ada data</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Sumber Dana Filter */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sumber Dana</label>
+                                        <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {availableSumber.map(s => (
                                                 <button
                                                     key={s}
                                                     onClick={() => {
@@ -283,31 +343,60 @@ export default function RekapitulasiDraftPage() {
                                                             prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
                                                         );
                                                     }}
-                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedSumber.includes(s) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                    className={`px-2.5 py-1 rounded-xl text-[9px] font-bold transition-all border ${selectedSumber.includes(s) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
                                                 >
                                                     {s}
                                                 </button>
                                             ))}
+                                            {availableSumber.length === 0 && (
+                                                <span className="text-[9px] font-bold text-slate-300 italic">Tidak ada data</span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Unit Filter */}
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Unit Satuan</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {['SDIT 1', 'Dapur Pusat', 'SMPIT 1', 'Yayasan'].map(u => (
+                                    {/* 3. Bulan Filter */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Bulan</label>
+                                        <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {availableBulan.map(bln => (
                                                 <button
-                                                    key={u}
+                                                    key={bln}
                                                     onClick={() => {
-                                                        setSelectedUnit(prev => 
-                                                            prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]
+                                                        setSelectedBulan(prev => 
+                                                            prev.includes(bln) ? prev.filter(x => x !== bln) : [...prev, bln]
                                                         );
                                                     }}
-                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedUnit.includes(u) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                    className={`px-2.5 py-1 rounded-xl text-[9px] font-bold transition-all border ${selectedBulan.includes(bln) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
                                                 >
-                                                    {u}
+                                                    {bln}
                                                 </button>
                                             ))}
+                                            {availableBulan.length === 0 && (
+                                                <span className="text-[9px] font-bold text-slate-300 italic">Tidak ada data</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* 4. Tahun Ajaran Filter */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tahun Ajaran</label>
+                                        <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {availableTahun.map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => {
+                                                        setSelectedTahun(prev => 
+                                                            prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
+                                                        );
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-xl text-[9px] font-bold transition-all border ${selectedTahun.includes(t) ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    {t}
+                                                </button>
+                                            ))}
+                                            {availableTahun.length === 0 && (
+                                                <span className="text-[9px] font-bold text-slate-300 italic">Tidak ada data</span>
+                                            )}
                                         </div>
                                     </div>
 
