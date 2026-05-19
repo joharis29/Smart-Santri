@@ -538,6 +538,138 @@ export default function RiwayatPengajuanPage() {
         window.URL.revokeObjectURL(url);
     };
 
+    // Export all filtered table rows to a premium Excel sheet
+    const handleExportFilteredToExcel = async () => {
+        if (filteredRiwayat.length === 0) {
+            alert("Tidak ada data untuk diekspor");
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Riwayat RKA');
+
+        // Header Title
+        worksheet.mergeCells('A1:J1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'REKAPITULASI RIWAYAT RENCANA ANGGARAN KEGIATAN (RKA)';
+        titleCell.font = { name: 'Times New Roman', size: 14, bold: true };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Subtitle Metadata (Export Date)
+        worksheet.mergeCells('A2:J2');
+        const dateCell = worksheet.getCell('A2');
+        dateCell.value = `Tanggal Ekspor: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+        dateCell.font = { name: 'Times New Roman', size: 10, italic: true };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        worksheet.addRow([]); // Blank spacer row
+
+        // Table Headers
+        const headers = [
+            'No', 
+            'Tanggal', 
+            'Bulan / Periode', 
+            'Tahun Ajaran', 
+            'Unit', 
+            'Bidang', 
+            'Program / Kegiatan', 
+            'Sumber Dana', 
+            'Rencana Anggaran (Rp)', 
+            'Status'
+        ];
+        
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, name: 'Times New Roman', size: 11 };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF1F5F9' } // Light slate header background
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        // Add Data Rows
+        filteredRiwayat.forEach((row, index) => {
+            const dataRow = worksheet.addRow([
+                index + 1,
+                row.tanggal || '-',
+                row.bulan || '-',
+                row.tahun_ajaran || '-',
+                row.unit || '-',
+                row.bidang || '-',
+                row.kegiatan || '-',
+                row.sumber || '-',
+                Number(row.nominal || 0),
+                row.status || '-'
+            ]);
+
+            // Number formatting for Rp nominal
+            dataRow.getCell(9).numFmt = '"Rp "#,##0';
+            
+            // Text styling & thin borders
+            dataRow.eachCell((cell, colNum) => {
+                cell.font = { name: 'Times New Roman', size: 10 };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                
+                // Alignments
+                if (colNum === 1 || colNum === 2 || colNum === 3 || colNum === 4 || colNum === 10) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if (colNum === 9) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+
+                // Highlight status colours
+                if (colNum === 10) {
+                    if (row.status === 'SELESAI' || row.status === 'CAIR' || row.status === 'SUDAH_DICAIRKAN') {
+                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF059669' } };
+                    } else if (row.status === 'DRAF' || row.status === 'DRAFT') {
+                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF64748B' } };
+                    } else {
+                        cell.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FFD97706' } };
+                    }
+                }
+            });
+        });
+
+        // Set column widths dynamically for premium styling
+        worksheet.columns.forEach(col => {
+            if (!col || !col.values) return;
+            const values = col.values as string[];
+            let maxLen = 0;
+            values.forEach(val => {
+                if (val) {
+                    const str = val.toString();
+                    if (str.length > maxLen) maxLen = str.length;
+                }
+            });
+            col.width = Math.max(maxLen + 4, 12);
+        });
+
+        // Generate and trigger download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Rekap_Riwayat_RKA_${Date.now()}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+
     // Extract unique filter options dynamically
     const availableUnits = Array.from(new Set(riwayatItems.map((i: any) => i.unit).filter(Boolean)));
     const availableBidangs = Array.from(new Set(riwayatItems.map((i: any) => i.bidang).filter(Boolean)));
@@ -791,8 +923,11 @@ export default function RiwayatPengajuanPage() {
                         </div>
                         {/* --------------------------------------------------------- */}
 
-                        <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm shadow-emerald-200">
-                            <Download className="w-4 h-4" /> Export Data
+                        <button 
+                            onClick={handleExportFilteredToExcel}
+                            className="flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-[10px] font-black px-4 py-2.5 rounded-xl transition-all shadow-sm uppercase tracking-widest"
+                        >
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Ekspor Excel
                         </button>
                     </div>
                 </div>                {/* Table Container */}
