@@ -176,11 +176,11 @@ export default function AdminDashboardPage() {
 
         if (action === 'APPROVE') {
             if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
-                calculatedNextStatus = 'REKAP_BENDAHARA';
+                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'MENUNGGU_KEPALA' : 'REKAP_BENDAHARA';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
-                calculatedNextStatus = 'MENUNGGU_CAIR';
+                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'SELESAI' : 'MENUNGGU_CAIR';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_CAIR') {
                 calculatedNextStatus = 'CAIR';
             } else if (selectedTrxForReview.rawStatus === 'CAIR') {
