@@ -140,134 +140,482 @@ export default function RiwayatDokumenPage() {
         fetchRiwayat();
     }, []);
 
-    // Export LPJ Document details to Excel
+    // Export LPJ Document details to Excel (Comparison of RKA & LPJ with dynamic three-level signatures)
     const handleExportDocumentToExcel = async (docId: string, itemId: string) => {
         // Fetch full LPJ Document and its items
-        const { data: doc, error } = await supabase
+        const { data: lpjDoc, error: lpjError } = await supabase
             .from('dokumen_pengajuan')
             .select('*, item_pengajuan(*)')
             .eq('id', docId)
             .maybeSingle();
 
-        if (error || !doc) {
-            alert("Gagal mengunduh data realisasi LPJ: " + (error?.message || "Laporan tidak ditemukan"));
+        if (lpjError || !lpjDoc) {
+            alert("Gagal mengunduh data realisasi LPJ: " + (lpjError?.message || "Laporan tidak ditemukan"));
             return;
         }
 
+        const lpjItem = lpjDoc.item_pengajuan?.find((it: any) => it.id === itemId) || lpjDoc.item_pengajuan?.[0];
+        let lpjDetails: any = {};
+        if (lpjItem?.rincian_json) {
+            try {
+                lpjDetails = typeof lpjItem.rincian_json === 'string'
+                    ? JSON.parse(lpjItem.rincian_json)
+                    : lpjItem.rincian_json;
+            } catch (e) {
+                lpjDetails = {};
+            }
+        }
+
+        // Fetch original RKA Document
+        const rkaId = lpjDetails?.rka_id;
+        let rkaDoc: any = null;
+        let rkaItem: any = null;
+        let rkaDetails: any = {};
+
+        if (rkaId) {
+            const { data } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, item_pengajuan(*)')
+                .eq('id', rkaId)
+                .maybeSingle();
+            if (data) {
+                rkaDoc = data;
+                rkaItem = rkaDoc.item_pengajuan?.[0];
+                if (rkaItem?.rincian_json) {
+                    try {
+                        rkaDetails = typeof rkaItem.rincian_json === 'string'
+                            ? JSON.parse(rkaItem.rincian_json)
+                            : rkaItem.rincian_json;
+                    } catch (e) {
+                        rkaDetails = {};
+                    }
+                }
+            }
+        }
+
         const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        const bulanName = monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan);
-        const tahunAjaranStr = doc.tahun_ajaran || `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}`;
+        const bulanName = monthNames[Number(lpjDoc.periode_bulan)] || String(lpjDoc.periode_bulan);
+        const tahunAjaranStr = lpjDoc.tahun_ajaran || `${lpjDoc.periode_tahun}/${Number(lpjDoc.periode_tahun) + 1}`;
 
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('LPJ Realisasi');
+        const worksheet = workbook.addWorksheet('LPJ Realisasi & Perbandingan RKA');
 
-        // Title
-        worksheet.mergeCells('A1:G1');
-        const titleCell = worksheet.getCell('A1');
-        titleCell.value = 'LAPORAN PERTANGGUNGJAWABAN REALISASI ANGGARAN (LPJ)';
-        titleCell.font = { name: 'Times New Roman', size: 14, bold: true };
-        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        // Helper for borders
+        const thinBorder: Partial<ExcelJS.Borders> = {
+            top: { style: 'thin' as ExcelJS.BorderStyle },
+            left: { style: 'thin' as ExcelJS.BorderStyle },
+            bottom: { style: 'thin' as ExcelJS.BorderStyle },
+            right: { style: 'thin' as ExcelJS.BorderStyle }
+        };
 
-        // Metadata
-        worksheet.getRow(2).values = [
-            'Unit / Jenjang:', doc.unit || '-',
-            '',
-            'Bidang / Dept:', doc.bidang || '-',
-            '',
-            'Bulan:', bulanName,
-            '',
-            'Tahun Ajaran:', tahunAjaranStr
+        const thickBorder: Partial<ExcelJS.Borders> = {
+            top: { style: 'thick' as ExcelJS.BorderStyle },
+            left: { style: 'thick' as ExcelJS.BorderStyle },
+            bottom: { style: 'thick' as ExcelJS.BorderStyle },
+            right: { style: 'thick' as ExcelJS.BorderStyle }
+        };
+
+        // Column Config (parity with the Buat LPJ page)
+        worksheet.columns = [
+            { key: 'A', width: 5 },   // No
+            { key: 'B', width: 35 },  // Program
+            { key: 'C', width: 15 },  // Operasional
+            { key: 'D', width: 12 },  // Jml
+            { key: 'E', width: 12 },  // Waktu
+            { key: 'F', width: 12 },  // Tempat
+            { key: 'G', width: 15 },  // PIC
+            { key: 'H', width: 15 },  // Sasaran
+            { key: 'I', width: 18 },  // Total
+            { key: 'J', width: 3 },   // Spacer
+            { key: 'K', width: 30 },  // Sidebar Column
+            { key: 'L', width: 10 }   // Extra
         ];
-        worksheet.getRow(2).font = { name: 'Times New Roman', size: 10 };
-        ['A2', 'D2', 'G2', 'J2'].forEach(ref => {
-            const cell = worksheet.getCell(ref);
-            cell.font = { bold: true, name: 'Times New Roman' };
+
+        // 1. Title
+        worksheet.mergeCells('A1:I1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'Laporan Realisasi & Perbandingan Anggaran (LPJ vs RKA)';
+        titleCell.font = { name: 'Times New Roman', bold: true, size: 14 };
+
+        // 2. Metadata Row
+        worksheet.getRow(2).values = ['Unit :', '', 'Bidang :', '', 'Bulan :', '', 'Tahun Ajaran :'];
+        worksheet.getCell('B2').value = lpjDoc.unit || '-';
+        worksheet.getCell('D2').value = lpjDoc.bidang || '-';
+        worksheet.getCell('F2').value = bulanName;
+        worksheet.getCell('H2').value = tahunAjaranStr;
+        worksheet.getRow(2).font = { name: 'Times New Roman', bold: true, size: 10 };
+        
+        // Right align labels
+        [1, 3, 5, 7].forEach(col => {
+            worksheet.getCell(2, col).alignment = { horizontal: 'right' };
         });
 
-        worksheet.addRow([]);
+        let currentRow = 4;
 
-        // Table Headers
-        const tableHeaders = ['No', 'Kegiatan / Program', 'Operasional', 'PIC', 'Waktu & Tempat', 'Sumber Dana', 'Nominal Realisasi (Rp)'];
-        const headerRow = worksheet.addRow(tableHeaders);
-        headerRow.eachCell((cell) => {
-            cell.font = { bold: true, name: 'Times New Roman' };
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFF1F5F9' }
-            };
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        // --- SECTION 1: RKA ---
+        const rkaStartRow = currentRow;
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const rkaTitle = worksheet.getCell(`A${currentRow}`);
+        rkaTitle.value = 'Tabel Rencana Kegiatan & Anggaran (RKA) - Target/Rencana';
+        rkaTitle.font = { name: 'Times New Roman', bold: true };
+        currentRow++;
+
+        const rkaHeaderRow = worksheet.getRow(currentRow);
+        rkaHeaderRow.values = ['No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Rencana Anggaran'];
+        currentRow++;
+
+        const rkaMainRow = worksheet.getRow(currentRow);
+        rkaMainRow.values = [
+            1, 
+            rkaItem?.judul_kegiatan || rkaItem?.kegiatan || '-', 
+            rkaItem?.kategori_coa || '-', 
+            rkaDetails?.jumlah_kegiatan || '1x', 
+            rkaItem?.waktu || '-', 
+            rkaItem?.tempat || '-', 
+            rkaItem?.pic || '-', 
+            rkaItem?.sasaran || '-', 
+            Number(rkaItem?.nominal || 0)
+        ];
+        rkaMainRow.getCell(9).numFmt = '"Rp "#,##0';
+        currentRow++;
+
+        // RKA Rincian Title
+        const rkaRincianLabelRow = worksheet.getRow(currentRow);
+        rkaRincianLabelRow.getCell(2).value = 'Rincian Detail & Budgeting:';
+        rkaRincianLabelRow.getCell(2).font = { italic: true, size: 9 };
+        currentRow++;
+
+        const rkaSubHeader = worksheet.getRow(currentRow);
+        rkaSubHeader.values = ['No', 'Nama Item / Spesifikasi', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)'];
+        currentRow++;
+
+        const rkaSubItems = rkaDetails?.items || [{ name: rkaItem?.judul_kegiatan || '', unit: 'Pcs', price: Number(rkaItem?.nominal || 0), qty: 1, total: Number(rkaItem?.nominal || 0) }];
+        rkaSubItems.forEach((item: any, i: number) => {
+            const row = worksheet.getRow(currentRow);
+            row.values = [i + 1, item.name, item.unit, Number(item.price || 0), Number(item.qty || 0), Number(item.total || 0)];
+            [4, 6].forEach(c => row.getCell(c).numFmt = '"Rp "#,##0');
+            currentRow++;
         });
 
-        // Filter and write rows
-        const targetItems = (doc.item_pengajuan || []).filter((it: any) => it.id === itemId);
-        let grandTotal = 0;
+        // RKA Footer
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Alokasi Sumber Dana';
+        currentRow++;
 
-        targetItems.forEach((row: any, idx: number) => {
-            const nominal = Number(row.nominal) || 0;
-            grandTotal += nominal;
+        const rkaSplits = rkaDetails?.fundingSplits || [{ source: rkaItem?.sumber_dana || 'Yayasan', percent: 100, nominal: rkaItem?.nominal }];
+        rkaSplits.forEach((split: any) => {
+            worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+            worksheet.getCell(`G${currentRow}`).value = `${split.source} (${split.percent}%)`;
+            worksheet.getCell(`I${currentRow}`).value = Number(split.nominal);
+            worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+            currentRow++;
+        });
+        
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Total Pengajuan';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = Number(rkaItem?.nominal || 0);
+        worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+        worksheet.getCell(`I${currentRow}`).font = { bold: true };
+        currentRow++;
 
-            const timePlace = `${row.waktu || '-'} / ${row.tempat || '-'}`;
-            const r = worksheet.addRow([
-                idx + 1,
-                row.judul_kegiatan || 'Realisasi Anggaran',
-                row.kategori_coa || 'Lainnya',
-                row.pic || '-',
-                timePlace,
-                row.sumber_dana || 'Dana Yayasan',
-                nominal
-            ]);
-            r.getCell(7).numFmt = '"Rp "#,##0';
-            r.eachCell(cell => {
-                cell.font = { name: 'Times New Roman' };
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Jenis Pencairan';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = rkaDoc?.metode_pencairan || rkaDoc?.metode_pembayaran || 'CASH';
+        worksheet.getCell(`I${currentRow}`).font = { italic: true };
+        const rkaEndRow = currentRow;
+
+        // Apply Borders & Bold Headers
+        for (let r = rkaStartRow; r <= rkaEndRow; r++) {
+            for (let c = 1; c <= 9; c++) {
+                const cell = worksheet.getCell(r, c);
+                cell.border = thinBorder;
+                
+                // Bold Headers
+                if (r === rkaStartRow || r === rkaStartRow + 1 || r === rkaStartRow + 4) {
+                    cell.font = { bold: true, size: r === rkaStartRow ? 10 : 9, name: 'Times New Roman' };
+                }
+                
+                if (r === rkaStartRow || r === rkaStartRow + 1) cell.alignment = { horizontal: 'center' };
+            }
+        }
+        // Bold RKA Summary Titles
+        for (let r = rkaEndRow - rkaSplits.length - 1; r <= rkaEndRow; r++) {
+            worksheet.getCell(r, 7).font = { bold: true, name: 'Times New Roman' };
+        }
+
+        currentRow += 2;
+
+        // --- SECTION 2: LPJ ---
+        const lpjStartRow = currentRow;
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const lpjTitle = worksheet.getCell(`A${currentRow}`);
+        lpjTitle.value = 'Tabel Realisasi Anggaran (LPJ) - Aktual/Realisasi';
+        lpjTitle.font = { name: 'Times New Roman', bold: true };
+        currentRow++;
+
+        const lpjHeaderRow = worksheet.getRow(currentRow);
+        lpjHeaderRow.values = ['No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Total Realisasi'];
+        currentRow++;
+
+        const lpjMainRow = worksheet.getRow(currentRow);
+        lpjMainRow.values = [
+            1, 
+            lpjItem?.judul_kegiatan || 'Realisasi Anggaran', 
+            lpjItem?.kategori_coa || 'Lainnya', 
+            lpjDetails?.jumlah_kegiatan || '1x', 
+            lpjItem?.waktu || '-', 
+            lpjItem?.tempat || '-', 
+            lpjItem?.pic || '-', 
+            lpjItem?.sasaran || '-', 
+            Number(lpjItem?.nominal || 0)
+        ];
+        lpjMainRow.getCell(9).numFmt = '"Rp "#,##0';
+        currentRow++;
+
+        const lpjRincianLabelRow = worksheet.getRow(currentRow);
+        lpjRincianLabelRow.getCell(2).value = 'Rincian Detail Realisasi:';
+        lpjRincianLabelRow.getCell(2).font = { italic: true, size: 9 };
+        currentRow++;
+
+        const lpjSubHeader = worksheet.getRow(currentRow);
+        lpjSubHeader.values = ['No', 'Nama Item / Spesifikasi', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)'];
+        currentRow++;
+
+        const lpjSubItems = lpjDetails?.items || [{ name: lpjItem?.judul_kegiatan || '', unit: 'Pcs', price: Number(lpjItem?.nominal || 0), qty: 1, total: Number(lpjItem?.nominal || 0) }];
+        lpjSubItems.forEach((item: any, i: number) => {
+            const row = worksheet.getRow(currentRow);
+            row.values = [i + 1, item.name, item.unit, Number(item.price || 0), Number(item.qty || 0), Number(item.total || 0)];
+            [4, 6].forEach(c => row.getCell(c).numFmt = '"Rp "#,##0');
+            currentRow++;
+        });
+
+        // LPJ Footer
+        worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+        worksheet.getCell(`G${currentRow}`).value = 'Total Realisasi';
+        worksheet.getCell(`G${currentRow}`).font = { bold: true };
+        worksheet.getCell(`I${currentRow}`).value = Number(lpjItem?.nominal || 0);
+        worksheet.getCell(`I${currentRow}`).numFmt = '"Rp "#,##0';
+        worksheet.getCell(`I${currentRow}`).font = { bold: true };
+        const lpjEndRow = currentRow;
+
+        // Apply Borders & Bold Headers to LPJ Section
+        for (let r = lpjStartRow; r <= lpjEndRow; r++) {
+            for (let c = 1; c <= 9; c++) {
+                const cell = worksheet.getCell(r, c);
+                cell.border = thinBorder;
+                
+                // Bold Headers
+                if (r === lpjStartRow || r === lpjStartRow + 1 || r === lpjStartRow + 4) {
+                    cell.font = { bold: true, size: r === lpjStartRow ? 10 : 9, name: 'Times New Roman' };
+                }
+
+                if (r === lpjStartRow || r === lpjStartRow + 1) cell.alignment = { horizontal: 'center' };
+            }
+        }
+        worksheet.getCell(lpjEndRow, 7).font = { bold: true, name: 'Times New Roman' };
+
+        // RIGHT SIDEBAR: Selisih, Subsidi Silang, & Catatan
+        worksheet.mergeCells(`K${lpjStartRow}:L${lpjStartRow+1}`);
+        const selisihBox = worksheet.getCell(`K${lpjStartRow}`);
+        const rawSelisih = Number(rkaItem?.nominal || 0) - Number(lpjItem?.nominal || 0);
+        const selisih = -rawSelisih;
+        selisihBox.value = `Selisih\nRp ${rawSelisih.toLocaleString('id-ID')}`;
+        selisihBox.font = { bold: true, name: 'Times New Roman' };
+        selisihBox.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        selisihBox.border = thickBorder;
+
+        let nextSidebarRow = lpjStartRow + 3;
+
+        const subsidiSources = lpjDetails?.subsidiSources || [];
+        if (selisih > 0) {
+            worksheet.mergeCells(`K${nextSidebarRow}:L${nextSidebarRow+2}`);
+            const subsidiBox = worksheet.getCell(`K${nextSidebarRow}`);
+            const subsidiText = subsidiSources.map((s: any) => `- ${s.source}: Rp ${Number(s.amount).toLocaleString('id-ID')} (${Number(s.percent).toFixed(0)}%)`).join('\n');
+            subsidiBox.value = `Subsidi Silang:\n${subsidiText || '-'}`;
+            subsidiBox.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+            subsidiBox.border = thickBorder;
+            nextSidebarRow += 4;
+        }
+
+        const catatanEndRow = Math.max(lpjEndRow, nextSidebarRow + 4);
+        worksheet.mergeCells(`K${nextSidebarRow}:L${catatanEndRow}`);
+        const catatanBox = worksheet.getCell(`K${nextSidebarRow}`);
+        catatanBox.value = `Catatan:\n${lpjDetails?.narasi || '-'}`;
+        catatanBox.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+        catatanBox.border = thickBorder;
+
+        // Apply Font "Times New Roman" Globally
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                if (!cell.font) cell.font = {};
+                cell.font.name = 'Times New Roman';
             });
         });
 
-        worksheet.addRow([]);
-        const totalRow = worksheet.addRow(['TOTAL REALISASI DICAIRKAN', '', '', '', '', '', grandTotal]);
-        totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
-        totalRow.getCell(7).font = { bold: true, size: 12, color: { argb: 'FF065F46' }, name: 'Times New Roman' };
-        totalRow.getCell(7).numFmt = '"Rp "#,##0';
+        currentRow = Math.max(currentRow, catatanEndRow);
 
-        worksheet.columns.forEach((col, i) => {
-            if (i === 1) col.width = 35;
-            else if (i === 4 || i === 5) col.width = 25;
-            else col.width = 15;
-        });
+        // SECTION: Bukti Nota / Kuitansi (Moved to Bottom)
+        const attachments = lpjDetails?.attachments || [];
+        if (attachments.length > 0) {
+            currentRow += 3;
+            worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+            const buktiHeader = worksheet.getCell(`A${currentRow}`);
+            buktiHeader.value = 'BUKTI NOTA / KUITANSI';
+            buktiHeader.font = { bold: true, size: 12, name: 'Times New Roman' };
+            buktiHeader.alignment = { horizontal: 'center' };
+            buktiHeader.border = thickBorder;
+            currentRow++;
 
-        // Tanda Tangan
-        worksheet.addRow([]);
-        worksheet.addRow([]);
-        const signRow = worksheet.lastRow!.number + 1;
+            const buktiStartRow = currentRow;
+            let imgCol = 1;
+            let imgRow = currentRow;
+
+            for (const att of attachments) {
+                const { file, url, base64, customName } = att as any;
+                
+                let extension: 'png' | 'jpeg' | 'gif' = 'png';
+                let imageInput: { buffer: ArrayBuffer } | { base64: string } | null = null;
+                
+                if (file) {
+                    if (file.type?.startsWith('image/')) {
+                        try {
+                            const buffer = await file.arrayBuffer();
+                            imageInput = { buffer };
+                            extension = (file.name.split('.').pop() as any) || 'png';
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                } else if (base64 || url) {
+                    const sourceString = base64 || url || '';
+                    if (sourceString.startsWith('data:image/')) {
+                        const matches = sourceString.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+                        if (matches && matches.length === 3) {
+                            extension = matches[1] as any;
+                            imageInput = { base64: matches[2] };
+                        }
+                    } else if (sourceString.startsWith('http')) {
+                        try {
+                            const res = await fetch(sourceString);
+                            if (res.ok) {
+                                const buffer = await res.arrayBuffer();
+                                imageInput = { buffer };
+                                extension = (sourceString.split('.').pop()?.split('?')[0] as any) || 'png';
+                            }
+                        } catch (e) {
+                            console.error('Failed to fetch image attachment:', e);
+                        }
+                    }
+                }
+                
+                if (imageInput) {
+                    try {
+                        const imageId = workbook.addImage({
+                            ...imageInput,
+                            extension: extension
+                        } as any);
+                        
+                        worksheet.addImage(imageId, {
+                            tl: { col: imgCol - 0.9, row: imgRow },
+                            ext: { width: 250, height: 250 }
+                        });
+
+                        const labelRow = imgRow + 13;
+                        worksheet.getCell(labelRow, imgCol).value = customName;
+                        worksheet.getCell(labelRow, imgCol).font = { bold: true, size: 10, name: 'Times New Roman' };
+                        worksheet.getCell(labelRow, imgCol).alignment = { horizontal: 'center' };
+                        
+                        imgCol += 4;
+                        if (imgCol > 8) {
+                            imgCol = 1;
+                            imgRow += 16; 
+                        }
+                    } catch (e) {
+                        console.error('Failed to add image to excel', e);
+                    }
+                }
+            }
+            const finalImgRow = imgCol === 1 ? imgRow : imgRow + 16;
+            for(let r=buktiStartRow; r<=finalImgRow; r++) {
+                worksheet.getRow(r).height = 20;
+            }
+            currentRow = finalImgRow + 2;
+        } else {
+            currentRow += 2;
+        }
+
+        // SECTION: Otorisasi & Tanda Tangan
+        currentRow += 1;
+        const signRow = currentRow;
+        
+        // Bendahara Unit
         worksheet.mergeCells(`B${signRow}:C${signRow}`);
-        worksheet.getCell(`B${signRow}`).value = 'Bendahara Pusat,';
+        worksheet.getCell(`B${signRow}`).value = 'Bendahara Unit/Jenjang,';
         worksheet.getCell(`B${signRow}`).font = { name: 'Times New Roman', bold: true };
         worksheet.getCell(`B${signRow}`).alignment = { horizontal: 'center' };
 
+        // Kepala Unit
         worksheet.mergeCells(`E${signRow}:F${signRow}`);
-        worksheet.getCell(`E${signRow}`).value = 'Penerima Laporan,';
+        worksheet.getCell(`E${signRow}`).value = 'Kepala Unit/Jenjang,';
         worksheet.getCell(`E${signRow}`).font = { name: 'Times New Roman', bold: true };
         worksheet.getCell(`E${signRow}`).alignment = { horizontal: 'center' };
 
+        // Bendahara Pusat
+        worksheet.mergeCells(`H${signRow}:I${signRow}`);
+        worksheet.getCell(`H${signRow}`).value = 'Bendahara Pusat,';
+        worksheet.getCell(`H${signRow}`).font = { name: 'Times New Roman', bold: true };
+        worksheet.getCell(`H${signRow}`).alignment = { horizontal: 'center' };
+
+        // Signature Spaces (Empty rows)
+        currentRow += 5;
+        const nameRow = currentRow;
+
+        // Names (Underlines)
+        worksheet.mergeCells(`B${nameRow}:C${nameRow}`);
+        worksheet.getCell(`B${nameRow}`).border = { bottom: { style: 'thin' } };
+        
+        worksheet.mergeCells(`E${nameRow}:F${nameRow}`);
+        worksheet.getCell(`E${nameRow}`).border = { bottom: { style: 'thin' } };
+        
+        worksheet.mergeCells(`H${nameRow}:I${nameRow}`);
+        worksheet.getCell(`H${nameRow}`).border = { bottom: { style: 'thin' } };
+
+        // Title Info
+        currentRow += 1;
+        const infoRow = currentRow;
+        worksheet.mergeCells(`B${infoRow}:C${infoRow}`);
+        worksheet.getCell(`B${infoRow}`).value = `Bendahara ${lpjDoc.unit || 'Unit/Jenjang'}`;
+        worksheet.getCell(`B${infoRow}`).font = { name: 'Times New Roman', size: 9, italic: true };
+        worksheet.getCell(`B${infoRow}`).alignment = { horizontal: 'center' };
+
+        worksheet.mergeCells(`E${infoRow}:F${infoRow}`);
+        worksheet.getCell(`E${infoRow}`).value = `Kepala ${lpjDoc.unit || 'Unit/Jenjang'}`;
+        worksheet.getCell(`E${infoRow}`).font = { name: 'Times New Roman', size: 9, italic: true };
+        worksheet.getCell(`E${infoRow}`).alignment = { horizontal: 'center' };
+
+        worksheet.mergeCells(`H${infoRow}:I${infoRow}`);
+        worksheet.getCell(`H${infoRow}`).value = 'Bendahara Pusat (Yayasan)';
+        worksheet.getCell(`H${infoRow}`).font = { name: 'Times New Roman', size: 9, italic: true };
+        worksheet.getCell(`H${infoRow}`).alignment = { horizontal: 'center' };
+
+        // Force Times New Roman font on new signature rows
+        for (let r = signRow; r <= infoRow; r++) {
+            worksheet.getRow(r).eachCell((cell) => {
+                if (!cell.font) cell.font = {};
+                cell.font.name = 'Times New Roman';
+            });
+        }
+
+        // Download
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `LPJ_REALISASI_${doc.unit || 'Jenjang'}_${Date.now()}.xlsx`;
-        anchor.click();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `LPJ_Formal_${lpjDoc.unit || 'SmartSantri'}_${Date.now()}.xlsx`;
+        a.click();
         window.URL.revokeObjectURL(url);
     };
 
