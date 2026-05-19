@@ -262,7 +262,31 @@ export default function BuatRealisasiPage() {
                 .eq('jenis', 'RKA')
                 .order('created_at', { ascending: false });
             
-            if (data) setApprovedRkas(data);
+            if (data) {
+                // Fetch all LPJ documents to find which RKAs have already been reported
+                const { data: lpjDocs } = await supabase
+                    .from('dokumen_pengajuan')
+                    .select('item_pengajuan(rincian_json)')
+                    .eq('jenis', 'LPJ');
+
+                const realizedRkaIds = new Set<string>();
+                lpjDocs?.forEach(doc => {
+                    doc.item_pengajuan?.forEach((it: any) => {
+                        try {
+                            const details = typeof it.rincian_json === 'string' 
+                                ? JSON.parse(it.rincian_json) 
+                                : (it.rincian_json || {});
+                            if (details.rka_id) {
+                                realizedRkaIds.add(details.rka_id);
+                            }
+                        } catch(e) {}
+                    });
+                });
+
+                // Filter out RKAs that have already been reported in an LPJ
+                const filtered = data.filter(doc => !realizedRkaIds.has(doc.id));
+                setApprovedRkas(filtered);
+            }
 
             // Fetch user profile unit
             const { data: { user } } = await supabase.auth.getUser();

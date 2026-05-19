@@ -169,9 +169,34 @@ export default function RiwayatPengajuanPage() {
                 if (error) {
                     console.error("Error fetching riwayat:", error);
                 } else if (data) {
+                    // Fetch all LPJ documents to find which RKAs have already been reported
+                    const { data: lpjDocs } = await supabase
+                        .from('dokumen_pengajuan')
+                        .select('item_pengajuan(rincian_json)')
+                        .eq('jenis', 'LPJ');
+
+                    const realizedRkaIds = new Set<string>();
+                    lpjDocs?.forEach(doc => {
+                        doc.item_pengajuan?.forEach((it: any) => {
+                            try {
+                                const details = typeof it.rincian_json === 'string' 
+                                    ? JSON.parse(it.rincian_json) 
+                                    : (it.rincian_json || {});
+                                if (details.rka_id) {
+                                    realizedRkaIds.add(details.rka_id);
+                                }
+                            } catch(e) {}
+                        });
+                    });
+
                     const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                     const mapped: any[] = [];
                     data.forEach(doc => {
+                        // Skip if this RKA document has already been reported in an LPJ
+                        if (realizedRkaIds.has(doc.id)) {
+                            return;
+                        }
+
                         const items = doc.item_pengajuan || [];
                         items.forEach((it: any) => {
                             mapped.push({
