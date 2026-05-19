@@ -236,48 +236,48 @@ export default function RekapitulasiDraftPage() {
     const isAllSelected = filteredItems.length > 0 && filteredItems.every(i => i.selected);
 
     return (
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-3 md:p-4 space-y-3">
             
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="bg-amber-500 p-3 rounded-2xl text-white shadow-lg shadow-amber-100">
-                        <CheckSquare className="w-6 h-6" />
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <div className="bg-amber-500 p-2 rounded-xl text-white shadow-lg shadow-amber-100/50">
+                        <CheckSquare className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Rekapitulasi Draft</h1>
+                        <h1 className="text-base font-black text-slate-800 tracking-tight uppercase">Rekapitulasi Draft</h1>
                     </div>
                 </div>
             </div>
 
             {/* Tab Navigation & Search Bar */}
-            <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center bg-white p-2 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="flex bg-slate-100 p-1 rounded-2xl gap-1">
+            <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex bg-slate-100 p-0.5 rounded-xl gap-0.5">
                     <button 
                         onClick={() => setActiveTab('RKA')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${activeTab === 'RKA' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5 ${activeTab === 'RKA' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                        <FileText className="w-4 h-4" /> Antrean RKA
-                        <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md text-[10px]">{rkaQueue.length}</span>
+                        <FileText className="w-3.5 h-3.5" /> Antrean RKA
+                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded text-[9px] font-bold">{rkaQueue.length}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('LPJ')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${activeTab === 'LPJ' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5 ${activeTab === 'LPJ' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                        <ClipboardCheck className="w-4 h-4" /> Antrean LPJ
-                        <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md text-[10px]">{lpjQueue.length}</span>
+                        <ClipboardCheck className="w-3.5 h-3.5" /> Antrean LPJ
+                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded text-[9px] font-bold">{lpjQueue.length}</span>
                     </button>
                 </div>
 
                 <div className="flex flex-1 gap-2 lg:max-w-md">
                     <div className="relative flex-1 group">
-                        <Search className="absolute left-4 top-3 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                        <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                         <input 
                             type="text" 
                             placeholder={`Cari pengaju, kegiatan, atau unit...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-11 pr-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
+                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-9 pr-3 py-2 text-[10px] font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
                         />
                     </div>
                     <div className="relative" ref={filterRef}>
@@ -417,97 +417,97 @@ export default function RekapitulasiDraftPage() {
             </div>
 
             {/* Main Content Table */}
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
                 <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
+                    <table className="w-full text-left border-collapse min-w-[750px]">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 w-12 text-center">
+                                <th className="px-3 py-2 w-10 text-center">
                                     <input 
                                         type="checkbox" 
                                         checked={isAllSelected}
                                         onChange={(e) => toggleAllSelection(e.target.checked)}
-                                        className="rounded text-emerald-600 w-4 h-4 cursor-pointer" 
+                                        className="rounded text-emerald-600 w-3.5 h-3.5 cursor-pointer" 
                                     />
                                 </th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">PENGAJU & BIDANG</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Program/Kegiatan</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sumber Dana</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Nominal</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Opsi</th>
+                                <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap w-[180px]">PENGAJU & BIDANG</th>
+                                <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-auto">Program/Kegiatan</th>
+                                <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[160px]">Sumber Dana</th>
+                                <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right whitespace-nowrap w-[120px]">Nominal</th>
+                                <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap w-[60px]">Opsi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-20 text-center space-y-3">
+                                    <td colSpan={6} className="py-12 text-center space-y-2">
                                         <div className="flex justify-center">
-                                            <div className="bg-slate-50 p-4 rounded-full">
-                                                <ClipboardCheck className="w-12 h-12 text-slate-200" />
+                                            <div className="bg-slate-50 p-3 rounded-full">
+                                                <ClipboardCheck className="w-8 h-8 text-slate-200" />
                                             </div>
                                         </div>
-                                        <p className="text-sm font-black text-slate-300 uppercase tracking-widest">Tidak ada antrean {activeTab}</p>
+                                        <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Tidak ada antrean {activeTab}</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredItems.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4 text-center">
+                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-3 py-1.5 text-center">
                                             <input 
                                                 type="checkbox" 
                                                 checked={item.selected} 
                                                 onChange={() => toggleItemSelection(item.id)}
-                                                className="rounded text-emerald-600 w-4 h-4 cursor-pointer" 
+                                                className="rounded text-emerald-600 w-3.5 h-3.5 cursor-pointer" 
                                             />
                                         </td>
-                                        <td className="px-4 py-4 align-middle">
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-slate-100 p-2 rounded-xl">
-                                                    <User className="w-4 h-4 text-slate-500" />
+                                        <td className="px-2 py-1.5 align-middle">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-slate-100 p-1.5 rounded-lg shrink-0">
+                                                    <User className="w-3.5 h-3.5 text-slate-500" />
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs font-black text-slate-800 leading-none mb-1">{item.pengaju}</p>
-                                                    <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest leading-none">{item.bidang}</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-[11px] font-black text-slate-800 leading-tight truncate">{item.pengaju}</p>
+                                                    <p className="text-[8px] text-emerald-600 font-black uppercase tracking-wider leading-none mt-0.5">{item.bidang}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 align-middle">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="text-xs font-black text-slate-700">{item.kegiatan}</p>
+                                        <td className="px-2 py-1.5 align-middle">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <p className="text-[11px] font-black text-slate-700 leading-tight">{item.kegiatan}</p>
                                                 {item.isRevisi ? (
                                                     <span 
-                                                        className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black rounded uppercase cursor-help"
+                                                        className="px-1 py-0.2 bg-amber-50 text-amber-700 text-[7px] font-black rounded uppercase cursor-help tracking-tighter"
                                                         title={`HASIL REVISI: ${item.lastNote}`}
                                                     >
                                                         Revisi
                                                     </span>
                                                 ) : (
-                                                    <span className="px-1.5 py-0.5 bg-sky-100 text-sky-700 text-[8px] font-black rounded uppercase">
+                                                    <span className="px-1 py-0.2 bg-sky-50 text-sky-700 text-[7px] font-black rounded uppercase tracking-tighter">
                                                         Baru
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">{item.coa}</span>
-                                                <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Info className="w-2.5 h-2.5" /> ID: {item.id}</span>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-[8px] font-bold bg-slate-100 text-slate-500 px-1 py-0.2 rounded uppercase tracking-tighter shrink-0">{item.coa}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 flex items-center gap-0.5 tracking-tighter shrink-0"><Info className="w-2 h-2" /> ID: {item.id}</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 align-middle text-center">
-                                            <span className="inline-flex px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-black rounded-lg border border-slate-100 uppercase tracking-tighter">
+                                        <td className="px-2 py-1.5 align-middle text-center">
+                                            <span className="inline-flex px-1.5 py-0.5 bg-slate-50 text-slate-600 text-[8px] font-black rounded border border-slate-100 uppercase tracking-tighter">
                                                 {item.sumber}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-4 align-middle text-right whitespace-nowrap">
-                                            <p className="text-sm font-black text-slate-800 italic tracking-tighter">Rp {item.nominal.toLocaleString('id-ID')}</p>
+                                        <td className="px-2 py-1.5 align-middle text-right whitespace-nowrap">
+                                            <p className="text-[11px] font-black text-slate-800 italic tracking-tighter">Rp {item.nominal.toLocaleString('id-ID')}</p>
                                         </td>
-                                        <td className="px-4 py-4 align-middle text-center whitespace-nowrap">
-                                            <div className="flex items-center justify-center gap-2">
+                                        <td className="px-2 py-1.5 align-middle text-center whitespace-nowrap">
+                                            <div className="flex items-center justify-center gap-1">
                                                 <button 
                                                     onClick={() => handleOpenDetail(item)}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" 
+                                                    className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" 
                                                     title="Review Detail"
                                                 >
-                                                    <ArrowUpRight className="w-4.5 h-4.5" />
+                                                    <ArrowUpRight className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         </td>
@@ -519,25 +519,25 @@ export default function RekapitulasiDraftPage() {
                 </div>
 
                 {/* Footer Toolbar */}
-                <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                            <div className="text-right border-r border-slate-100 pr-4">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Item Terpilih</p>
-                                <p className="text-sm font-black text-slate-800">{totalSelectedItems} baris</p>
+                <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                            <div className="text-right border-r border-slate-100 pr-3">
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Item Terpilih</p>
+                                <p className="text-xs font-black text-slate-800 leading-none">{totalSelectedItems} baris</p>
                             </div>
                             <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Nominal</p>
-                                <p className="text-lg font-black text-emerald-700 italic tracking-tighter">Rp {totalSelectedNominal.toLocaleString('id-ID')}</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Nominal</p>
+                                <p className="text-sm font-black text-emerald-700 italic tracking-tighter leading-none">Rp {totalSelectedNominal.toLocaleString('id-ID')}</p>
                             </div>
                         </div>
                     </div>
                     <button 
                         onClick={handleForwardToKepala}
                         disabled={totalSelectedItems === 0 || isForwarding}
-                        className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-10 py-4 rounded-2xl shadow-xl shadow-emerald-100 transition-all flex items-center justify-center gap-2 uppercase tracking-tight active:scale-95"
+                        className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-6 py-2.5 rounded-xl shadow-md shadow-emerald-100/50 transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-tight active:scale-95 shrink-0"
                     >
-                        <Send className="w-4 h-4 fill-white" />
+                        <Send className="w-3.5 h-3.5 fill-white" />
                         {isForwarding ? 'Memproses...' : 'Teruskan ke Kepala Unit'}
                     </button>
                 </div>
