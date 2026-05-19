@@ -288,14 +288,70 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   // FETCH DOCUMENT INFO
   const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
 
-  const { data, error } = await supabase
+  // FETCH CURRENT ITEMS FOR SNAPSHOT
+  const { data: currentItems } = await supabase
+    .from('item_pengajuan')
+    .select('*')
+    .eq('dokumen_id', id)
+
+  const snapshot = {
+    tanggal_revisi: new Date().toISOString(),
+    catatan_revisi: catatan,
+    total_nominal: doc?.total_nominal,
+    status_sebelumnya: doc?.status,
+    items: currentItems?.map(it => {
+      let rincian = {};
+      try {
+        rincian = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {});
+      } catch(e) {
+        rincian = {};
+      }
+      return {
+        id: it.id,
+        judul_kegiatan: it.judul_kegiatan,
+        kategori_coa: it.kategori_coa,
+        sumber_dana: it.sumber_dana,
+        nominal: it.nominal,
+        rincian_json: rincian,
+        catatan_revisi: it.catatan_revisi
+      }
+    }) || []
+  };
+
+  const oldHistory = Array.isArray(doc?.riwayat_revisi) ? doc.riwayat_revisi : [];
+  const updatedHistory = [...oldHistory, snapshot];
+
+  let data = null;
+  let error = null;
+
+  // Try updating with riwayat_revisi snapshot
+  const mainUpdate = await supabase
     .from('dokumen_pengajuan')
     .update({ 
       status: 'REVISI',
-      catatan_revisi: catatan
+      catatan_revisi: catatan,
+      riwayat_revisi: updatedHistory
     })
     .eq('id', id)
-    .select()
+    .select();
+
+  data = mainUpdate.data;
+  error = mainUpdate.error;
+
+  // Fallback if riwayat_revisi column is not created yet
+  if (error) {
+    console.warn("riwayat_revisi column might be missing in Supabase, falling back...", error);
+    const fallbackUpdate = await supabase
+      .from('dokumen_pengajuan')
+      .update({ 
+        status: 'REVISI',
+        catatan_revisi: catatan
+      })
+      .eq('id', id)
+      .select();
+    data = fallbackUpdate.data;
+    error = fallbackUpdate.error;
+  }
 
   if (error) return { error: error.message }
   if (!data || data.length === 0) {

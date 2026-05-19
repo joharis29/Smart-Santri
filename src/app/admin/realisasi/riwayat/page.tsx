@@ -59,6 +59,7 @@ export default function RiwayatDokumenPage() {
     const [detailLpjDoc, setDetailLpjDoc] = useState<any>(null);
     const [detailRkaDoc, setDetailRkaDoc] = useState<any>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
+    const [selectedRevisionSnapshot, setSelectedRevisionSnapshot] = useState<any>(null);
 
     const handleViewDetail = async (item: RiwayatDokumen) => {
         setSelectedItemForDetail(item);
@@ -998,6 +999,7 @@ export default function RiwayatDokumenPage() {
                                     setSelectedItemForDetail(null);
                                     setDetailLpjDoc(null);
                                     setDetailRkaDoc(null);
+                                    setSelectedRevisionSnapshot(null);
                                 }} 
                                 className="p-1.5 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
                             >
@@ -1021,7 +1023,9 @@ export default function RiwayatDokumenPage() {
                                         
                                         // LPJ: Alokasi dari RKA Rujukan
                                         if (detailRkaDoc) {
-                                            const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                            const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                ? selectedRevisionSnapshot.items?.[0]
+                                                : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
                                             const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
                                             const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
                                                 const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
@@ -1045,7 +1049,9 @@ export default function RiwayatDokumenPage() {
                                         }
 
                                         // LPJ: Subsidi Silang
-                                        const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                        const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                            ? selectedRevisionSnapshot.items?.[0]
+                                            : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
                                         let lpjDetails: any = {};
                                         try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
                                         
@@ -1079,6 +1085,31 @@ export default function RiwayatDokumenPage() {
                                     })()}
                                 </div>
 
+                                {/* Banner for revision snapshot view */}
+                                {selectedRevisionSnapshot && (
+                                    <div className="bg-amber-500 text-white px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md border-b border-amber-600 shrink-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1 bg-white/20 rounded-lg">
+                                                <AlertTriangle className="w-4 h-4 text-white animate-pulse" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-wider leading-tight">
+                                                    ⚠️ MENAMPILKAN ARSIP SEBELUM REVISI ({selectedRevisionSnapshot.type === 'LPJ' ? 'Laporan LPJ' : 'Perencanaan RKA'})
+                                                </p>
+                                                <p className="text-[9px] font-bold opacity-90 leading-normal">
+                                                    Tanggal Revisi: {new Date(selectedRevisionSnapshot.tanggal_revisi).toLocaleString('id-ID')} • Catatan: "{selectedRevisionSnapshot.catatan_revisi}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setSelectedRevisionSnapshot(null)}
+                                            className="px-3 py-1 bg-white text-amber-600 hover:bg-slate-50 active:scale-95 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                                        >
+                                            Kembali ke Versi Sekarang
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Scrollable Body */}
                                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-50/30">
                                     {/* Status & Summary Bar */}
@@ -1091,7 +1122,9 @@ export default function RiwayatDokumenPage() {
                                         </div>
                                         
                                         {detailRkaDoc && (() => {
-                                            const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                            const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                ? selectedRevisionSnapshot.items?.[0]
+                                                : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
                                             const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
                                             const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
                                                 const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
@@ -1100,7 +1133,9 @@ export default function RiwayatDokumenPage() {
                                             const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
 
                                             const totalRka = rkaItemsToRender.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
-                                            const totalLpj = selectedItemForDetail.nominal || 0;
+                                            const totalLpj = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                ? selectedRevisionSnapshot.total_nominal || selectedRevisionSnapshot.items?.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0
+                                                : selectedItemForDetail.nominal || 0;
                                             const selisih = totalRka - totalLpj;
                                             const isOverBudget = selisih < 0;
 
@@ -1139,7 +1174,14 @@ export default function RiwayatDokumenPage() {
                                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                                                     Total Realisasi:
                                                 </span>
-                                                <span className="text-sm font-black text-slate-800 italic">Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}</span>
+                                                <span className="text-sm font-black text-slate-800 italic">
+                                                    Rp {(() => {
+                                                        const totalVal = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                            ? selectedRevisionSnapshot.total_nominal || selectedRevisionSnapshot.items?.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0
+                                                            : selectedItemForDetail.nominal || 0;
+                                                        return totalVal.toLocaleString('id-ID');
+                                                    })()}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1158,7 +1200,7 @@ export default function RiwayatDokumenPage() {
                                                 </span>
                                             </div>
                                             
-                                            {!detailRkaDoc ? (
+                                            {!detailRkaDoc && !(selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA') ? (
                                                 <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                                     ⚠️ Referensi RKA tidak terhubung / tidak ditemukan
                                                 </div>
@@ -1178,13 +1220,20 @@ export default function RiwayatDokumenPage() {
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-100">
                                                             {(() => {
-                                                                const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
-                                                                const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
-                                                                const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
-                                                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
-                                                                    return rkaActivityName === lpjActivityName;
-                                                                }) || [];
-                                                                const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
+                                                                let rkaItemsToRender = [];
+                                                                if (selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'RKA') {
+                                                                    rkaItemsToRender = selectedRevisionSnapshot.items || [];
+                                                                } else if (detailRkaDoc) {
+                                                                    const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                                        ? selectedRevisionSnapshot.items?.[0]
+                                                                        : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                                                    const lpjActivityName = (lpjItem?.judul_kegiatan || selectedItemForDetail.kegiatan || '').trim().toLowerCase();
+                                                                    const matchingRkaItems = detailRkaDoc.item_pengajuan?.filter((it: any) => {
+                                                                        const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                                        return rkaActivityName === lpjActivityName;
+                                                                    }) || [];
+                                                                    rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (detailRkaDoc.item_pengajuan || []);
+                                                                }
                                                                 
                                                                 return rkaItemsToRender.map((it: any, idx: number) => {
                                                                     let rkaDetails: any = {};
@@ -1252,7 +1301,9 @@ export default function RiwayatDokumenPage() {
                                             </div>
                                             
                                             {(() => {
-                                                const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                                const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                    ? selectedRevisionSnapshot.items?.[0]
+                                                    : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
                                                 let lpjDetails: any = {};
                                                 try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
                                                 const lpjItems = lpjDetails.items || [];
@@ -1323,7 +1374,9 @@ export default function RiwayatDokumenPage() {
 
                                     {/* SECTION 3: Catatan & Narasi */}
                                     {(() => {
-                                        const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                        const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                            ? selectedRevisionSnapshot.items?.[0]
+                                            : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
                                         let lpjDetails: any = {};
                                         try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
                                         
@@ -1372,6 +1425,76 @@ export default function RiwayatDokumenPage() {
                                                                     </div>
                                                                 </a>
                                                             ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* NEW SECTION: RIWAYAT REVISI SNAPSHOT LOG */}
+                                    {(() => {
+                                        const lpjHistory = detailLpjDoc?.riwayat_revisi || [];
+                                        const rkaHistory = detailRkaDoc?.riwayat_revisi || [];
+                                        const hasHistory = lpjHistory.length > 0 || rkaHistory.length > 0;
+                                        
+                                        if (!hasHistory) return null;
+                                        
+                                        return (
+                                            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <History className="w-4 h-4 text-amber-600 animate-pulse" />
+                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                        Riwayat Log Penolakan & Berkas Sebelum Revisi ({lpjHistory.length + rkaHistory.length}):
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {/* LPJ Revisions */}
+                                                    {lpjHistory.length > 0 && (
+                                                        <div className="space-y-2">
+                                                            <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Revisi Realisasi (LPJ)</p>
+                                                            <div className="divide-y divide-slate-100 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                                                                {lpjHistory.map((rev: any, rIdx: number) => (
+                                                                    <div key={rIdx} className="py-2.5 flex flex-col gap-1 text-[10px] font-bold">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-500 font-semibold">{new Date(rev.tanggal_revisi).toLocaleString('id-ID')}</span>
+                                                                            <button 
+                                                                                onClick={() => setSelectedRevisionSnapshot({ ...rev, type: 'LPJ' })}
+                                                                                className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 active:scale-95 text-blue-600 rounded text-[8px] font-black uppercase tracking-tighter transition-all cursor-pointer"
+                                                                            >
+                                                                                Lihat File & Tabel Lama
+                                                                            </button>
+                                                                        </div>
+                                                                        <p className="text-slate-800 italic leading-snug">"{rev.catatan_revisi || 'Tanpa catatan'}"</p>
+                                                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Total Nominal: Rp {Number(rev.total_nominal || 0).toLocaleString('id-ID')}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* RKA Revisions */}
+                                                    {rkaHistory.length > 0 && (
+                                                        <div className="space-y-2">
+                                                            <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest">Revisi Perencanaan (RKA)</p>
+                                                            <div className="divide-y divide-slate-100 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                                                                {rkaHistory.map((rev: any, rIdx: number) => (
+                                                                    <div key={rIdx} className="py-2.5 flex flex-col gap-1 text-[10px] font-bold">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-500 font-semibold">{new Date(rev.tanggal_revisi).toLocaleString('id-ID')}</span>
+                                                                            <button 
+                                                                                onClick={() => setSelectedRevisionSnapshot({ ...rev, type: 'RKA' })}
+                                                                                className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-600 rounded text-[8px] font-black uppercase tracking-tighter transition-all cursor-pointer"
+                                                                            >
+                                                                                Lihat RKA Lama
+                                                                            </button>
+                                                                        </div>
+                                                                        <p className="text-slate-800 italic leading-snug">"{rev.catatan_revisi || 'Tanpa catatan'}"</p>
+                                                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Total RKA: Rp {Number(rev.total_nominal || 0).toLocaleString('id-ID')}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1431,8 +1554,9 @@ export default function RiwayatDokumenPage() {
                                             setSelectedItemForDetail(null);
                                             setDetailLpjDoc(null);
                                             setDetailRkaDoc(null);
+                                            setSelectedRevisionSnapshot(null);
                                         }}
-                                        className="px-5 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-md"
+                                        className="px-5 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-md cursor-pointer"
                                     >
                                         Tutup Detail
                                     </button>
