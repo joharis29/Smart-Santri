@@ -329,148 +329,144 @@ export default function KelolaSumberDanaPage() {
     }
 
     return (
-        <div className="p-4 md:p-6 space-y-6 bg-slate-50/50 min-h-screen">
+        <div className="p-3 md:p-4 space-y-3 bg-slate-50/50 min-h-screen">
             
-            {/* Header Title Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="bg-slate-900 p-3 rounded-[1.25rem] text-white shadow-xl shadow-slate-200">
-                        <Banknote className="w-6 h-6" />
+            {/* Unified Compact Header */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-3 px-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="bg-slate-900 p-2.5 rounded-xl text-white shadow-md shadow-slate-100">
+                        <Banknote className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase leading-none mb-1">Kelola Bidang & Dana</h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kustomisasi Departemen / Bidang & Sumber Anggaran Per Unit Pesantren</p>
+                        <h1 className="text-lg font-black text-slate-800 tracking-tight uppercase leading-none mb-0.5">Kelola Bidang & Dana</h1>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Kustomisasi Departemen / Bidang & Anggaran Unit Pesantren</p>
                     </div>
                 </div>
 
-                <button 
-                    onClick={() => loadUnitData(selectedUnit)}
-                    className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest"
-                >
-                    <RefreshCw className="w-3.5 h-3.5" /> Reload
-                </button>
+                {/* Compact Controls Area */}
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    {/* Lock Status / Info mini-badge */}
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider ${isCenterUser ? 'bg-amber-50 text-amber-600 border border-amber-200/50' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                        {isCenterUser ? <Unlock className="w-3 h-3 animate-pulse" /> : <Lock className="w-3 h-3" />}
+                        {isCenterUser ? 'Akses Pusat' : 'Akses Terkunci'}
+                    </div>
+
+                    {/* Unit Selector */}
+                    {isCenterUser ? (
+                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <select 
+                                value={selectedUnit}
+                                onChange={(e) => setSelectedUnit(e.target.value)}
+                                className="bg-transparent text-slate-700 font-black focus:outline-none cursor-pointer text-[10px] uppercase outline-none"
+                            >
+                                {ALL_UNITS.map(u => (
+                                    <option key={u} value={u}>{u}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div className="bg-slate-50 text-slate-650 border border-slate-250 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                            {selectedUnit}
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={() => loadUnitData(selectedUnit)}
+                        className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-650 text-[10px] font-black px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest shrink-0"
+                    >
+                        <RefreshCw className="w-3 h-3" /> Reload
+                    </button>
+                </div>
             </div>
 
             {/* Notifications */}
             {errorMessage && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
-                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-                    <p className="text-xs font-bold">{errorMessage}</p>
+                <div className="bg-rose-50 border border-rose-250 text-rose-800 p-2.5 px-4 rounded-xl flex items-center gap-2 animate-in fade-in duration-300">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <p className="text-[11px] font-bold leading-none">{errorMessage}</p>
                 </div>
             )}
             {successMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <p className="text-xs font-bold">{successMessage}</p>
+                <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 p-2.5 px-4 rounded-xl flex items-center gap-2 animate-in fade-in duration-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <p className="text-[11px] font-bold leading-none">{successMessage}</p>
                 </div>
             )}
 
-            {/* UNIT SELECTOR / CONTROLLER LOCK CARD */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${isCenterUser ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
-                        {isCenterUser ? <Unlock className="w-5 h-5 animate-pulse" /> : <Lock className="w-5 h-5" />}
-                    </div>
-                    <div>
-                        <h2 className="text-sm font-black uppercase text-slate-800 tracking-tight leading-none mb-1">
-                            {isCenterUser ? 'Seleksi Unit Administratif' : 'Unit Terkunci (Role-Restricted)'}
-                        </h2>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                            {isCenterUser ? 'Anda dapat beralih ke unit mana saja sebagai Bendahara Pusat' : `Akses Anda dibatasi hanya untuk mengelola unit ${assignedUnit}`}
-                        </p>
-                    </div>
-                </div>
-
-                {isCenterUser ? (
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 w-full md:w-auto">
-                        <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                        <select 
-                            value={selectedUnit}
-                            onChange={(e) => setSelectedUnit(e.target.value)}
-                            className="bg-transparent text-slate-700 font-extrabold focus:outline-none cursor-pointer text-xs w-full"
-                        >
-                            {ALL_UNITS.map(u => (
-                                <option key={u} value={u}>{u}</option>
-                            ))}
-                        </select>
-                    </div>
-                ) : (
-                    <div className="bg-slate-100 text-slate-650 border border-slate-200 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shrink-0">
-                        <Building2 className="w-4 h-4 text-slate-500" />
-                        {selectedUnit}
-                    </div>
-                )}
-            </div>
-
             {/* DUAL PANELS (BIDANG & SUMBER DANA) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                 {/* 1. BIDANG / DEPARTEMEN PANEL */}
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                    <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-gradient-to-r from-slate-50/50 to-white">
-                        <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-650 shrink-0">
-                            <Layers className="w-4 h-4" />
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-3 px-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50/50 to-white">
+                        <div className="flex items-center gap-2.5">
+                            <div className="bg-indigo-50 p-2 rounded-lg text-indigo-650 shrink-0">
+                                <Layers className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xs font-black text-slate-800 tracking-tight uppercase leading-none mb-0.5">Daftar Bidang / Departemen</h2>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Grup Kegiatan Anggaran {selectedUnit}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-base font-black text-slate-800 tracking-tight uppercase leading-none mb-1">Daftar Bidang / Departemen</h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grup Kegiatan Anggaran untuk RKA {selectedUnit}</p>
-                        </div>
+                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">{bidangs.length || activeFallbackBidang.length} Item</span>
                     </div>
 
                     {/* Inline Form to Add Bidang */}
-                    <form onSubmit={handleAddBidang} className="p-6 border-b border-slate-100 bg-slate-50/20">
+                    <form onSubmit={handleAddBidang} className="p-2.5 px-4 border-b border-slate-100 bg-slate-50/20">
                         <div className="flex gap-2">
                             <input 
                                 type="text"
                                 value={newBidangName}
                                 onChange={(e) => setNewBidangName(e.target.value)}
-                                placeholder="Tambah Bidang/Dept Baru (Contoh: Humas, Kurikulum)..."
-                                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 placeholder-slate-350 focus:outline-none focus:border-emerald-600 transition-colors"
+                                placeholder="Tambah Bidang/Dept Baru..."
+                                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 placeholder-slate-350 focus:outline-none focus:border-emerald-600 transition-colors"
                                 disabled={isSavingBidang}
                             />
                             <button
                                 type="submit"
                                 disabled={isSavingBidang || !newBidangName.trim()}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl disabled:opacity-50 transition-colors shrink-0 flex items-center justify-center"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 px-3 rounded-lg disabled:opacity-50 transition-colors shrink-0 flex items-center justify-center text-xs font-black uppercase tracking-wider gap-1"
                             >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-4 h-4" /> Tambah
                             </button>
                         </div>
                     </form>
 
                     {/* Bidangs List */}
-                    <div className="p-6 flex-1 overflow-y-auto max-h-[350px]">
+                    <div className="p-3 px-4 flex-1 overflow-y-auto max-h-[300px] scrollbar-thin">
                         {bidangs.length === 0 ? (
-                            <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-2xl flex items-start gap-3">
-                                    <HelpCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                            <div className="space-y-2.5">
+                                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-2.5 px-4 rounded-xl flex items-start gap-2.5">
+                                    <HelpCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-xs font-bold">Menggunakan Daftar Bidang Bawaan</p>
-                                        <p className="text-[10px] text-blue-600 font-semibold mt-0.5 leading-relaxed">
-                                            Anda belum menambahkan Bidang kustom. Sistem saat ini menampilkan konfigurasi bidang default pesantren di bawah ini. Tambahkan item di atas untuk mulai membuat daftar dinamis Anda sendiri.
+                                        <p className="text-[11px] font-black uppercase">Menggunakan Daftar Bidang Bawaan</p>
+                                        <p className="text-[9px] text-blue-600 font-bold mt-0.5 leading-relaxed">
+                                            Anda belum menambahkan Bidang kustom. Sistem menampilkan data default pesantren. Tambahkan item di atas untuk mulai membuat daftar dinamis Anda.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
                                     {activeFallbackBidang.map((fb, idx) => (
-                                        <div key={idx} className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-[11px] font-black text-slate-500 uppercase tracking-wide">
+                                        <div key={idx} className="bg-slate-50 border border-slate-200/60 p-1.5 px-2.5 rounded-lg text-[10px] font-black text-slate-550 uppercase tracking-wide truncate" title={fb}>
                                             {fb}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-1.5">
                                 {bidangs.map((b) => (
-                                    <div key={b.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl group hover:border-slate-300 transition-colors">
-                                        <span className="text-xs font-black text-slate-700 uppercase tracking-wide">{b.nama_bidang}</span>
+                                    <div key={b.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 p-2 px-3 rounded-xl group hover:border-slate-355 transition-colors">
+                                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate mr-2" title={b.nama_bidang}>{b.nama_bidang}</span>
                                         <button
                                             onClick={() => handleDeleteBidang(b.id, b.nama_bidang)}
                                             disabled={deletingId === b.id}
-                                            className="text-slate-400 hover:text-rose-600 transition-colors"
+                                            className="text-slate-400 hover:text-rose-600 transition-colors shrink-0"
                                             title="Hapus Bidang"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 ))}
@@ -480,71 +476,74 @@ export default function KelolaSumberDanaPage() {
                 </div>
 
                 {/* 2. SUMBER DANA PANEL */}
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                    <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-gradient-to-r from-slate-50/50 to-white">
-                        <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-650 shrink-0">
-                            <Banknote className="w-4 h-4" />
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-3 px-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50/50 to-white">
+                        <div className="flex items-center gap-2.5">
+                            <div className="bg-emerald-50 p-2 rounded-lg text-emerald-650 shrink-0">
+                                <Banknote className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xs font-black text-slate-800 tracking-tight uppercase leading-none mb-0.5">Daftar Sumber Dana</h2>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Alokasi Anggaran {selectedUnit}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-base font-black text-slate-800 tracking-tight uppercase leading-none mb-1">Daftar Sumber Dana</h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Alokasi Pendanaan & Subsidi Silang Per Unit {selectedUnit}</p>
-                        </div>
+                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">{sources.length || activeFallbackSources.length} Item</span>
                     </div>
 
                     {/* Inline Form to Add Source */}
-                    <form onSubmit={handleAddSource} className="p-6 border-b border-slate-100 bg-slate-50/20">
+                    <form onSubmit={handleAddSource} className="p-2.5 px-4 border-b border-slate-100 bg-slate-50/20">
                         <div className="flex gap-2">
                             <input 
                                 type="text"
                                 value={newSourceName}
                                 onChange={(e) => setNewSourceName(e.target.value)}
-                                placeholder="Tambah Sumber Dana Baru (Contoh: Dana BOS, Wakaf)..."
-                                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 placeholder-slate-350 focus:outline-none focus:border-emerald-600 transition-colors"
+                                placeholder="Tambah Sumber Dana Baru..."
+                                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 placeholder-slate-350 focus:outline-none focus:border-emerald-600 transition-colors"
                                 disabled={isSavingSource}
                             />
                             <button
                                 type="submit"
                                 disabled={isSavingSource || !newSourceName.trim()}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl disabled:opacity-50 transition-colors shrink-0 flex items-center justify-center"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 px-3 rounded-lg disabled:opacity-50 transition-colors shrink-0 flex items-center justify-center text-xs font-black uppercase tracking-wider gap-1"
                             >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-4 h-4" /> Tambah
                             </button>
                         </div>
                     </form>
 
                     {/* Sources List */}
-                    <div className="p-6 flex-1 overflow-y-auto max-h-[350px]">
+                    <div className="p-3 px-4 flex-1 overflow-y-auto max-h-[300px] scrollbar-thin">
                         {sources.length === 0 ? (
-                            <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-2xl flex items-start gap-3">
-                                    <HelpCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                            <div className="space-y-2.5">
+                                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-2.5 px-4 rounded-xl flex items-start gap-2.5">
+                                    <HelpCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-xs font-bold">Menggunakan Daftar Sumber Dana Bawaan</p>
-                                        <p className="text-[10px] text-blue-600 font-semibold mt-0.5 leading-relaxed">
-                                            Anda belum menambahkan Sumber Dana kustom. Sistem saat ini menampilkan alokasi dana default pesantren di bawah ini. Tambahkan item di atas untuk mulai membuat daftar dinamis Anda sendiri.
+                                        <p className="text-[11px] font-black uppercase">Menggunakan Daftar Sumber Dana Bawaan</p>
+                                        <p className="text-[9px] text-blue-600 font-bold mt-0.5 leading-relaxed">
+                                            Anda belum menambahkan Sumber Dana kustom. Sistem menampilkan data default pesantren. Tambahkan item di atas untuk mulai membuat daftar dinamis Anda.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
                                     {activeFallbackSources.map((fb, idx) => (
-                                        <div key={idx} className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-[11px] font-black text-slate-500 uppercase tracking-wide">
+                                        <div key={idx} className="bg-slate-50 border border-slate-200/60 p-1.5 px-2.5 rounded-lg text-[10px] font-black text-slate-550 uppercase tracking-wide truncate" title={fb}>
                                             {fb}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-1.5">
                                 {sources.map((s) => (
-                                    <div key={s.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl group hover:border-slate-300 transition-colors">
-                                        <span className="text-xs font-black text-slate-700 uppercase tracking-wide">{s.nama_sumber_dana}</span>
+                                    <div key={s.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 p-2 px-3 rounded-xl group hover:border-slate-355 transition-colors">
+                                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate mr-2" title={s.nama_sumber_dana}>{s.nama_sumber_dana}</span>
                                         <button
                                             onClick={() => handleDeleteSource(s.id, s.nama_sumber_dana)}
                                             disabled={deletingId === s.id}
-                                            className="text-slate-400 hover:text-rose-600 transition-colors"
+                                            className="text-slate-400 hover:text-rose-600 transition-colors shrink-0"
                                             title="Hapus Sumber Dana"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 ))}
