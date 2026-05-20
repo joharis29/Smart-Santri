@@ -32,6 +32,7 @@ interface LedgerEntry {
     nominal: number;
     saldo: number;
     refId: string;
+    metode?: string; // Optional payment/receipt method field
 }
 
 const MONTHS = [
@@ -75,6 +76,23 @@ export default function BukuBesarPage() {
     
     const filterRef = useRef<HTMLDivElement>(null);
     const periodRef = useRef<HTMLDivElement>(null);
+
+    // Helper functions to dynamically map standard accounting cash/bank asset names
+    const getAssetAccountName = (item: LedgerEntry) => {
+        const method = (item.metode || '').toLowerCase();
+        if (method.includes('cash') || method.includes('tunai')) {
+            return `Kas Tunai (${item.coa})`;
+        }
+        return `Kas Bank (${item.coa})`;
+    };
+
+    const getCentralSPPAccountName = (item: LedgerEntry) => {
+        const method = (item.metode || '').toLowerCase();
+        if (method.includes('cash') || method.includes('tunai')) {
+            return `Kas Tunai (Dompet SPP)`;
+        }
+        return `Kas Bank (Dompet SPP)`;
+    };
 
     // Close menus when clicking outside
     useEffect(() => {
@@ -186,7 +204,8 @@ export default function BukuBesarPage() {
                     tipe: 'DEBET',
                     nominal: Number(item.nominal),
                     saldo: 0,
-                    refId: item.id.substring(0, 8).toUpperCase()
+                    refId: item.id.substring(0, 8).toUpperCase(),
+                    metode: item.jenis_penerimaan || 'Transfer'
                 });
             });
 
@@ -217,7 +236,8 @@ export default function BukuBesarPage() {
                             tipe: 'KREDIT',
                             nominal: Number(item.nominal),
                             saldo: 0,
-                            refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase()
+                            refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
+                            metode: doc.metode_pencairan || 'Transfer'
                         });
                     });
                 }
@@ -268,7 +288,8 @@ export default function BukuBesarPage() {
                                 tipe: 'KREDIT',
                                 nominal: yayasanAmount,
                                 saldo: 0,
-                                refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase()
+                                refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
+                                metode: doc.metode_pencairan || 'Transfer'
                             });
                         }
                     });
@@ -765,9 +786,9 @@ export default function BukuBesarPage() {
                                 <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">{selectedJournalItem.unit}</span>
                             </div>
                             <div>
-                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Jenis Mutasi</span>
-                                <span className={`text-xs font-black ${selectedJournalItem.tipe === 'DEBET' ? 'text-emerald-600' : 'text-rose-600'} leading-none`}>
-                                    {selectedJournalItem.tipe === 'DEBET' ? 'DEBET (MASUK)' : 'KREDIT (KELUAR)'}
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Metode / Jalur</span>
+                                <span className="text-xs font-black text-slate-650 bg-slate-100 px-2.5 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">
+                                    {selectedJournalItem.metode || 'Transfer'}
                                 </span>
                             </div>
                         </div>
@@ -794,7 +815,7 @@ export default function BukuBesarPage() {
                                         <>
                                             <tr>
                                                 <td className="py-4 text-xs font-black text-slate-800">
-                                                    Kas dan Bank ({selectedJournalItem.coa})
+                                                    {getAssetAccountName(selectedJournalItem)}
                                                 </td>
                                                 <td className="py-4 text-xs font-black text-emerald-600 text-right">
                                                     {selectedJournalItem.nominal.toLocaleString('id-ID')}
@@ -829,7 +850,7 @@ export default function BukuBesarPage() {
                                                     </tr>
                                                     <tr>
                                                         <td className="py-4 text-xs font-black text-slate-500 pl-8">
-                                                            Kas dan Bank (Dompet SPP)
+                                                            {getCentralSPPAccountName(selectedJournalItem)}
                                                         </td>
                                                         <td className="py-4 text-xs text-slate-355 text-right">-</td>
                                                         <td className="py-4 text-xs font-black text-rose-600 text-right">
@@ -850,7 +871,7 @@ export default function BukuBesarPage() {
                                                     </tr>
                                                     <tr>
                                                         <td className="py-4 text-xs font-black text-slate-500 pl-8">
-                                                            Kas dan Bank ({selectedJournalItem.coa})
+                                                            {getAssetAccountName(selectedJournalItem)}
                                                         </td>
                                                         <td className="py-4 text-xs text-slate-355 text-right">-</td>
                                                         <td className="py-4 text-xs font-black text-rose-600 text-right">
