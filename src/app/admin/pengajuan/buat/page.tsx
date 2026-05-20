@@ -36,7 +36,8 @@ import {
   CheckSquare,
   History,
   ClipboardCheck,
-  FileEdit
+  FileEdit,
+  Lock
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
@@ -439,6 +440,78 @@ function BuatPengajuanContent() {
 
   const [userRole, setUserRole] = useState('')
   const [assignedUnit, setAssignedUnit] = useState('')
+
+  const [isRkaActive, setIsRkaActive] = useState<boolean>(true)
+  const [checkingActive, setCheckingActive] = useState<boolean>(true)
+
+  // Check if RKA (Buat Pengajuan) is active for this unit / globally
+  useEffect(() => {
+    const checkRkaGate = async () => {
+      setCheckingActive(true)
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setCheckingActive(false)
+          return
+        }
+
+        // Get user role to determine bypass
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profile) {
+          const activeRoleKey = `activeRole_${user.id}`
+          const dbRoleName = typeof profile.role === 'string' ? profile.role : (profile.role?.name || '')
+          const roleName = localStorage.getItem(activeRoleKey) || dbRoleName
+          
+          // Administrator and Central Treasurer bypass any gate checks
+          if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
+            setIsRkaActive(true)
+            setCheckingActive(false)
+            return
+          }
+        }
+
+        // 1. Check Global Gate
+        const { data: globalGate } = await supabase
+          .from('kontrol_pengajuan')
+          .select('rka_aktif')
+          .eq('unit_name', 'GLOBAL')
+          .maybeSingle()
+
+        if (globalGate && globalGate.rka_aktif === false) {
+          setIsRkaActive(false)
+          setCheckingActive(false)
+          return
+        }
+
+        // 2. Check Unit Specific Gate
+        const { data: unitGate } = await supabase
+          .from('kontrol_pengajuan')
+          .select('rka_aktif')
+          .eq('unit_name', unit)
+          .maybeSingle()
+
+        if (unitGate && unitGate.rka_aktif === false) {
+          setIsRkaActive(false)
+        } else {
+          setIsRkaActive(true)
+        }
+      } catch (err) {
+        console.error("Error checking RKA gate status:", err)
+      } finally {
+        setCheckingActive(false)
+      }
+    }
+
+    if (unit) {
+      checkRkaGate()
+    }
+  }, [unit])
 
   // Load User Profile to handle Role-Based Access Control on Unit & Bidang selections
   useEffect(() => {
@@ -1458,6 +1531,42 @@ function BuatPengajuanContent() {
       setAttachments([])
       if (importRef.current) importRef.current.value = ''
     }
+  }
+
+  if (checkingActive) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Memeriksa Status Pembukuan...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isRkaActive) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
+        <div className="bg-white max-w-md w-full p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-100 flex flex-col items-center text-center space-y-6">
+          <div className="bg-rose-50 p-6 rounded-[2rem] text-rose-600 shadow-inner">
+            <Lock className="w-12 h-12" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase leading-none">Pengisian RKA Ditutup</h2>
+            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Jendela Pengajuan Anggaran Dibekukan</p>
+          </div>
+          <p className="text-xs font-bold text-slate-400 leading-relaxed">
+            Maaf, pengisian formulir **Buat Pengajuan (RKA)** saat ini sedang dinonaktifkan oleh Bendahara Pusat untuk unit Anda **({unit})**. Silakan hubungi Bendahara Pusat untuk informasi lebih lanjut mengenai jadwal pembukaan kembali.
+          </p>
+          <button 
+            onClick={() => router.push('/admin')}
+            className="w-full bg-slate-900 text-white text-[10px] font-black py-4 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all uppercase tracking-widest"
+          >
+            Kembali ke Dasbor
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

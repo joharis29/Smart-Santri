@@ -21,7 +21,8 @@ import {
     ChevronRight,
     ShieldAlert,
     PlusCircle,
-    Banknote
+    Banknote,
+    ToggleLeft
 } from 'lucide-react';
 
 const UNITS = [
@@ -40,6 +41,9 @@ function hasMenuAccess(role: string, path: string): boolean {
         case '/admin/users': // Manajemen Pengguna
         case '/admin/roles': // Manajemen Peran
             return cleanRole === 'ADMINISTRATOR';
+
+        case '/admin/pengaturan/kontrol-pengajuan': // Kontrol Pengajuan RKA & LPJ
+            return ['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(cleanRole);
 
         case '/admin/pengaturan/rka-referensi': // Program
             return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
@@ -331,7 +335,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         {/* Pengaturan Menu */}
                         {(hasMenuAccess(activeRole, '/admin/users') ||
                           hasMenuAccess(activeRole, '/admin/roles') ||
-                          hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi')) && (
+                          hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi') ||
+                          hasMenuAccess(activeRole, '/admin/pengaturan/kontrol-pengajuan')) && (
                             <div className="pt-2">
                                 <button 
                                     onClick={() => setSettingsOpen(!settingsOpen)}
@@ -365,6 +370,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                                 <FileText className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
                                                 <span className="truncate">Program</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengaturan/kontrol-pengajuan') && (
+                                            <Link href="/admin/pengaturan/kontrol-pengajuan" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <ToggleLeft className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Kontrol Pengajuan & LPJ</span>
                                             </Link>
                                         )}
                                     </div>
