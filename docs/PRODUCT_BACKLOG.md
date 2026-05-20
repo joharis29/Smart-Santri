@@ -78,10 +78,11 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
 ## 🧠 Fase 3: Integrasi Kecerdasan Buatan (Smart Compliance Audit)
 Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk validasi kepatuhan.
 
-- [ ] Persiapan *Vector Database* (Supabase `pgvector`).
-- [ ] Ekstraksi dan *Embedding* 4 Pilar Regulasi (ISAK 335, PAP, Juknis BOS, SOP Pesantren).
-- [ ] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering).
-- [ ] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan OpenAI LLM.
+- [x] Persiapan *Vector Database* (Supabase `pgvector`) — Tabel `document_chunks` + fungsi `match_documents` RPC.
+- [x] Ekstraksi dan *Chunking* 4 Pilar Regulasi (ISAK 335, PAP, Juknis BOS, SOP Pesantren) — 893 chunks dari 14 PDF (`scripts/prepare_documents.ts`).
+- [/] *Embedding* chunks ke database vektor — Menunggu kredit OpenAI untuk proses `text-embedding-3-small`.
+- [x] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering) — `src/lib/rag.ts` dengan mock fallback.
+- [x] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan OpenAI LLM — `POST /api/audit`.
 - [x] Integrasi UI: Menampilkan bendera peringatan (*Flag*) anomali audit (Kepatuhan Syariah) di tabel pengajuan.
 
 ---
