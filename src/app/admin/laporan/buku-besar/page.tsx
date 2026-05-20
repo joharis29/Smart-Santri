@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { 
-    BarChart3, 
     Download, 
     Search, 
     Filter, 
@@ -17,7 +16,8 @@ import {
     ChevronDown,
     FileText,
     Lock,
-    X
+    X,
+    Briefcase
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import * as XLSX from 'xlsx';
@@ -32,7 +32,9 @@ interface LedgerEntry {
     nominal: number;
     saldo: number;
     refId: string;
-    metode?: string; // Optional payment/receipt method field
+    metode?: string;
+    bidang?: string;
+    tahunAjaran?: string;
 }
 
 const MONTHS = [
@@ -60,14 +62,12 @@ export default function BukuBesarPage() {
     // --- FILTER & DATA STATES ---
     const [searchQuery, setSearchQuery] = useState('');
     const [filterUnit, setFilterUnit] = useState('');
+    const [filterBidang, setFilterBidang] = useState('');
     const [filterCOA, setFilterCOA] = useState('');
-    const [filterPeriod, setFilterPeriod] = useState<'ALL' | 'MONTHLY'>('ALL');
-    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [filterMonth, setFilterMonth] = useState(''); // '' means Semua Bulan
+    const [filterTahunAjaran, setFilterTahunAjaran] = useState(''); // '' means Semua Tahun Ajaran
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-    
     const [ledgerData, setLedgerData] = useState<LedgerEntry[]>([]);
     const [isFetching, setIsFetching] = useState<boolean>(false);
     
@@ -75,7 +75,19 @@ export default function BukuBesarPage() {
     const [selectedJournalItem, setSelectedJournalItem] = useState<LedgerEntry | null>(null);
     
     const filterRef = useRef<HTMLDivElement>(null);
-    const periodRef = useRef<HTMLDivElement>(null);
+
+    // Dynamic School Year (Tahun Ajaran) helper from transaction date
+    const getTahunAjaranFromDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // 1-indexed
+        if (month >= 7) {
+            return `${year}/${year + 1}`;
+        } else {
+            return `${year - 1}/${year}`;
+        }
+    };
 
     // Helper functions to dynamically map standard accounting cash/bank asset names
     const getAssetAccountName = (item: LedgerEntry) => {
@@ -99,9 +111,6 @@ export default function BukuBesarPage() {
         const handleClickOutside = (event: MouseEvent) => {
             if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
                 setIsFilterOpen(false);
-            }
-            if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
-                setIsPeriodOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -205,7 +214,9 @@ export default function BukuBesarPage() {
                     nominal: Number(item.nominal),
                     saldo: 0,
                     refId: item.id.substring(0, 8).toUpperCase(),
-                    metode: item.jenis_penerimaan || 'Transfer'
+                    metode: item.jenis_penerimaan || 'Transfer',
+                    bidang: 'Penerimaan',
+                    tahunAjaran: getTahunAjaranFromDate(item.tanggal)
                 });
             });
 
@@ -237,7 +248,9 @@ export default function BukuBesarPage() {
                             nominal: Number(item.nominal),
                             saldo: 0,
                             refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
-                            metode: doc.metode_pencairan || 'Transfer'
+                            metode: doc.metode_pencairan || 'Transfer',
+                            bidang: doc.bidang || 'Tanpa Bidang',
+                            tahunAjaran: doc.tahun_ajaran || (doc.periode_tahun ? `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}` : getTahunAjaranFromDate(doc.tanggal_kebutuhan || doc.created_at.split('T')[0]))
                         });
                     });
                 }
@@ -289,7 +302,9 @@ export default function BukuBesarPage() {
                                 nominal: yayasanAmount,
                                 saldo: 0,
                                 refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
-                                metode: doc.metode_pencairan || 'Transfer'
+                                metode: doc.metode_pencairan || 'Transfer',
+                                bidang: doc.bidang || 'Tanpa Bidang',
+                                tahunAjaran: doc.tahun_ajaran || (doc.periode_tahun ? `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}` : getTahunAjaranFromDate(doc.created_at.split('T')[0]))
                             });
                         }
                     });
@@ -304,21 +319,7 @@ export default function BukuBesarPage() {
                 return a.id.localeCompare(b.id);
             });
 
-            // 5. Compute dynamically running cumulative balance (Debet - Kredit)
-            let runningBalance = 0;
-            const updatedEntries = entries.map(item => {
-                if (item.tipe === 'DEBET') {
-                    runningBalance += item.nominal;
-                } else {
-                    runningBalance -= item.nominal;
-                }
-                return {
-                    ...item,
-                    saldo: runningBalance
-                };
-            });
-
-            setLedgerData(updatedEntries);
+            setLedgerData(entries);
 
         } catch (err) {
             console.error("Error compiling ledger database:", err);
@@ -342,40 +343,79 @@ export default function BukuBesarPage() {
                                  item.refId.toLowerCase().includes(searchQuery.toLowerCase());
             
             const matchesCOA = filterCOA === '' || item.coa === filterCOA;
+            const matchesBidang = filterBidang === '' || item.bidang === filterBidang;
+            const matchesTahunAjaran = filterTahunAjaran === '' || item.tahunAjaran === filterTahunAjaran;
+            const matchesMonth = filterMonth === '' || (new Date(item.tanggal).getMonth() + 1 === Number(filterMonth));
             
-            if (filterPeriod === 'MONTHLY') {
-                const itemDate = new Date(item.tanggal);
-                const matchesMonth = itemDate.getMonth() + 1 === selectedMonth;
-                const matchesYear = itemDate.getFullYear() === selectedYear;
-                return matchesSearch && matchesCOA && matchesMonth && matchesYear;
-            }
-            return matchesSearch && matchesCOA;
+            return matchesSearch && matchesCOA && matchesBidang && matchesTahunAjaran && matchesMonth;
         });
-    }, [searchQuery, filterCOA, filterPeriod, selectedMonth, selectedYear, ledgerData]);
+    }, [searchQuery, filterCOA, filterBidang, filterTahunAjaran, filterMonth, ledgerData]);
+
+    // Recompute cumulative running balances on the filtered subset for perfect balance display
+    const processedLedger = useMemo(() => {
+        let runningBalance = 0;
+        return filteredLedger.map(item => {
+            if (item.tipe === 'DEBET') {
+                runningBalance += item.nominal;
+            } else {
+                runningBalance -= item.nominal;
+            }
+            return {
+                ...item,
+                saldo: runningBalance
+            };
+        });
+    }, [filteredLedger]);
 
     const stats = useMemo(() => {
-        const totalDebet = filteredLedger.filter(i => i.tipe === 'DEBET').reduce((acc, curr) => acc + curr.nominal, 0);
-        const totalKredit = filteredLedger.filter(i => i.tipe === 'KREDIT').reduce((acc, curr) => acc + curr.nominal, 0);
+        const totalDebet = processedLedger.filter(i => i.tipe === 'DEBET').reduce((acc, curr) => acc + curr.nominal, 0);
+        const totalKredit = processedLedger.filter(i => i.tipe === 'KREDIT').reduce((acc, curr) => acc + curr.nominal, 0);
         return { totalDebet, totalKredit };
-    }, [filteredLedger]);
+    }, [processedLedger]);
 
     const uniqueCOAs = useMemo(() => {
         return Array.from(new Set(ledgerData.map(i => i.coa)));
     }, [ledgerData]);
 
+    const uniqueBidangs = useMemo(() => {
+        return Array.from(new Set(ledgerData.map(i => i.bidang).filter(Boolean))) as string[];
+    }, [ledgerData]);
+
+    const uniqueTahunAjarans = useMemo(() => {
+        return Array.from(new Set(ledgerData.map(i => i.tahunAjaran).filter(Boolean))) as string[];
+    }, [ledgerData]);
+
+    const activeFiltersCount = useMemo(() => {
+        let count = 0;
+        if (filterBidang) count++;
+        if (filterCOA) count++;
+        if (filterMonth) count++;
+        if (filterTahunAjaran) count++;
+        return count;
+    }, [filterBidang, filterCOA, filterMonth, filterTahunAjaran]);
+
+    const handleClearFilters = () => {
+        setFilterBidang('');
+        setFilterCOA('');
+        setFilterMonth('');
+        setFilterTahunAjaran('');
+    };
+
     // --- HIGH FIDELITY EXCEL EXPORT ENGINE ---
     const handleExcelExport = () => {
-        if (filteredLedger.length === 0) {
+        if (processedLedger.length === 0) {
             alert("Tidak ada entri Buku Besar untuk diekspor!");
             return;
         }
 
-        const dataToExport = filteredLedger.map((item, idx) => ({
+        const dataToExport = processedLedger.map((item, idx) => ({
             'No': idx + 1,
             'Tanggal': item.tanggal,
             'No. Ref': item.id,
             'Keterangan Transaksi': item.keterangan,
             'Unit Kerja': item.unit,
+            'Bidang': item.bidang || '-',
+            'Tahun Ajaran': item.tahunAjaran || '-',
             'Akun (COA)': item.coa,
             'Debet (Rp)': item.tipe === 'DEBET' ? item.nominal : 0,
             'Kredit (Rp)': item.tipe === 'KREDIT' ? item.nominal : 0,
@@ -398,8 +438,8 @@ export default function BukuBesarPage() {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Buku Besar");
         
-        const periodStr = filterPeriod === 'MONTHLY' 
-            ? `${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}` 
+        const periodStr = filterMonth 
+            ? `${MONTHS.find(m => m.value === Number(filterMonth))?.label}` 
             : 'Semua_Periode';
 
         XLSX.writeFile(
@@ -464,66 +504,6 @@ export default function BukuBesarPage() {
                 </div>
                 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    {/* Period Dropdown Selector */}
-                    <div className="relative flex-1 md:flex-none" ref={periodRef}>
-                        <button 
-                            onClick={() => setIsPeriodOpen(!isPeriodOpen)}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black px-5 py-3.5 rounded-2xl hover:bg-slate-50 transition-all uppercase tracking-widest shadow-sm"
-                        >
-                            <Calendar className="w-4 h-4 text-slate-400" /> 
-                            {filterPeriod === 'ALL' ? 'Semua Periode' : `${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`}
-                            <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
-                        </button>
-
-                        {isPeriodOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-3xl border border-slate-100 shadow-2xl p-5 z-50 space-y-4">
-                                <h4 className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Filter Periode</h4>
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="period" 
-                                            checked={filterPeriod === 'ALL'} 
-                                            onChange={() => setFilterPeriod('ALL')}
-                                            className="accent-emerald-600"
-                                        />
-                                        Tampilkan Semua
-                                    </label>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="period" 
-                                            checked={filterPeriod === 'MONTHLY'} 
-                                            onChange={() => setFilterPeriod('MONTHLY')}
-                                            className="accent-emerald-600"
-                                        />
-                                        Berdasarkan Bulan
-                                    </label>
-                                </div>
-
-                                {filterPeriod === 'MONTHLY' && (
-                                    <div className="grid grid-cols-2 gap-2 pt-2 animate-in fade-in duration-300">
-                                        <select 
-                                            value={selectedMonth} 
-                                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                                            className="bg-slate-50 border border-slate-100 text-[9px] font-bold rounded-xl px-2 py-2 outline-none"
-                                        >
-                                            {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                        </select>
-                                        <select 
-                                            value={selectedYear} 
-                                            onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                            className="bg-slate-50 border border-slate-100 text-[9px] font-bold rounded-xl px-2 py-2 outline-none"
-                                        >
-                                            <option value={2026}>2026</option>
-                                            <option value={2025}>2025</option>
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
                     <button 
                         onClick={handleExcelExport}
                         className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 text-white text-[10px] font-black px-6 py-3.5 rounded-2xl hover:bg-emerald-700 transition-all uppercase tracking-widest shadow-xl shadow-emerald-100"
@@ -583,51 +563,98 @@ export default function BukuBesarPage() {
                     <div className="flex gap-2 relative" ref={filterRef}>
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest ${isFilterOpen || filterCOA ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                            className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest ${isFilterOpen || activeFiltersCount > 0 ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
-                            <Filter className="w-4 h-4" /> Filter Laporan
+                            <Filter className="w-4 h-4" /> Filter Laporan {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
                         </button>
 
                         {isFilterOpen && (
-                            <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
-                                <div className="space-y-5">
-                                    <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                            <div className="absolute top-full left-0 mt-3 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                                         <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Kriteria Laporan</h3>
-                                        {filterCOA && (
+                                        {activeFiltersCount > 0 && (
                                             <button 
-                                                onClick={() => { setFilterCOA(''); }}
+                                                onClick={handleClearFilters}
                                                 className="text-[9px] font-black text-rose-500 hover:underline uppercase"
                                             >
-                                                Clear
+                                                Reset
                                             </button>
                                         )}
                                     </div>
                                     
-                                    <div className="space-y-1.5">
+                                    {/* 1. UNIT FILTER */}
+                                    <div className="space-y-1">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                                            <Building2 className="w-3 h-3" /> Unit Kerja Aktif
+                                            <Building2 className="w-3 h-3" /> 1. Unit Kerja Aktif
                                         </label>
                                         <select 
                                             value={filterUnit}
                                             onChange={(e) => setFilterUnit(e.target.value)}
                                             disabled={authorizedUnits.length <= 1}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
                                             {authorizedUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                         </select>
                                     </div>
 
-                                    <div className="space-y-1.5">
+                                    {/* 2. BIDANG FILTER */}
+                                    <div className="space-y-1">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                                            <Info className="w-3 h-3" /> Kategori Akun (COA)
+                                            <Briefcase className="w-3 h-3" /> 2. Berdasarkan Bidang
+                                        </label>
+                                        <select 
+                                            value={filterBidang}
+                                            onChange={(e) => setFilterBidang(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                        >
+                                            <option value="">Semua Bidang</option>
+                                            {uniqueBidangs.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* 3. COA CATEGORY FILTER */}
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                            <Info className="w-3 h-3" /> 3. Kategori Akun (COA)
                                         </label>
                                         <select 
                                             value={filterCOA}
                                             onChange={(e) => setFilterCOA(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
                                         >
                                             <option value="">Semua Akun</option>
                                             {uniqueCOAs.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* 4. BULAN FILTER */}
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" /> 4. Berdasarkan Bulan
+                                        </label>
+                                        <select 
+                                            value={filterMonth}
+                                            onChange={(e) => setFilterMonth(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                        >
+                                            <option value="">Semua Bulan</option>
+                                            {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* 5. TAHUN AJARAN FILTER */}
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" /> 5. Tahun Ajaran
+                                        </label>
+                                        <select 
+                                            value={filterTahunAjaran}
+                                            onChange={(e) => setFilterTahunAjaran(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                        >
+                                            <option value="">Semua Tahun Ajaran</option>
+                                            {uniqueTahunAjarans.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                     </div>
 
@@ -661,8 +688,8 @@ export default function BukuBesarPage() {
                             <tr>
                                 <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tgl & ID</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] w-1/3">Keterangan Transaksi</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Unit Satuan</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Akun (COA)</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Unit & Bidang</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Akun (COA) & TA</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Debet (Rp)</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Kredit (Rp)</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right bg-slate-50/50">Saldo (Rp)</th>
@@ -679,7 +706,7 @@ export default function BukuBesarPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredLedger.length === 0 ? (
+                            ) : processedLedger.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="py-24 text-center">
                                         <div className="flex flex-col items-center gap-2 opacity-20">
@@ -689,7 +716,7 @@ export default function BukuBesarPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredLedger.map((item, idx) => (
+                                processedLedger.map((item, idx) => (
                                     <tr key={`${item.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-3.5">
                                             <p className="text-[11px] font-black text-slate-600 leading-none mb-1 uppercase tracking-tighter">{item.tanggal}</p>
@@ -700,9 +727,11 @@ export default function BukuBesarPage() {
                                         </td>
                                         <td className="px-4 py-3.5">
                                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-100 px-2 py-0.5 rounded-lg inline-block">{item.unit}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.bidang || '-'}</p>
                                         </td>
                                         <td className="px-4 py-3.5">
                                             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{item.coa}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.tahunAjaran || '-'}</p>
                                         </td>
                                         <td className="px-4 py-3.5 text-right">
                                             <p className={`text-[11px] font-black ${item.tipe === 'DEBET' ? 'text-emerald-600' : 'text-slate-200'}`}>
@@ -737,7 +766,7 @@ export default function BukuBesarPage() {
 
                 {/* Footer Info */}
                 <div className="bg-slate-50/50 px-8 py-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Menampilkan {filteredLedger.length} Entri Jurnal Buku Besar</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Menampilkan {processedLedger.length} Entri Jurnal Buku Besar</p>
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -782,13 +811,13 @@ export default function BukuBesarPage() {
                                 <span className="text-xs font-black text-slate-850 leading-none">{selectedJournalItem.tanggal}</span>
                             </div>
                             <div>
-                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Unit Kerja</span>
-                                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">{selectedJournalItem.unit}</span>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Unit / Bidang</span>
+                                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">{selectedJournalItem.unit} / {selectedJournalItem.bidang || '-'}</span>
                             </div>
                             <div>
-                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Metode / Jalur</span>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Metode / TA</span>
                                 <span className="text-xs font-black text-slate-650 bg-slate-100 px-2.5 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">
-                                    {selectedJournalItem.metode || 'Transfer'}
+                                    {selectedJournalItem.metode || 'Transfer'} ({selectedJournalItem.tahunAjaran || '-'})
                                 </span>
                             </div>
                         </div>
