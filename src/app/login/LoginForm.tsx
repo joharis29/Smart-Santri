@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { User, Lock, Eye, EyeOff } from 'lucide-react'
 import { login } from './actions'
 
@@ -46,9 +47,9 @@ export default function LoginForm() {
           </label>
         </div>
         <div className="text-xs">
-          <a href="#" className="font-medium text-secondary hover:text-accent transition-colors">
+          <Link href="/lupa-kata-sandi" className="font-medium text-secondary hover:text-accent transition-colors">
             Lupa Kata Sandi?
-          </a>
+          </Link>
         </div>
       </div>
 
