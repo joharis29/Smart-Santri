@@ -252,43 +252,68 @@ export default function AdminDashboardPage() {
                     }
 
                     if (itemYayasanAmount > 0) {
-                        // 1. Insert into transaksi_pendapatan (increments unit balance via DB trigger)
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const rkaLabel = item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA';
+                        const receiverUnit = selectedTrxForReview.unit || 'Unit';
+
+                        // 1. Insert into transaksi_pendapatan for the receiving unit
+                        //    → Otomatis muncul di halaman Input Pendapatan unit terkait
+                        //    → DB Trigger sync_pendapatan_to_dompet akan menambah saldo dompet unit
                         const { error: insErr } = await supabase
                             .from('transaksi_pendapatan')
                             .insert([{
-                                tanggal: new Date().toISOString().split('T')[0],
-                                unit: selectedTrxForReview.unit || 'SDIT 1',
+                                tanggal: todayStr,
+                                unit: receiverUnit,
                                 sumber_dana: 'Dana Pesantren/Yayasan',
                                 nominal: itemYayasanAmount,
                                 jenis_penerimaan: chosenMetode,
                                 nama_bank: '-',
-                                keterangan: `Alokasi RKA Otomatis: ${item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA'} (ID RKA: ${selectedTrxForReview.id})`,
+                                keterangan: `Alokasi RKA Otomatis: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
                                 created_by: userId || null
                             }]);
                         
                         if (insErr) {
-                            console.error("Error inserting RKA allocation:", insErr);
+                            console.error("Error inserting RKA pendapatan allocation:", insErr);
                         }
 
-                        // 2. Decrement Central's SPP wallet balance
-                        const { data: centralWallet, error: getErr } = await supabase
-                            .from('dompet_dana')
-                            .select('*')
-                            .is('unit_id', null)
-                            .eq('kategori', 'SPP')
-                            .maybeSingle();
+                        // 2. Insert into transaksi_pengeluaran for Pusat (Yayasan)
+                        //    → Otomatis muncul di halaman Input Pengeluaran sisi Pusat
+                        //    → Menjaga keselarasan pencatatan di seluruh halaman keuangan
+                        const { error: expErr } = await supabase
+                            .from('transaksi_pengeluaran')
+                            .insert([{
+                                tanggal: todayStr,
+                                unit: 'Pusat (Yayasan)',
+                                sumber_dana: 'Dana SPP',
+                                nominal: itemYayasanAmount,
+                                metode_pencairan: chosenMetode,
+                                nama_bank: '-',
+                                keterangan: `Penyaluran RKA ke ${receiverUnit}: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
+                                created_by: userId || null
+                            }]);
 
-                        if (centralWallet) {
-                            const { error: updErr } = await supabase
+                        if (expErr) {
+                            console.error("Error inserting RKA pengeluaran Pusat:", expErr);
+                        }
+
+                        // 3. Jika insert pengeluaran gagal (misal DB trigger sudah mengurangi saldo),
+                        //    lakukan update manual saldo dompet SPP Pusat sebagai fallback
+                        if (expErr) {
+                            const { data: centralWallet } = await supabase
                                 .from('dompet_dana')
-                                .update({
-                                    saldo: Math.max(0, Number(centralWallet.saldo) - itemYayasanAmount),
-                                    updated_at: new Date().toISOString()
-                                })
-                                .eq('id', centralWallet.id);
-                            
-                            if (updErr) {
-                                console.error("Error updating central SPP wallet:", updErr);
+                                .select('*')
+                                .is('unit_id', null)
+                                .eq('kategori', 'SPP')
+                                .maybeSingle();
+
+                            if (centralWallet) {
+                                await supabase
+                                    .from('dompet_dana')
+                                    .update({
+                                        saldo: Math.max(0, Number(centralWallet.saldo) - itemYayasanAmount),
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', centralWallet.id);
                             }
                         }
                     }
