@@ -805,17 +805,17 @@ export default function BukuBesarPage() {
             {/* High Density Ledger Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <table className="w-full text-left border-collapse min-w-full lg:min-w-0 table-auto">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tgl & ID</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] w-1/3">Keterangan Transaksi</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Unit & Bidang</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Akun (COA) & TA</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Debet (Rp)</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Kredit (Rp)</th>
-                                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right bg-slate-50/50">Saldo (Rp)</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Jurnal</th>
+                                <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Tgl & ID</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider w-1/4">Keterangan Transaksi</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Unit & Bidang</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Akun (COA) & TA</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right">Debet (Rp)</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right">Kredit (Rp)</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right bg-slate-50/50">Saldo (Rp)</th>
+                                <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center">Jurnal</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -840,43 +840,43 @@ export default function BukuBesarPage() {
                             ) : (
                                 processedLedger.map((item, idx) => (
                                     <tr key={`${item.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-3.5">
+                                        <td className="px-3 py-2.5 whitespace-nowrap">
                                             <p className="text-[11px] font-black text-slate-600 leading-none mb-1 uppercase tracking-tighter">{item.tanggal}</p>
                                             <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{item.id}</p>
                                         </td>
-                                        <td className="px-4 py-3.5">
+                                        <td className="px-2 py-2.5">
                                             <p className="text-[11px] font-black text-slate-800 leading-tight">{item.keterangan}</p>
                                         </td>
-                                        <td className="px-4 py-3.5">
+                                        <td className="px-2 py-2.5">
                                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-100 px-2 py-0.5 rounded-lg inline-block">{item.unit}</p>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.bidang || '-'}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-normal mt-0.5 truncate max-w-[140px]" title={item.bidang}>{item.bidang || '-'}</p>
                                         </td>
-                                        <td className="px-4 py-3.5">
+                                        <td className="px-2 py-2.5">
                                             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{item.coa}</p>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.tahunAjaran || '-'}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-normal mt-0.5">{item.tahunAjaran || '-'}</p>
                                         </td>
-                                        <td className="px-4 py-3.5 text-right">
+                                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
                                             <p className={`text-[11px] font-black ${item.tipe === 'DEBET' ? 'text-emerald-600' : 'text-slate-200'}`}>
                                                 {item.tipe === 'DEBET' ? item.nominal.toLocaleString('id-ID') : '-'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-3.5 text-right">
+                                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
                                             <p className={`text-[11px] font-black ${item.tipe === 'KREDIT' ? 'text-rose-600' : 'text-slate-200'}`}>
                                                 {item.tipe === 'KREDIT' ? item.nominal.toLocaleString('id-ID') : '-'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-3.5 text-right bg-slate-50/30">
+                                        <td className="px-2 py-2.5 text-right whitespace-nowrap bg-slate-50/30">
                                             <p className="text-[11px] font-black text-slate-900 italic tracking-tighter">
                                                 {item.saldo.toLocaleString('id-ID')}
                                             </p>
                                         </td>
-                                        <td className="px-6 py-3.5 text-center">
+                                        <td className="px-3 py-2.5 text-center whitespace-nowrap">
                                             <button 
                                                 onClick={() => setSelectedJournalItem(item)}
-                                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-[9px] font-black rounded-lg transition-all uppercase tracking-wider inline-flex items-center gap-1 shadow-sm"
+                                                className="px-2 py-1 bg-slate-100 hover:bg-slate-900 hover:text-white text-[9px] font-black rounded-lg transition-all uppercase tracking-wider inline-flex items-center gap-1 shadow-sm"
                                                 title="Lihat Jurnal Pembukuan"
                                             >
-                                                <FileText className="w-3.5 h-3.5" /> Jurnal
+                                                <FileText className="w-3 h-3" /> Jurnal
                                             </button>
                                         </td>
                                     </tr>
