@@ -63,10 +63,10 @@ export function PendidikanWidgets({
         <WidgetCard 
           title="Iuran Non-Wajib" 
           amount={`Rp ${(balances['IURAN_NON_WAJIB'] || 0).toLocaleString('id-ID')}`} 
-          type="Unrestricted" 
+          type="Restricted" 
           icon={Bus} 
-          colorType="emerald" 
-          subtitle="Dikelola Mandiri oleh Unit TK"
+          colorType="accent" 
+          subtitle="Khusus Biaya Antar Jemput Siswa TK"
           isVisible={preferences.showAntarJemput}
         />
       )}
