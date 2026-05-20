@@ -241,44 +241,44 @@ export default function RKAReferencePage() {
     };
 
     return (
-        <div className="p-4 space-y-4">
-            {/* Header */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="p-3 md:p-4 space-y-3 bg-slate-50/50 min-h-screen">
+            {/* Compact Header */}
+            <div className="bg-white rounded-xl p-3 px-4 shadow-sm border border-slate-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-700">
-                            <BookOpen className="w-6 h-6" />
+                        <div className="bg-emerald-100 p-2.5 rounded-xl text-emerald-700">
+                            <BookOpen className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black text-slate-800 tracking-tight">Program</h1>
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Katalog Program & Kegiatan Institusi</p>
+                            <h1 className="text-lg font-black text-slate-800 tracking-tight leading-none mb-0.5">Program Referensi</h1>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Katalog Program & Kegiatan Institusi</p>
                         </div>
                     </div>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-emerald-100 uppercase tracking-widest"
+                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-md shadow-emerald-100 uppercase tracking-widest w-full sm:w-auto justify-center"
                     >
-                        <Plus className="w-4 h-4" /> Tambah Program
+                        <Plus className="w-3.5 h-3.5" /> Tambah Program
                     </button>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+            <div className="bg-white rounded-xl p-2.5 px-3 shadow-sm border border-slate-200 flex flex-col md:flex-row gap-2.5 items-center">
                 <div className="relative flex-1 w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Cari program atau kegiatan..."
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder-slate-400"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <Filter className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
                     <select
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                         value={filterUnit}
                         onChange={(e) => {
                             setFilterUnit(e.target.value);
@@ -291,7 +291,7 @@ export default function RKAReferencePage() {
                         ))}
                     </select>
                     <select
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                         value={filterBidang}
                         onChange={(e) => setFilterBidang(e.target.value)}
                     >
@@ -304,74 +304,76 @@ export default function RKAReferencePage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/50 border-b border-slate-100">
                             <tr>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-12 text-center">No</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Unit / Bidang</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[150px]">Standar</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[200px]">Program</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[180px]">Kegiatan</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[250px]">Detail</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[150px]">Pelaksana</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Sasaran</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-10 text-center">No</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[110px]">Unit / Bidang</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Standar</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[160px]">Program</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[140px]">Kegiatan</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[220px]">Detail</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Pelaksana</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[100px]">Sasaran</th>
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-4 py-12 text-center">
-                                        <div className="flex flex-col items-center gap-2 text-slate-300">
-                                            <AlertCircle className="w-8 h-8 opacity-20" />
-                                            <p className="text-xs font-bold uppercase tracking-widest">Tidak ada data ditemukan</p>
+                                    <td colSpan={9} className="px-3 py-8 text-center">
+                                        <div className="flex flex-col items-center gap-1.5 text-slate-350">
+                                            <AlertCircle className="w-6 h-6 opacity-30" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">Tidak ada data ditemukan</p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredData.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/30 transition-colors group">
-                                        <td className="px-4 py-3 text-center text-[11px] font-bold text-slate-400">{index + 1}</td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{item.unit}</p>
-                                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black rounded-full border border-emerald-100 uppercase tracking-tighter mt-1 inline-block">
+                                    <tr key={item.id} className="hover:bg-slate-50/25 transition-colors group">
+                                        <td className="px-3 py-2 text-center text-[10px] font-bold text-slate-450">{index + 1}</td>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[9px] font-black text-slate-800 uppercase tracking-tight leading-none mb-0.5">{item.unit}</p>
+                                            <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-black rounded-md border border-emerald-100/60 uppercase tracking-tighter inline-block mt-0.5">
                                                 {item.bidang}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase italic">{item.standar}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[9px] font-bold text-slate-450 uppercase italic leading-none">{item.standar}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[11px] font-black text-slate-800 leading-tight">{item.program}</p>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{item.prioritas}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[10px] font-black text-slate-800 leading-snug">{item.program}</p>
+                                            <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5 leading-none">{item.prioritas}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[11px] font-black text-emerald-700 leading-tight">{item.namaKegiatan}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[10px] font-black text-emerald-700 leading-snug">{item.namaKegiatan}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[11px] font-bold text-slate-600 leading-relaxed">{item.kegiatan}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[11px] font-bold text-slate-700">{item.pelaksana}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[10px] font-bold text-slate-650 leading-none">{item.pelaksana}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-[11px] font-bold text-slate-500">{item.sasaran}</p>
+                                        <td className="px-3 py-2">
+                                            <p className="text-[10px] font-bold text-slate-450 leading-none">{item.sasaran}</p>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-2">
+                                        <td className="px-3 py-2">
+                                            <div className="flex items-center justify-center gap-1">
                                                 <button
                                                     onClick={() => handleOpenEdit(item)}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-transparent hover:border-emerald-100"
+                                                    className="p-1 px-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100/60"
+                                                    title="Edit Program"
                                                 >
-                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                    <Edit2 className="w-3 h-3" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
-                                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
+                                                    className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all border border-transparent hover:border-rose-100/60"
+                                                    title="Hapus Program"
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <Trash2 className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         </td>
@@ -386,37 +388,37 @@ export default function RKAReferencePage() {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
                         {/* Compact Header */}
-                        <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
-                                    {editingItem ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                        <div className="px-4 py-3 bg-white border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-650">
+                                    {editingItem ? <Edit2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">
-                                        {editingItem ? 'Edit Program' : 'Tambah Program Baru'}
+                                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                        {editingItem ? 'Edit Program Referensi' : 'Tambah Program Referensi'}
                                     </h3>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Master Data Acuan</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Master Data Acuan</p>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => setIsModalOpen(false)} 
-                                className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full transition-all border border-transparent hover:border-slate-200"
+                                className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-650 rounded-full transition-all border border-transparent hover:border-slate-200"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
                         
                         {/* Ultra Compact Form Body */}
-                        <div className="overflow-y-auto custom-scrollbar">
-                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Unit / Jenjang</label>
+                        <div className="overflow-y-auto custom-scrollbar scrollbar-thin">
+                            <form onSubmit={handleSubmit} className="p-4 space-y-2.5">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Unit / Jenjang</label>
                                         <select
                                             required
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value, bidang: '' })}
                                         >
@@ -425,13 +427,13 @@ export default function RKAReferencePage() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Bidang / Departemen</label>
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Bidang / Departemen</label>
                                         {!isAddingNewBidang ? (
                                             <div className="relative">
                                                 <select
                                                     required
-                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
                                                     value={formData.bidang}
                                                     onChange={(e) => {
                                                         if (e.target.value === 'ADD_NEW') {
@@ -449,12 +451,12 @@ export default function RKAReferencePage() {
                                                 </select>
                                             </div>
                                         ) : (
-                                            <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
+                                            <div className="flex gap-1.5 animate-in slide-in-from-right-2 duration-200">
                                                 <input
                                                     type="text"
                                                     autoFocus
-                                                    placeholder="Nama bidang baru..."
-                                                    className="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                                    placeholder="Bidang baru..."
+                                                    className="flex-1 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                                     value={newBidangName}
                                                     onChange={(e) => setNewBidangName(e.target.value)}
                                                     onKeyDown={(e) => {
@@ -468,27 +470,27 @@ export default function RKAReferencePage() {
                                                 <button
                                                     type="button"
                                                     onClick={handleAddNewBidang}
-                                                    className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
+                                                    className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                                                 >
-                                                    <Plus className="w-4 h-4" />
+                                                    <Plus className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setIsAddingNewBidang(false)}
-                                                    className="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-colors"
+                                                    className="p-1.5 bg-slate-100 text-slate-400 rounded-lg hover:bg-slate-200 transition-colors"
                                                 >
-                                                    <X className="w-4 h-4" />
+                                                    <X className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Standar</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Standar RKA</label>
                                         <select
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
                                             value={formData.standar}
                                             onChange={(e) => setFormData({ ...formData, standar: e.target.value })}
                                         >
@@ -503,13 +505,10 @@ export default function RKAReferencePage() {
                                             <option value="(-)">(-)</option>
                                         </select>
                                     </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Prioritas</label>
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Prioritas</label>
                                         <select
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
                                             value={formData.prioritas}
                                             onChange={(e) => setFormData({ ...formData, prioritas: e.target.value })}
                                         >
@@ -518,30 +517,43 @@ export default function RKAReferencePage() {
                                             <option value="Program Pendukung">Program Pendukung</option>
                                         </select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Pelaksana</label>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Pelaksana</label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
-                                            placeholder="Jabatan pelaksana..."
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                            placeholder="Pelaksana..."
                                             value={formData.pelaksana}
                                             onChange={(e) => setFormData({ ...formData, pelaksana: e.target.value })}
                                         />
                                     </div>
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Sasaran</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                            placeholder="Target sasaran..."
+                                            value={formData.sasaran}
+                                            onChange={(e) => setFormData({ ...formData, sasaran: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-1 relative" ref={programDropdownRef}>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Program</label>
+                                <div className="space-y-0.5 relative" ref={programDropdownRef}>
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Nama Program</label>
                                     {!isAddingNewProgram ? (
                                         <div className="relative">
                                             <div 
-                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
+                                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
                                                 onClick={() => setIsProgramDropdownOpen(!isProgramDropdownOpen)}
                                             >
                                                 <input
                                                     type="text"
                                                     placeholder={formData.program || "Cari & Pilih Program..."}
-                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700"
+                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700 text-xs font-bold"
                                                     value={programSearch}
                                                     onChange={(e) => {
                                                         setProgramSearch(e.target.value);
@@ -550,18 +562,18 @@ export default function RKAReferencePage() {
                                                     onClick={(e) => e.stopPropagation()}
                                                     onFocus={() => setIsProgramDropdownOpen(true)}
                                                 />
-                                                <Filter className="w-3 h-3 text-slate-400" />
+                                                <Filter className="w-3 h-3 text-slate-450 shrink-0" />
                                             </div>
 
                                             {isProgramDropdownOpen && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
                                                     {availablePrograms.length === 0 ? (
-                                                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
+                                                        <div className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
                                                     ) : (
                                                         availablePrograms.map(prog => (
                                                             <div
                                                                 key={prog}
-                                                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
+                                                                className="px-3 py-1.5 text-xs font-bold text-slate-650 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
                                                                 onClick={() => {
                                                                     setFormData({ ...formData, program: prog, namaKegiatan: '' });
                                                                     setProgramSearch('');
@@ -573,7 +585,7 @@ export default function RKAReferencePage() {
                                                         ))
                                                     )}
                                                     <div
-                                                        className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
+                                                        className="px-3 py-1.5 text-[10px] font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
                                                         onClick={() => {
                                                             setIsAddingNewProgram(true);
                                                             setIsProgramDropdownOpen(false);
@@ -585,12 +597,12 @@ export default function RKAReferencePage() {
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
+                                        <div className="flex gap-1.5 animate-in slide-in-from-right-2 duration-200">
                                             <input
                                                 type="text"
                                                 autoFocus
-                                                placeholder="Nama program baru..."
-                                                className="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                                placeholder="Program baru..."
+                                                className="flex-1 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                                 value={newProgramName}
                                                 onChange={(e) => setNewProgramName(e.target.value)}
                                                 onKeyDown={(e) => {
@@ -598,24 +610,24 @@ export default function RKAReferencePage() {
                                                     if (e.key === 'Escape') setIsAddingNewProgram(false);
                                                 }}
                                             />
-                                            <button type="button" onClick={handleAddNewProgram} className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"><Plus className="w-4 h-4" /></button>
-                                            <button type="button" onClick={() => setIsAddingNewProgram(false)} className="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200"><X className="w-4 h-4" /></button>
+                                            <button type="button" onClick={handleAddNewProgram} className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"><Plus className="w-3.5 h-3.5" /></button>
+                                            <button type="button" onClick={() => setIsAddingNewProgram(false)} className="p-1.5 bg-slate-100 text-slate-450 rounded-lg hover:bg-slate-200"><X className="w-3.5 h-3.5" /></button>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="space-y-1 relative" ref={kegiatanDropdownRef}>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Kegiatan</label>
+                                <div className="space-y-0.5 relative" ref={kegiatanDropdownRef}>
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Nama Kegiatan</label>
                                     {!isAddingNewKegiatan ? (
                                         <div className="relative">
                                             <div 
-                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
+                                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
                                                 onClick={() => setIsKegiatanDropdownOpen(!isKegiatanDropdownOpen)}
                                             >
                                                 <input
                                                     type="text"
                                                     placeholder={formData.namaKegiatan || "Cari & Pilih Kegiatan..."}
-                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700"
+                                                    className="bg-transparent outline-none w-full cursor-pointer placeholder:text-slate-700 text-xs font-bold"
                                                     value={kegiatanSearch}
                                                     onChange={(e) => {
                                                         setKegiatanSearch(e.target.value);
@@ -624,18 +636,18 @@ export default function RKAReferencePage() {
                                                     onClick={(e) => e.stopPropagation()}
                                                     onFocus={() => setIsKegiatanDropdownOpen(true)}
                                                 />
-                                                <Filter className="w-3 h-3 text-slate-400" />
+                                                <Filter className="w-3 h-3 text-slate-455 shrink-0" />
                                             </div>
 
                                             {isKegiatanDropdownOpen && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
                                                     {availableKegiatans.length === 0 ? (
-                                                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
+                                                        <div className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase text-center italic">Tidak ditemukan</div>
                                                     ) : (
                                                         availableKegiatans.map(keg => (
                                                             <div
                                                                 key={keg}
-                                                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
+                                                                className="px-3 py-1.5 text-xs font-bold text-slate-650 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors"
                                                                 onClick={() => {
                                                                     setFormData({ ...formData, namaKegiatan: keg });
                                                                     setKegiatanSearch('');
@@ -647,7 +659,7 @@ export default function RKAReferencePage() {
                                                         ))
                                                     )}
                                                     <div
-                                                        className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
+                                                        className="px-3 py-1.5 text-[10px] font-black text-emerald-600 hover:bg-emerald-600 hover:text-white cursor-pointer transition-colors border-t border-slate-100"
                                                         onClick={() => {
                                                             setIsAddingNewKegiatan(true);
                                                             setIsKegiatanDropdownOpen(false);
@@ -659,12 +671,12 @@ export default function RKAReferencePage() {
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
+                                        <div className="flex gap-1.5 animate-in slide-in-from-right-2 duration-200">
                                             <input
                                                 type="text"
                                                 autoFocus
-                                                placeholder="Nama kegiatan baru..."
-                                                className="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                                placeholder="Kegiatan baru..."
+                                                className="flex-1 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                                 value={newKegiatanName}
                                                 onChange={(e) => setNewKegiatanName(e.target.value)}
                                                 onKeyDown={(e) => {
@@ -672,58 +684,46 @@ export default function RKAReferencePage() {
                                                     if (e.key === 'Escape') setIsAddingNewKegiatan(false);
                                                 }}
                                             />
-                                            <button type="button" onClick={handleAddNewKegiatan} className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"><Plus className="w-4 h-4" /></button>
-                                            <button type="button" onClick={() => setIsAddingNewKegiatan(false)} className="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200"><X className="w-4 h-4" /></button>
+                                            <button type="button" onClick={handleAddNewKegiatan} className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"><Plus className="w-3.5 h-3.5" /></button>
+                                            <button type="button" onClick={() => setIsAddingNewKegiatan(false)} className="p-1.5 bg-slate-100 text-slate-450 rounded-lg hover:bg-slate-200"><X className="w-3.5 h-3.5" /></button>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Detail Kegiatan</label>
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Detail Rincian Kegiatan</label>
                                     <textarea
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none min-h-[80px] transition-all resize-none"
-                                        placeholder="Rincian kegiatan yang akan dilakukan..."
+                                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none min-h-[50px] transition-all resize-none leading-normal"
+                                        placeholder="Detail kegiatan..."
                                         value={formData.kegiatan}
                                         onChange={(e) => setFormData({ ...formData, kegiatan: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Sasaran</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
-                                            placeholder="Target sasaran..."
-                                            value={formData.sasaran}
-                                            onChange={(e) => setFormData({ ...formData, sasaran: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Indikator Keberhasilan</label>
-                                        <textarea
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none min-h-[80px] transition-all resize-none"
-                                            placeholder="Target output..."
-                                            value={formData.indikator}
-                                            onChange={(e) => setFormData({ ...formData, indikator: e.target.value })}
-                                        />
-                                    </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Indikator Keberhasilan (Target Output)</label>
+                                    <textarea
+                                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none min-h-[50px] transition-all resize-none leading-normal"
+                                        placeholder="Output keberhasilan..."
+                                        value={formData.indikator}
+                                        onChange={(e) => setFormData({ ...formData, indikator: e.target.value })}
+                                    />
                                 </div>
 
-                                <div className="pt-4 flex gap-3 sticky bottom-0 bg-white">
+                                <div className="pt-2 flex gap-2 sticky bottom-0 bg-white">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-2.5 bg-slate-100 text-slate-500 text-xs font-black rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+                                        className="flex-1 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-[2] py-2.5 bg-emerald-600 text-white text-xs font-black rounded-xl uppercase tracking-widest shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                        className="flex-[2] py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-md shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5"
                                     >
-                                        <Save className="w-4 h-4" /> Simpan Data
+                                        <Save className="w-3.5 h-3.5" /> Simpan Data
                                     </button>
                                 </div>
                             </form>
