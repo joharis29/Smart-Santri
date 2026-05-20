@@ -225,8 +225,10 @@ export default function AdminDashboardPage() {
             return;
         }
 
-        // UPDATE DATABASE TRANS_PENDAPATAN AND AUTO UPDATE DOMPET_DANA & LOCAL STATE
-        if (action === 'APPROVE' && (calculatedNextStatus === 'SUDAH_DITERIMA' || calculatedNextStatus === 'SELESAI')) {
+        // =====================================================================
+        // A. RKA SUDAH_DITERIMA: Penyaluran Dana Yayasan ke Unit Pengaju
+        // =====================================================================
+        if (action === 'APPROVE' && calculatedNextStatus === 'SUDAH_DITERIMA') {
             const supabase = createClient();
             for (const item of (selectedTrxForReview.items || [])) {
                 try {
@@ -256,9 +258,7 @@ export default function AdminDashboardPage() {
                         const rkaLabel = item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA';
                         const receiverUnit = selectedTrxForReview.unit || 'Unit';
 
-                        // 1. Insert into transaksi_pendapatan for the receiving unit
-                        //    → Otomatis muncul di halaman Input Pendapatan unit terkait
-                        //    → DB Trigger sync_pendapatan_to_dompet akan menambah saldo dompet unit
+                        // 1. Insert transaksi_pendapatan → unit penerima (DEBET)
                         const { error: insErr } = await supabase
                             .from('transaksi_pendapatan')
                             .insert([{
@@ -271,14 +271,9 @@ export default function AdminDashboardPage() {
                                 keterangan: `Alokasi RKA Otomatis: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
                                 created_by: userId || null
                             }]);
-                        
-                        if (insErr) {
-                            console.error("Error inserting RKA pendapatan allocation:", insErr);
-                        }
+                        if (insErr) console.error("Error inserting RKA pendapatan:", insErr);
 
-                        // 2. Insert into transaksi_pengeluaran for Pusat (Yayasan)
-                        //    → Otomatis muncul di halaman Input Pengeluaran sisi Pusat
-                        //    → Menjaga keselarasan pencatatan di seluruh halaman keuangan
+                        // 2. Insert transaksi_pengeluaran → Pusat (KREDIT)
                         const { error: expErr } = await supabase
                             .from('transaksi_pengeluaran')
                             .insert([{
@@ -291,21 +286,15 @@ export default function AdminDashboardPage() {
                                 keterangan: `Penyaluran RKA ke ${receiverUnit}: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
                                 created_by: userId || null
                             }]);
-
                         if (expErr) {
                             console.error("Error inserting RKA pengeluaran Pusat:", expErr);
-                        }
-
-                        // 3. Jika insert pengeluaran gagal (misal DB trigger sudah mengurangi saldo),
-                        //    lakukan update manual saldo dompet SPP Pusat sebagai fallback
-                        if (expErr) {
+                            // Fallback: update dompet SPP Pusat secara manual
                             const { data: centralWallet } = await supabase
                                 .from('dompet_dana')
                                 .select('*')
                                 .is('unit_id', null)
                                 .eq('kategori', 'SPP')
                                 .maybeSingle();
-
                             if (centralWallet) {
                                 await supabase
                                     .from('dompet_dana')
@@ -318,10 +307,77 @@ export default function AdminDashboardPage() {
                         }
                     }
                 } catch (e) {
-                    console.error("Error processing split item:", e);
+                    console.error("Error processing RKA split item:", e);
                 }
             }
-            // Trigger asynchronous refresh of balances to reflect live state instantly
+            fetchLiveBalances();
+        }
+
+        // =====================================================================
+        // B. LPJ SELESAI: Pencatatan Pengeluaran Unit per Alokasi Dana
+        //    → Setiap sumber dana (Dana BOS, Dana Yayasan, dll + overbudget)
+        //      dicatat sebagai pengeluaran unit di transaksi_pengeluaran.
+        //    → DB Trigger sync_pengeluaran_to_dompet otomatis mengurangi saldo.
+        //    → Otomatis muncul di Input Pengeluaran & Buku Besar unit.
+        // =====================================================================
+        if (action === 'APPROVE' && calculatedNextStatus === 'SELESAI' && selectedTrxForReview.type === 'LPJ') {
+            const supabase = createClient();
+            const lpjUnit = selectedTrxForReview.unit || 'Unit';
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            for (const item of (selectedTrxForReview.items || [])) {
+                try {
+                    const details = typeof item.rincian_json === 'string'
+                        ? JSON.parse(item.rincian_json)
+                        : (item.rincian_json || {});
+                    const splits = details.fundingSplits || [];
+                    const activityLabel = item.judul_kegiatan || item.kegiatan || 'Kegiatan LPJ';
+
+                    if (Array.isArray(splits) && splits.length > 0) {
+                        // Catat setiap sumber dana sebagai pengeluaran terpisah
+                        for (const split of splits) {
+                            const splitAmount = Number(split.amount || split.nominal || 0);
+                            const splitSource = split.source || split.sumber || 'Dana Pesantren/Yayasan';
+
+                            if (splitAmount > 0) {
+                                const { error: lpjExpErr } = await supabase
+                                    .from('transaksi_pengeluaran')
+                                    .insert([{
+                                        tanggal: todayStr,
+                                        unit: lpjUnit,
+                                        sumber_dana: splitSource,
+                                        nominal: splitAmount,
+                                        metode_pencairan: 'Transfer',
+                                        nama_bank: '-',
+                                        keterangan: `Realisasi LPJ: ${activityLabel} [${splitSource}] (ID LPJ: ${selectedTrxForReview.id})`,
+                                        created_by: userId || null
+                                    }]);
+                                if (lpjExpErr) console.error(`Error inserting LPJ pengeluaran (${splitSource}):`, lpjExpErr);
+                            }
+                        }
+                    } else {
+                        // Fallback: gunakan sumber_dana dan nominal item langsung
+                        const amount = Number(item.nominal || 0);
+                        if (amount > 0) {
+                            const { error: lpjExpErr } = await supabase
+                                .from('transaksi_pengeluaran')
+                                .insert([{
+                                    tanggal: todayStr,
+                                    unit: lpjUnit,
+                                    sumber_dana: item.sumber_dana || 'Dana Pesantren/Yayasan',
+                                    nominal: amount,
+                                    metode_pencairan: 'Transfer',
+                                    nama_bank: '-',
+                                    keterangan: `Realisasi LPJ: ${activityLabel} (ID LPJ: ${selectedTrxForReview.id})`,
+                                    created_by: userId || null
+                                }]);
+                            if (lpjExpErr) console.error("Error inserting LPJ pengeluaran fallback:", lpjExpErr);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error processing LPJ expenditure item:", e);
+                }
+            }
             fetchLiveBalances();
         }
 

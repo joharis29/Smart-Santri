@@ -220,60 +220,30 @@ export default function BukuBesarPage() {
                 });
             });
 
-            // 2. Pengeluaran (Kredit): Get approved LPJ item expenses for active filterUnit
-            const { data: lpjDocs, error: lpjErr } = await supabase
-                .from('dokumen_pengajuan')
-                .select('*, unit:unit_id(name), item_pengajuan(*)')
-                .eq('jenis', 'LPJ')
-                .eq('status', 'SELESAI');
-
-            if (lpjErr) console.error("Error fetching completed LPJs:", lpjErr);
-
-            lpjDocs?.forEach((doc: any) => {
-                const docUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Pusat (Yayasan)';
-                if (docUnitName === filterUnit) {
-                    doc.item_pengajuan?.forEach((item: any) => {
-                        let coaName = item.sumber_dana || 'Dana Pesantren/Yayasan';
-                        if (coaName === 'SPP' || coaName === 'Dana SPP') {
-                            coaName = 'DANA SPP';
-                        }
-
-                        entries.push({
-                            id: item.id.substring(0, 8).toUpperCase(),
-                            tanggal: doc.tanggal_kebutuhan || doc.created_at.split('T')[0],
-                            keterangan: item.judul_kegiatan || 'Realisasi Pengeluaran LPJ',
-                            unit: docUnitName,
-                            coa: coaName,
-                            tipe: 'KREDIT',
-                            nominal: Number(item.nominal),
-                            saldo: 0,
-                            refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
-                            metode: doc.metode_pencairan || 'Transfer',
-                            bidang: doc.bidang || 'Tanpa Bidang',
-                            tahunAjaran: doc.tahun_ajaran || (doc.periode_tahun ? `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}` : getTahunAjaranFromDate(doc.tanggal_kebutuhan || doc.created_at.split('T')[0]))
-                        });
-                    });
-                }
-            });
-
-            // 2.5. Pengeluaran Manual (Kredit): Get manual expenditures for active filterUnit
+            // 2. Pengeluaran Unit (Kredit): Dari transaksi_pengeluaran
+            //    Mencakup: pengeluaran manual + realisasi LPJ otomatis (dicatat saat SELESAI)
+            //    CATATAN: LPJ SELESAI kini dicatat otomatis ke transaksi_pengeluaran per split dana,
+            //    sehingga tidak perlu query terpisah ke dokumen_pengajuan (menghindari double-count).
             const { data: manualExpenses, error: expErr } = await supabase
                 .from('transaksi_pengeluaran')
                 .select('*')
                 .eq('unit', filterUnit);
 
-            if (expErr) console.error("Error fetching manual expenditures:", expErr);
+            if (expErr) console.error("Error fetching expenditures:", expErr);
 
             manualExpenses?.forEach((item: any) => {
                 let coaName = item.sumber_dana || 'Dana Pesantren/Yayasan';
                 if (coaName === 'SPP' || coaName === 'Dana SPP') {
                     coaName = 'DANA SPP';
                 }
+                // Tentukan label bidang berdasarkan keterangan
+                const isLpjEntry = (item.keterangan || '').startsWith('Realisasi LPJ:');
+                const isRkaEntry = (item.keterangan || '').startsWith('Penyaluran RKA ke');
 
                 entries.push({
                     id: item.id.substring(0, 8).toUpperCase(),
                     tanggal: item.tanggal,
-                    keterangan: item.keterangan || `Pengeluaran Manual - ${item.sumber_dana}`,
+                    keterangan: item.keterangan || `Pengeluaran - ${item.sumber_dana}`,
                     unit: item.unit,
                     coa: coaName,
                     tipe: 'KREDIT',
@@ -281,7 +251,7 @@ export default function BukuBesarPage() {
                     saldo: 0,
                     refId: item.id.substring(0, 8).toUpperCase(),
                     metode: item.metode_pencairan || 'Transfer',
-                    bidang: 'Pengeluaran Manual',
+                    bidang: isLpjEntry ? 'Realisasi LPJ' : isRkaEntry ? 'Penyaluran RKA' : 'Pengeluaran Manual',
                     tahunAjaran: getTahunAjaranFromDate(item.tanggal)
                 });
             });
