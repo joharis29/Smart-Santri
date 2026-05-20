@@ -22,6 +22,7 @@ import {
 import { createClient } from '@/utils/supabase/client';
 
 import { revisiPengajuan } from '../buat/actions';
+import { notifyKepalaForwarded } from '../buat/actions';
 
 export default function RekapitulasiDraftPage() {
     const supabase = createClient();
@@ -216,6 +217,8 @@ export default function RekapitulasiDraftPage() {
             alert("Gagal meneruskan pengajuan: " + error.message);
         } else {
             alert(`Berhasil meneruskan ${selectedDocIds.length} pengajuan ke Kepala Unit.`);
+            // Send email notification to Kepala Unit (non-blocking)
+            notifyKepalaForwarded(selectedDocIds).catch(err => console.error('[notifyKepalaForwarded]', err));
             // Update local queues to remove forwarded items
             setRkaQueue(prev => prev.filter(i => !selectedDocIds.includes(i.dokumenId)));
             setLpjQueue(prev => prev.filter(i => !selectedDocIds.includes(i.dokumenId)));

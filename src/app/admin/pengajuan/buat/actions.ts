@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { sendNotifikasiEmail, getBulanName } from '@/lib/email'
 
 export async function batchSavePengajuan(payload: {
   id?: string, // Optional ID for updates
@@ -136,6 +137,36 @@ export async function batchSavePengajuan(payload: {
 
     revalidatePath('/admin/pengajuan/draft-saya')
     revalidatePath('/admin/pengajuan/rekap')
+
+    // Email notification — non-blocking, tidak mempengaruhi alur utama
+    if (payload.status !== 'DRAFT') {
+      try {
+        const { data: bendahara } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('role', 'BENDAHARA_UNIT')
+          .eq('unit_id', unit_id)
+          .maybeSingle()
+        if (bendahara?.email) {
+          const bulanName = getBulanName(bulanInt)
+          await sendNotifikasiEmail({
+            event: payload.mode === 'RKA' ? 'RKA_SUBMITTED' : 'LPJ_SUBMITTED',
+            toEmail: bendahara.email,
+            toName: bendahara.full_name || 'Bendahara Unit',
+            unitName: payload.unit,
+            bidang: payload.bidang,
+            jumlahKegiatan: payload.data.length,
+            totalNominal: total_nominal,
+            bulan: bulanName,
+            tahun: payload.tahun_ajaran,
+            jenis: payload.mode === 'RKA' ? 'RKA' : 'LPJ'
+          })
+        }
+      } catch (emailErr) {
+        console.error('[Email batchSavePengajuan]', emailErr)
+      }
+    }
+
     return { success: true, id: docId }
   } catch (err: any) {
     console.error("batchSavePengajuan unhandled error:", err)
@@ -380,6 +411,33 @@ Target Status: DRAFT`
     }
   }
 
+  // Email notification ke staf pembuat — non-blocking
+  try {
+    if (doc?.pembuat_id) {
+      const { data: pembuat } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', doc.pembuat_id)
+        .maybeSingle()
+      if (pembuat?.email) {
+        await sendNotifikasiEmail({
+          event: 'REVISI_DIMINTA',
+          toEmail: pembuat.email,
+          toName: pembuat.full_name || 'Staf',
+          unitName: doc.unit || '',
+          bidang: doc.bidang || '',
+          totalNominal: doc.total_nominal || 0,
+          bulan: getBulanName(doc.periode_bulan),
+          tahun: String(doc.periode_tahun || ''),
+          catatanRevisi: catatan,
+          jenis: doc.jenis === 'LPJ' ? 'LPJ' : 'RKA'
+        })
+      }
+    }
+  } catch (emailErr) {
+    console.error('[Email revisiPengajuan]', emailErr)
+  }
+
   return { success: true }
 }
 export async function verifikasiPengajuan(id: string, nextStatus?: string, metodePencairan?: string) {
@@ -427,6 +485,52 @@ Doc Unit: ${doc?.unit_id || 'none'}
 Doc Jenjang: ${doc?.jenjang_id || 'none'}
 Target Status: ${nextStatus}`
     return { error: diagMsg }
+  }
+
+  // Email notification berdasarkan nextStatus — non-blocking
+  try {
+    const supabaseFresh = await createClient()
+    const bulanName = getBulanName(doc?.periode_bulan)
+    const tahunStr = String(doc?.periode_tahun || '')
+    const baseParams = {
+      unitName: doc?.unit || '',
+      bidang: doc?.bidang || '',
+      totalNominal: doc?.total_nominal || 0,
+      bulan: bulanName,
+      tahun: tahunStr,
+      jenis: (doc?.jenis === 'LPJ' ? 'LPJ' : 'RKA') as 'RKA' | 'LPJ'
+    }
+
+    if (nextStatus === 'MENUNGGU_KEPALA') {
+      // Notify Kepala Unit
+      const { data: kepala } = await supabaseFresh.from('profiles').select('email, full_name')
+        .eq('role', 'KEPALA_UNIT').eq('unit_id', doc?.unit_id).maybeSingle()
+      if (kepala?.email) {
+        await sendNotifikasiEmail({ event: 'FORWARDED_TO_KEPALA', toEmail: kepala.email, toName: kepala.full_name || 'Kepala Unit', ...baseParams })
+      }
+    } else if (nextStatus === 'MENUNGGU_PUSAT' || nextStatus === 'MENUNGGU_VERIFIKASI_PUSAT') {
+      // Notify semua Bendahara Pusat
+      const { data: pusatList } = await supabaseFresh.from('profiles').select('email, full_name').eq('role', 'BENDAHARA_PUSAT')
+      for (const p of (pusatList || [])) {
+        if (p.email) await sendNotifikasiEmail({ event: 'APPROVED_TO_PUSAT', toEmail: p.email, toName: p.full_name || 'Bendahara Pusat', ...baseParams })
+      }
+    } else if (nextStatus === 'CAIR') {
+      // Notify Bendahara Unit + Staf Pembuat
+      const { data: bendahara } = await supabaseFresh.from('profiles').select('email, full_name').eq('role', 'BENDAHARA_UNIT').eq('unit_id', doc?.unit_id).maybeSingle()
+      const { data: pembuat } = doc?.pembuat_id ? await supabaseFresh.from('profiles').select('email, full_name').eq('id', doc.pembuat_id).maybeSingle() : { data: null }
+      for (const r of [bendahara, pembuat].filter(Boolean)) {
+        if (r?.email) await sendNotifikasiEmail({ event: 'DANA_CAIR', toEmail: r.email, toName: r.full_name || 'Pengguna', ...baseParams })
+      }
+    } else if (nextStatus === 'SUDAH_DITERIMA') {
+      // Notify Bendahara Unit + Staf Pembuat
+      const { data: bendahara } = await supabaseFresh.from('profiles').select('email, full_name').eq('role', 'BENDAHARA_UNIT').eq('unit_id', doc?.unit_id).maybeSingle()
+      const { data: pembuat } = doc?.pembuat_id ? await supabaseFresh.from('profiles').select('email, full_name').eq('id', doc.pembuat_id).maybeSingle() : { data: null }
+      for (const r of [bendahara, pembuat].filter(Boolean)) {
+        if (r?.email) await sendNotifikasiEmail({ event: 'SUDAH_DITERIMA', toEmail: r.email, toName: r.full_name || 'Pengguna', ...baseParams })
+      }
+    }
+  } catch (emailErr) {
+    console.error('[Email verifikasiPengajuan]', emailErr)
   }
 
   return { success: true }
@@ -572,3 +676,43 @@ export async function saveLPJ(payload: {
   }
 }
 
+// Kirim notifikasi email ke Kepala Unit setelah Bendahara Unit meneruskan pengajuan
+// Dipanggil dari rekap/page.tsx setelah update status ke MENUNGGU_KEPALA berhasil
+export async function notifyKepalaForwarded(docIds: string[]): Promise<void> {
+  if (!docIds || docIds.length === 0) return
+  try {
+    const supabase = await createClient()
+    for (const docId of docIds) {
+      try {
+        const { data: doc } = await supabase
+          .from('dokumen_pengajuan')
+          .select('unit, unit_id, bidang, periode_bulan, periode_tahun, total_nominal, jenis')
+          .eq('id', docId)
+          .maybeSingle()
+        if (!doc) continue
+        const { data: kepala } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('role', 'KEPALA_UNIT')
+          .eq('unit_id', doc.unit_id)
+          .maybeSingle()
+        if (!kepala?.email) continue
+        await sendNotifikasiEmail({
+          event: 'FORWARDED_TO_KEPALA',
+          toEmail: kepala.email,
+          toName: kepala.full_name || 'Kepala Unit',
+          unitName: doc.unit || '',
+          bidang: doc.bidang || '',
+          totalNominal: doc.total_nominal || 0,
+          bulan: getBulanName(doc.periode_bulan),
+          tahun: String(doc.periode_tahun || ''),
+          jenis: doc.jenis === 'LPJ' ? 'LPJ' : 'RKA'
+        })
+      } catch (innerErr) {
+        console.error('[Email notifyKepalaForwarded inner]', innerErr)
+      }
+    }
+  } catch (err) {
+    console.error('[Email notifyKepalaForwarded]', err)
+  }
+}
