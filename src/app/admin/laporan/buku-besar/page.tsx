@@ -152,12 +152,12 @@ export default function BukuBesarPage() {
                     .eq('user_id', user.id);
 
                 const allowedUnits = new Set<string>();
-                if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_UNIT') {
+                if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_JENJANG' || role === 'BENDAHARA_UNIT') {
                     allowedUnits.add(primaryUnit);
                 }
                 
                 multiRoles?.forEach((mr: any) => {
-                    if (mr.role === 'BENDAHARA_PUSAT' || mr.role === 'BENDAHARA_UNIT') {
+                    if (mr.role === 'BENDAHARA_PUSAT' || mr.role === 'BENDAHARA_JENJANG' || mr.role === 'BENDAHARA_UNIT') {
                         if (mr.unit?.name) allowedUnits.add(mr.unit.name);
                     }
                 });
@@ -583,7 +583,7 @@ export default function BukuBesarPage() {
     }
 
     // --- ACCESS ENFORCEMENT CONTROL ---
-    const isAuthorized = userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
+    const isAuthorized = userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_JENJANG' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
 
     if (!isAuthorized) {
         return (
@@ -597,7 +597,7 @@ export default function BukuBesarPage() {
                         <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Dokumen Terbatas Milik Bendahara</p>
                     </div>
                     <p className="text-xs font-bold text-slate-400 leading-relaxed">
-                        Maaf, Laporan Buku Besar (Ledger) ini bersifat sangat rahasia. Akses hanya diizinkan untuk peran **Bendahara Unit** dan **Bendahara Pusat**. Peran Anda ({userRole || 'Tamu'}) tidak memiliki izin.
+                        Maaf, Laporan Buku Besar (Ledger) ini bersifat sangat rahasia. Akses hanya diizinkan untuk peran **Bendahara (Pusat/Jenjang/Unit)**. Peran Anda ({userRole || 'Tamu'}) tidak memiliki izin.
                     </p>
                     <button 
                         onClick={() => window.location.href = '/admin'}
