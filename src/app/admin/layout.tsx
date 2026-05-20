@@ -45,7 +45,7 @@ function hasMenuAccess(role: string, path: string): boolean {
             return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
         case '/admin/laporan/buku-besar': // Laporan (Buku Besar)
-            return ['BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
+            return ['BENDAHARA_PUSAT', 'PIMPINAN', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
         case '/admin/pendapatan/buat': // Input Pendapatan
         case '/admin/pengeluaran/buat': // Input Pengeluaran Manual
