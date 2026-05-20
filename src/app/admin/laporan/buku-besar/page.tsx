@@ -162,7 +162,10 @@ export default function BukuBesarPage() {
                         .eq('user_id', user.id);
 
                     const allowedUnits = new Set<string>();
-                    if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_JENJANG' || role === 'BENDAHARA_UNIT') {
+                    if (role === 'BENDAHARA_PUSAT') {
+                        // Bendahara Pusat secara default HANYA boleh melihat Pusat (Yayasan)
+                        allowedUnits.add('Pusat (Yayasan)');
+                    } else if (role === 'BENDAHARA_JENJANG' || role === 'BENDAHARA_UNIT') {
                         allowedUnits.add(primaryUnit);
                     }
                     
