@@ -34,7 +34,7 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
   - [x] **Smart Funding Split**: Kalkulasi pembagian sumber dana otomatis via persentase (%) dan nominal (Rp).
   - [x] Akumulasi otomatis rincian kegiatan ke total Rencana Anggaran utama.
   - [x] Pencegahan input untuk periode (Bulan & Tahun Ajaran) yang sudah lampau.
-  - [/] Fitur *Import* data RKA via Excel/CSV (Kerangka UI Selesai).
+  - [x] Fitur *Import* data RKA via Excel/CSV (Telah Berfungsi).
 - [x] **Modul Otorisasi Berjenjang**
   - [x] Fitur persetujuan tingkat 1: Kepala Unit / Jenjang (Review & Penolakan Bercatatan).
   - [x] Fitur otorisasi tingkat 2: Bendahara Pusat (Edit Penuh, Setujui, Tolak dengan catatan).
@@ -97,7 +97,8 @@ Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 - [x] **Ultra Compact Dashboard**: Optimalisasi kepadatan informasi untuk monitoring keuangan efisien.
 - [x] **Filter Dasbor Interaktif**: Filter berdasarkan unit & jenis dana dengan penutupan otomatis saat klik di luar komponen.
 - [x] **RKA Referensi**: Halaman `/pengaturan/rka-referensi` untuk template standar kegiatan anggaran.
-
+- [x] **Akses Konsolidasi Pimpinan (Super Viewer)**: Hak akses penuh ke Buku Besar terpusat dengan perbaikan Row-Level Security (`transaksi_pendapatan`).
+- [x] **Nomenklatur Otomatis Jurnal**: Label pencatatan (Penerimaan RKA & Realisasi LPJ) otomatis untuk mencegah kebingungan double-entry di Buku Besar.
 ---
 
 ## 🚀 Fase 5: Pengujian & Peluncuran (Penyelesaian)
