@@ -58,10 +58,11 @@ export default function BukuBesarPage() {
     const [userUnit, setUserUnit] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [authorizedUnits, setAuthorizedUnits] = useState<string[]>([]);
+    const [isSuperViewer, setIsSuperViewer] = useState<boolean>(false); // PIMPINAN / ADMINISTRATOR
     
     // --- FILTER & DATA STATES ---
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterUnit, setFilterUnit] = useState('');
+    const [filterUnit, setFilterUnit] = useState(''); // '' = Semua Unit (hanya untuk super viewer)
     const [filterBidang, setFilterBidang] = useState('');
     const [filterCOA, setFilterCOA] = useState('');
     const [filterMonth, setFilterMonth] = useState(''); // '' means Semua Bulan
@@ -145,31 +146,41 @@ export default function BukuBesarPage() {
                 setUserRole(role);
                 setUserUnit(primaryUnit);
 
-                // Load any assigned multi-roles
-                const { data: multiRoles } = await supabase
-                    .from('profiles_multi_role')
-                    .select('*, unit:unit_id(name)')
-                    .eq('user_id', user.id);
+                // Pimpinan & Administrator: dapat melihat semua unit
+                const superViewer = role === 'PIMPINAN' || role === 'ADMINISTRATOR';
+                setIsSuperViewer(superViewer);
 
-                const allowedUnits = new Set<string>();
-                if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_JENJANG' || role === 'BENDAHARA_UNIT') {
-                    allowedUnits.add(primaryUnit);
-                }
-                
-                multiRoles?.forEach((mr: any) => {
-                    if (mr.role === 'BENDAHARA_PUSAT' || mr.role === 'BENDAHARA_JENJANG' || mr.role === 'BENDAHARA_UNIT') {
-                        if (mr.unit?.name) allowedUnits.add(mr.unit.name);
-                    }
-                });
-
-                const allowedArr = Array.from(allowedUnits);
-                setAuthorizedUnits(allowedArr);
-
-                // Automatically default to the first authorized unit
-                if (allowedArr.length > 0) {
-                    setFilterUnit(allowedArr[0]);
+                if (superViewer) {
+                    // Super viewer tidak dibatasi unit – filterUnit '' = semua unit
+                    setAuthorizedUnits([]);
+                    setFilterUnit(''); // default: tampilkan semua
                 } else {
-                    setFilterUnit(primaryUnit);
+                    // Load any assigned multi-roles for Bendahara roles
+                    const { data: multiRoles } = await supabase
+                        .from('profiles_multi_role')
+                        .select('*, unit:unit_id(name)')
+                        .eq('user_id', user.id);
+
+                    const allowedUnits = new Set<string>();
+                    if (role === 'BENDAHARA_PUSAT' || role === 'BENDAHARA_JENJANG' || role === 'BENDAHARA_UNIT') {
+                        allowedUnits.add(primaryUnit);
+                    }
+                    
+                    multiRoles?.forEach((mr: any) => {
+                        if (mr.role === 'BENDAHARA_PUSAT' || mr.role === 'BENDAHARA_JENJANG' || mr.role === 'BENDAHARA_UNIT') {
+                            if (mr.unit?.name) allowedUnits.add(mr.unit.name);
+                        }
+                    });
+
+                    const allowedArr = Array.from(allowedUnits);
+                    setAuthorizedUnits(allowedArr);
+
+                    // Automatically default to the first authorized unit
+                    if (allowedArr.length > 0) {
+                        setFilterUnit(allowedArr[0]);
+                    } else {
+                        setFilterUnit(primaryUnit);
+                    }
                 }
 
             } catch (err) {
@@ -183,17 +194,16 @@ export default function BukuBesarPage() {
 
     // --- REAL-TIME SUPABASE FETCH ENGINE ---
     const fetchLedger = async () => {
-        if (!filterUnit) return;
         setIsFetching(true);
         try {
             const supabase = createClient();
             const entries: LedgerEntry[] = [];
 
-            // 1. Pemasukan (Debet): Get manual incomes for active filterUnit
-            const { data: incomes, error: incErr } = await supabase
-                .from('transaksi_pendapatan')
-                .select('*')
-                .eq('unit', filterUnit);
+            // 1. Pemasukan (Debet): Get manual incomes
+            // Jika filterUnit kosong (Pimpinan/Admin), ambil semua unit
+            let incomesQuery = supabase.from('transaksi_pendapatan').select('*');
+            if (filterUnit) incomesQuery = incomesQuery.eq('unit', filterUnit);
+            const { data: incomes, error: incErr } = await incomesQuery;
 
             if (incErr) console.error("Error fetching ledger incomes:", incErr);
 
@@ -224,10 +234,9 @@ export default function BukuBesarPage() {
             //    Mencakup: pengeluaran manual + realisasi LPJ otomatis (dicatat saat SELESAI)
             //    CATATAN: LPJ SELESAI kini dicatat otomatis ke transaksi_pengeluaran per split dana,
             //    sehingga tidak perlu query terpisah ke dokumen_pengajuan (menghindari double-count).
-            const { data: manualExpenses, error: expErr } = await supabase
-                .from('transaksi_pengeluaran')
-                .select('*')
-                .eq('unit', filterUnit);
+            let expensesQuery = supabase.from('transaksi_pengeluaran').select('*');
+            if (filterUnit) expensesQuery = expensesQuery.eq('unit', filterUnit);
+            const { data: manualExpenses, error: expErr } = await expensesQuery;
 
             if (expErr) console.error("Error fetching expenditures:", expErr);
 
@@ -257,7 +266,8 @@ export default function BukuBesarPage() {
             });
 
             // 3. Kredit (Alokasi SPP - Khusus Pusat): Get approved RKAs funded by Central out of SPP
-            if (filterUnit === 'Pusat (Yayasan)') {
+            // Tampilkan jika filterUnit = Pusat, atau jika super viewer (semua unit)
+            if (!filterUnit || filterUnit === 'Pusat (Yayasan)') {
                 const { data: approvedRkas, error: rkaErr } = await supabase
                     .from('dokumen_pengajuan')
                     .select('*, unit:unit_id(name), item_pengajuan(*)')
@@ -328,12 +338,19 @@ export default function BukuBesarPage() {
         }
     };
 
-    // Re-fetch transactions when active filterUnit is updated
+    // Re-fetch transactions when active filterUnit is updated (Bendahara)
     useEffect(() => {
-        if (filterUnit) {
+        fetchLedger();
+    }, [filterUnit]);
+
+    // Khusus super viewer (Pimpinan/Admin): filterUnit tetap '' sehingga
+    // useEffect filterUnit tidak re-trigger. Fetch manual saat isSuperViewer siap.
+    useEffect(() => {
+        if (isSuperViewer) {
             fetchLedger();
         }
-    }, [filterUnit]);
+    }, [isSuperViewer]);
+
 
     // --- DYNAMIC IN-MEMORY QUERY FILTERS ---
     const filteredLedger = useMemo(() => {
@@ -553,7 +570,8 @@ export default function BukuBesarPage() {
     }
 
     // --- ACCESS ENFORCEMENT CONTROL ---
-    const isAuthorized = userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_JENJANG' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
+    // Pimpinan & Administrator juga berhak melihat Buku Besar
+    const isAuthorized = isSuperViewer || userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_JENJANG' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
 
     if (!isAuthorized) {
         return (
@@ -683,10 +701,14 @@ export default function BukuBesarPage() {
                                         <select 
                                             value={filterUnit}
                                             onChange={(e) => setFilterUnit(e.target.value)}
-                                            disabled={authorizedUnits.length <= 1}
+                                            disabled={!isSuperViewer && authorizedUnits.length <= 1}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
-                                            {authorizedUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                            {isSuperViewer && <option value="">— Semua Unit —</option>}
+                                            {isSuperViewer
+                                                ? ['Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 'Asrama Putra', 'Asrama Putri', 'THQ'].map(u => <option key={u} value={u}>{u}</option>)
+                                                : authorizedUnits.map(u => <option key={u} value={u}>{u}</option>)
+                                            }
                                         </select>
                                     </div>
 
