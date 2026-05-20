@@ -268,7 +268,7 @@ export default function AdminDashboardPage() {
                                 nominal: itemYayasanAmount,
                                 jenis_penerimaan: chosenMetode,
                                 nama_bank: '-',
-                                keterangan: `Alokasi RKA Otomatis: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
+                                keterangan: `Penerimaan Dana RKA dari Pusat: ${rkaLabel} (ID RKA: ${selectedTrxForReview.id})`,
                                 created_by: userId || null
                             }]);
                         if (insErr) console.error("Error inserting RKA pendapatan:", insErr);
