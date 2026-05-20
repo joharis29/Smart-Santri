@@ -9,11 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@langchain/community": "^1.1.28",
+    "@langchain/core": "^1.1.47",
+    "@langchain/openai": "^1.4.6",
+    "@langchain/textsplitters": "^1.0.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "exceljs": "^4.4.0",
+    "langchain": "^1.4.1",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
+    "pdf-parse": "^1.1.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.12.3",

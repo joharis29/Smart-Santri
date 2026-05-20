@@ -2623,7 +2623,13 @@ export default function BuatRealisasiPage() {
                                                                 >
                                                                     <option value="">Pilih Sumber Dana...</option>
                                                                     {availableFundSources.map((src) => (
-                                                                        <option key={src} value={src}>{src}</option>
+                                                                        <option 
+                                                                            key={src} 
+                                                                            value={src}
+                                                                            disabled={['Iuran Non-Wajib', 'Iuaran Non-Wajib', 'Tabungan Siswa', 'Tabungan SIswa', 'Uang Saku'].includes(src)}
+                                                                        >
+                                                                            {src}
+                                                                        </option>
                                                                     ))}
                                                                 </select>
                                                             </div>
