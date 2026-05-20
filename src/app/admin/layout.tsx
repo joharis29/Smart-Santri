@@ -45,6 +45,9 @@ function hasMenuAccess(role: string, path: string): boolean {
         case '/admin/pengaturan/kontrol-pengajuan': // Kontrol Pengajuan RKA & LPJ
             return ['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(cleanRole);
 
+        case '/admin/pengaturan/kelola-sumber-dana': // Kelola Bidang & Sumber Dana
+            return ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
+
         case '/admin/pengaturan/rka-referensi': // Program
             return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
@@ -332,11 +335,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </Link>
                         )}
                         
-                        {/* Pengaturan Menu */}
                         {(hasMenuAccess(activeRole, '/admin/users') ||
                           hasMenuAccess(activeRole, '/admin/roles') ||
                           hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi') ||
-                          hasMenuAccess(activeRole, '/admin/pengaturan/kontrol-pengajuan')) && (
+                          hasMenuAccess(activeRole, '/admin/pengaturan/kontrol-pengajuan') ||
+                          hasMenuAccess(activeRole, '/admin/pengaturan/kelola-sumber-dana')) && (
                             <div className="pt-2">
                                 <button 
                                     onClick={() => setSettingsOpen(!settingsOpen)}
@@ -377,6 +380,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                                 <ToggleLeft className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
                                                 <span className="truncate">Kontrol Pengajuan & LPJ</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengaturan/kelola-sumber-dana') && (
+                                            <Link href="/admin/pengaturan/kelola-sumber-dana" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <Banknote className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Kelola Bidang & Dana</span>
                                             </Link>
                                         )}
                                     </div>

@@ -610,15 +610,37 @@ export default function BuatRealisasiPage() {
         lpjRows.reduce((acc, curr) => acc + curr.nominal, 0),
     [lpjRows]);
 
-    const availableFundSources = useMemo(() => {
-        let normalizedUnit = unit || '';
-        if (normalizedUnit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
-        
-        const unitSources = FUNDING_SOURCES_BY_UNIT[normalizedUnit] || [];
-        if (unitSources.length > 0) {
-            return unitSources;
-        }
-        return ['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS'];
+    const [availableFundSources, setAvailableFundSources] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchCustomSources = async () => {
+            if (!unit) return;
+            try {
+                const supabase = createClient();
+                const { data: dbSources } = await supabase
+                    .from('pengaturan_sumber_dana')
+                    .select('nama_sumber_dana')
+                    .eq('unit_name', unit);
+
+                if (dbSources && dbSources.length > 0) {
+                    setAvailableFundSources(dbSources.map(s => s.nama_sumber_dana));
+                } else {
+                    // Fallback to static
+                    let normalizedUnit = unit || '';
+                    if (normalizedUnit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+                    
+                    const unitSources = FUNDING_SOURCES_BY_UNIT[normalizedUnit] || [];
+                    if (unitSources.length > 0) {
+                        setAvailableFundSources(unitSources);
+                    } else {
+                        setAvailableFundSources(['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS']);
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading dynamic fund sources for LPJ:", err);
+            }
+        };
+        fetchCustomSources();
     }, [unit]);
 
     const selisih = useMemo(() => {

@@ -176,14 +176,15 @@ export default function InputPendapatanPage() {
         }
     };
 
-    // Initial Fetch (User Info & Dynamic Active Tab)
+    const [availableSources, setAvailableSources] = useState<string[]>([]);
+
+    // Initial Fetch (User Info)
     useEffect(() => {
         const init = async () => {
             const supabase = createClient();
             
             // 1. Get User Info
             const { data: { user } } = await supabase.auth.getUser();
-            let unitName = 'Pusat (Yayasan)';
             if (user) {
                 setCurrentUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Bendahara');
                 
@@ -196,15 +197,8 @@ export default function InputPendapatanPage() {
                 
                 if (profile?.unit?.name) {
                     setCurrentUserUnit(profile.unit.name);
-                    unitName = profile.unit.name;
                 }
             }
-
-            // Set active tab to the first source of that unit dynamically
-            let normalizedUnit = unitName;
-            if (unitName.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
-            const sources = FUNDING_SOURCES_BY_UNIT[normalizedUnit] || ['Dana Pesantren/Yayasan'];
-            if (sources[0]) setActiveTab(sources[0]);
         };
         init();
     }, []);
@@ -218,12 +212,35 @@ export default function InputPendapatanPage() {
         load();
     }, [currentUserUnit, selectedMonth, selectedYear]);
 
-    // Get available sources for current unit
-    const availableSources = useMemo(() => {
-        let normalizedUnit = currentUserUnit;
-        if (currentUserUnit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
-        
-        return FUNDING_SOURCES_BY_UNIT[normalizedUnit] || ['Dana Pesantren/Yayasan'];
+    // Load available sources dynamically
+    useEffect(() => {
+        const fetchCustomSources = async () => {
+            if (!currentUserUnit) return;
+            try {
+                const supabase = createClient();
+                const { data: dbSources } = await supabase
+                    .from('pengaturan_sumber_dana')
+                    .select('nama_sumber_dana')
+                    .eq('unit_name', currentUserUnit);
+
+                let sourcesList: string[] = [];
+                if (dbSources && dbSources.length > 0) {
+                    sourcesList = dbSources.map(s => s.nama_sumber_dana);
+                } else {
+                    // Fallback to static
+                    let normalizedUnit = currentUserUnit;
+                    if (currentUserUnit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+                    sourcesList = FUNDING_SOURCES_BY_UNIT[normalizedUnit] || ['Dana Pesantren/Yayasan'];
+                }
+                setAvailableSources(sourcesList);
+                if (sourcesList[0]) {
+                    setActiveTab(sourcesList[0]);
+                }
+            } catch (err) {
+                console.error("Error loading dynamic sources for Pendapatan:", err);
+            }
+        };
+        fetchCustomSources();
     }, [currentUserUnit]);
 
     // Get dynamic card label based on selected filters

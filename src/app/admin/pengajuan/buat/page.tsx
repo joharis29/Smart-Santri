@@ -564,17 +564,50 @@ function BuatPengajuanContent() {
     return ['ADMINISTRATOR', 'PIMPINAN', 'BENDAHARA_PUSAT'].includes(userRole)
   }, [userRole])
 
-  const availableBidangs = useMemo(() => {
-    let normalizedUnit = unit;
-    if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
-    return BIDANG_BY_UNIT[normalizedUnit] || BIDANG_BY_UNIT[unit] || ['Umum'];
-  }, [unit])
+  const [availableBidangs, setAvailableBidangs] = useState<string[]>([]);
+  const [availableSources, setAvailableSources] = useState<string[]>([]);
 
-  const availableSources = useMemo(() => {
-    let normalizedUnit = unit;
-    if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
-    return FUNDING_SOURCES_BY_UNIT[normalizedUnit] || FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan'];
-  }, [unit])
+  useEffect(() => {
+    const fetchCustomMetadata = async () => {
+      if (!unit) return;
+      try {
+        const supabase = createClient();
+        
+        // 1. Fetch custom Bidang
+        const { data: dbBidangs } = await supabase
+          .from('pengaturan_bidang')
+          .select('nama_bidang')
+          .eq('unit_name', unit);
+
+        if (dbBidangs && dbBidangs.length > 0) {
+          setAvailableBidangs(dbBidangs.map(b => b.nama_bidang));
+        } else {
+          // Fallback to static
+          let normalizedUnit = unit;
+          if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+          setAvailableBidangs(BIDANG_BY_UNIT[normalizedUnit] || BIDANG_BY_UNIT[unit] || ['Umum']);
+        }
+
+        // 2. Fetch custom Sources
+        const { data: dbSources } = await supabase
+          .from('pengaturan_sumber_dana')
+          .select('nama_sumber_dana')
+          .eq('unit_name', unit);
+
+        if (dbSources && dbSources.length > 0) {
+          setAvailableSources(dbSources.map(s => s.nama_sumber_dana));
+        } else {
+          // Fallback to static
+          let normalizedUnit = unit;
+          if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+          setAvailableSources(FUNDING_SOURCES_BY_UNIT[normalizedUnit] || FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan']);
+        }
+      } catch (err) {
+        console.error("Error loading dynamic metadata:", err);
+      }
+    };
+    fetchCustomMetadata();
+  }, [unit]);
 
   // Reset bidang if it is no longer valid for the selected unit
   useEffect(() => {
