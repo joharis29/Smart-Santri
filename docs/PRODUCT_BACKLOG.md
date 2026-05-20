@@ -19,6 +19,10 @@ Fokus pada penyiapan infrastruktur dasar, autentikasi, dan skema basis data yang
 - [x] Pembuatan Skema Tabel Relasional (Users, Roles, Jenjang, Unit, Pengajuan, dsb)
 - [x] Implementasi Autentikasi & perlindungan *Route* via *Middleware*
 - [x] Konfigurasi *Row-Level Security* (RLS) untuk perlindungan data RBAC
+- [x] **Fitur Lupa Kata Sandi**: Halaman `/lupa-kata-sandi` & `/reset-kata-sandi` terintegrasi dengan Supabase Auth email recovery.
+- [x] **Template Email Kustom**: Desain email Reset Password & Password Changed dengan branding Smart Santri (panduan konfigurasi SMTP kustom disediakan).
+
+---
 
 ## 🏗️ Fase 2: Sistem Informasi Akuntansi (SIA) Inti (Prioritas Tinggi)
 Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluaran kas.
@@ -40,6 +44,7 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
   - [x] Sistem otomatis saldo unit bertambah saat status menjadi "SUDAH DITERIMA".
   - [x] Dasbor pemisahan saldo otomatis berdasarkan dompet dana (BOS, Yayasan, Zakat, dll).
   - [x] Penyelarasan branding: "Dana Dengan Pembatasan" (Restricted) & "Dana Tanpa Pembatasan" (Unrestricted) dengan skema warna Amber/Emerald.
+  - [x] **Klasifikasi Dana Iuran Non-Wajib**: Dikoreksi menjadi "Dana Dengan Pembatasan" karena eksklusif untuk biaya antar jemput siswa TK.
 - [x] **Modul Pelaporan Realisasi (LPJ)**
   - [x] Form laporan realisasi belanja dengan narasi detail (Ultra Compact UI).
   - [x] Fitur *Multi-Upload* foto kuitansi/nota (Dioptimalkan untuk *Mobile*).
@@ -50,6 +55,25 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
   - [x] **Universal Tab & Filter System**: Pemisahan RKA/LPJ di Draft Saya, Rekap Draft, dan Aktivitas Dasbor.
   - [x] Modul input harian (*reimbursement*) khusus Dapur Asrama.
   - [x] **Sistem Draft Pribadi (Personal Workspace)**: Halaman khusus "Draft Saya" untuk isolasi data staf sebelum diajukan ke Bendahara.
+  - [x] **Otomatisasi Pencatatan Buku Besar**: LPJ yang direalisasi otomatis dicatat ke `transaksi_pengeluaran` (segmentasi per sumber dana / split funding, termasuk penanganan overbudget).
+- [x] **Modul Buku Besar (Laporan)**
+  - [x] Halaman `/laporan/buku-besar` menampilkan mutasi keuangan unit.
+  - [x] Sumber data terpusat dari `transaksi_pengeluaran` untuk menghilangkan pencatatan ganda (*double-counting*).
+- [x] **Modul Pemasukan Manual**
+  - [x] Halaman `/pendapatan/buat` — form input pendapatan Ultra-Compact.
+  - [x] Pemetaan sumber dana dinamis dan dibatasi berdasarkan unit pengguna.
+  - [x] Logika RBAC: entri pendapatan otomatis terasosiasi dengan unit user yang login.
+  - [x] Persistensi data ke tabel pendapatan dan pembaruan saldo unit otomatis.
+  - [x] Sidebar ringkasan transaksi real-time untuk verifikasi administrasi langsung.
+- [x] **Pengaturan Sumber Dana**
+  - [x] Halaman `/pengaturan/kelola-sumber-dana` untuk manajemen daftar sumber dana per unit.
+- [x] **Pengaturan Kontrol Pengajuan**
+  - [x] Halaman `/pengaturan/kontrol-pengajuan` untuk pengaturan periode dan batas pengajuan.
+- [x] **Riwayat & Rekap Pengajuan**
+  - [x] Halaman riwayat pengajuan RKA & LPJ dengan filter status.
+  - [x] Halaman rekap draft untuk review Bendahara Unit.
+
+---
 
 ## 🧠 Fase 3: Integrasi Kecerdasan Buatan (Smart Compliance Audit)
 Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk validasi kepatuhan.
@@ -60,15 +84,21 @@ Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk valid
 - [ ] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan OpenAI LLM.
 - [x] Integrasi UI: Menampilkan bendera peringatan (*Flag*) anomali audit (Kepatuhan Syariah) di tabel pengajuan.
 
+---
+
 ## ⚙️ Fase 4: Fitur Lanjutan & Otomatisasi (Prioritas Menengah)
 Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 
-- [ ] **Sistem Blokir RKA**: Mekanisme penguncian pengajuan bulan baru jika realisasi bulan lalu belum selesai (belum diunggah).
+- [x] **Sistem Blokir RKA**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** (`/pengaturan/kontrol-pengajuan`) — Bendahara Pusat dapat mengunci/membuka akses RKA & LPJ secara manual per unit, memberikan fleksibilitas untuk kondisi nyata di mana jadwal kegiatan dapat mundur meskipun dana sudah cair.
 - [x] **Tracking System**: UI interaktif untuk melacak status pengajuan (Pop-up "Lacak" di Dasbor dengan Step Indicator).
 - [ ] **Notifikasi Email**: Pengiriman email otomatis untuk pengajuan yang *urgent* ke Bendahara Pusat.
 - [ ] **Manajemen Penjadwalan Ulang (*Reschedule*)**: Fitur untuk memindahkan kegiatan yang belum terlaksana ke bulan berikutnya beserta kalkulasi sisa saldo.
 - [x] **Audit Trail Log UI**: Tampilan riwayat aktivitas (*read-only*) terintegrasi (RKA & LPJ) melalui detail pelacakan untuk transparansi mutasi data.
 - [x] **Ultra Compact Dashboard**: Optimalisasi kepadatan informasi untuk monitoring keuangan efisien.
+- [x] **Filter Dasbor Interaktif**: Filter berdasarkan unit & jenis dana dengan penutupan otomatis saat klik di luar komponen.
+- [x] **RKA Referensi**: Halaman `/pengaturan/rka-referensi` untuk template standar kegiatan anggaran.
+
+---
 
 ## 🚀 Fase 5: Pengujian & Peluncuran (Penyelesaian)
 Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
@@ -81,3 +111,4 @@ Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 
 ---
 *Catatan: Centang kotak `[ ]` menjadi `[x]` seiring berjalannya progres pengembangan aplikasi.*
+*Terakhir diperbarui: 20 Mei 2026*
