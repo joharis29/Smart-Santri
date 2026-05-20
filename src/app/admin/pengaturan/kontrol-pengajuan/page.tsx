@@ -35,10 +35,16 @@ export default function KontrolPengajuanPage() {
     const STANDARDIZED_UNITS = [
         'Pusat (Yayasan)',
         'TK',
+        'Diniyah',
         'SDIT 1',
         'SDIT 2',
-        'MTS',
-        'MA'
+        'MTs',
+        'MA',
+        'THQ',
+        'Asrama Putra',
+        'Asrama Putri',
+        'Dapur Asrama Putra',
+        'Dapur Asrama Putri'
     ];
 
     useEffect(() => {

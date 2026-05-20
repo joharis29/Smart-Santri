@@ -40,9 +40,15 @@ CREATE POLICY "Allow public update kontrol_fitur"
 INSERT INTO kontrol_pengajuan (unit_name, rka_aktif, lpj_aktif) VALUES 
   ('GLOBAL', TRUE, TRUE),
   ('Pusat (Yayasan)', TRUE, TRUE),
+  ('TK', TRUE, TRUE),
+  ('Diniyah', TRUE, TRUE),
   ('SDIT 1', TRUE, TRUE),
   ('SDIT 2', TRUE, TRUE),
-  ('MTS', TRUE, TRUE),
+  ('MTs', TRUE, TRUE),
   ('MA', TRUE, TRUE),
-  ('TK', TRUE, TRUE)
+  ('THQ', TRUE, TRUE),
+  ('Asrama Putra', TRUE, TRUE),
+  ('Asrama Putri', TRUE, TRUE),
+  ('Dapur Asrama Putra', TRUE, TRUE),
+  ('Dapur Asrama Putri', TRUE, TRUE)
 ON CONFLICT (unit_name) DO NOTHING;
