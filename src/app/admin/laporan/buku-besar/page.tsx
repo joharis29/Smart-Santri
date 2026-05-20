@@ -20,7 +20,7 @@ import {
     Briefcase
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface LedgerEntry {
     id: string;
@@ -401,51 +401,143 @@ export default function BukuBesarPage() {
         setFilterTahunAjaran('');
     };
 
-    // --- HIGH FIDELITY EXCEL EXPORT ENGINE ---
-    const handleExcelExport = () => {
+    // --- HIGH FIDELITY EXCEL EXPORT ENGINE WITH EXCELJS ---
+    const handleExcelExport = async () => {
         if (processedLedger.length === 0) {
             alert("Tidak ada entri Buku Besar untuk diekspor!");
             return;
         }
 
-        const dataToExport = processedLedger.map((item, idx) => ({
-            'No': idx + 1,
-            'Tanggal': item.tanggal,
-            'No. Ref': item.id,
-            'Keterangan Transaksi': item.keterangan,
-            'Unit Kerja': item.unit,
-            'Bidang': item.bidang || '-',
-            'Tahun Ajaran': item.tahunAjaran || '-',
-            'Akun (COA)': item.coa,
-            'Debet (Rp)': item.tipe === 'DEBET' ? item.nominal : 0,
-            'Kredit (Rp)': item.tipe === 'KREDIT' ? item.nominal : 0,
-            'Saldo Berjalan (Rp)': item.saldo
-        }));
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Buku Besar');
 
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        
-        // Auto column widths sizing
-        const colWidths = Object.keys(dataToExport[0]).map(key => {
-            let maxLen = key.length;
-            dataToExport.forEach(row => {
-                const str = String((row as any)[key] || '');
-                if (str.length > maxLen) maxLen = str.length;
-            });
-            return { wch: maxLen + 4 };
+        // Column Config
+        worksheet.columns = [
+            { key: 'No', width: 6 },
+            { key: 'Tanggal', width: 14 },
+            { key: 'NoRef', width: 14 },
+            { key: 'Keterangan', width: 45 },
+            { key: 'Unit Kerja', width: 22 },
+            { key: 'Bidang', width: 18 },
+            { key: 'Tahun Ajaran', width: 15 },
+            { key: 'COA', width: 18 },
+            { key: 'Debet', width: 16 },
+            { key: 'Kredit', width: 16 },
+            { key: 'Saldo', width: 18 }
+        ];
+
+        // 1. LAPORAN BUKU BESAR
+        worksheet.mergeCells('A1:K1');
+        const title1 = worksheet.getCell('A1');
+        title1.value = 'LAPORAN BUKU BESAR';
+        title1.font = { name: 'Times New Roman', size: 14, bold: true };
+        title1.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // 2. KONSOLIDASI JURNAL & MUTASI KEUANGAN
+        worksheet.mergeCells('A2:K2');
+        const title2 = worksheet.getCell('A2');
+        title2.value = 'KONSOLIDASI JURNAL & MUTASI KEUANGAN';
+        title2.font = { name: 'Times New Roman', size: 12, bold: true };
+        title2.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // 3. Unit & Periode Info
+        worksheet.mergeCells('A3:K3');
+        const title3 = worksheet.getCell('A3');
+        const monthLabel = filterMonth 
+            ? MONTHS.find(m => m.value === Number(filterMonth))?.label 
+            : 'Semua Periode';
+        title3.value = `Unit: ${filterUnit || '-'} --- Bulan: ${monthLabel || '-'}`;
+        title3.font = { name: 'Times New Roman', size: 10, italic: true };
+        title3.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Blank Spacer Row
+        worksheet.addRow([]);
+
+        // Headers row (Row 5)
+        const headers = [
+            'No',
+            'Tanggal',
+            'No. Ref',
+            'Keterangan Transaksi',
+            'Unit Kerja',
+            'Bidang',
+            'Tahun Ajaran',
+            'Akun (COA)',
+            'Debet (Rp)',
+            'Kredit (Rp)',
+            'Saldo (Rp)'
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 25;
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, name: 'Times New Roman', size: 11, color: { argb: 'FF000000' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF00B050' } // Bright Green exact color as screenshot
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
-        worksheet['!cols'] = colWidths;
 
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Buku Besar");
-        
+        // Add Data Rows
+        processedLedger.forEach((item, index) => {
+            const dataRow = worksheet.addRow([
+                index + 1,
+                item.tanggal,
+                item.id,
+                item.keterangan,
+                item.unit,
+                item.bidang || '-',
+                item.tahunAjaran || '-',
+                item.coa,
+                item.tipe === 'DEBET' ? item.nominal : 0,
+                item.tipe === 'KREDIT' ? item.nominal : 0,
+                item.saldo
+            ]);
+
+            // Number formats
+            dataRow.getCell(9).numFmt = '#,##0';
+            dataRow.getCell(10).numFmt = '#,##0';
+            dataRow.getCell(11).numFmt = '#,##0';
+
+            dataRow.eachCell((cell, colNum) => {
+                cell.font = { name: 'Times New Roman', size: 10 };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+
+                // Alignment matching
+                if (colNum === 1 || colNum === 2 || colNum === 3 || colNum === 5 || colNum === 6 || colNum === 7 || colNum === 8) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if (colNum === 9 || colNum === 10 || colNum === 11) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            });
+        });
+
+        // Generate file and download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
         const periodStr = filterMonth 
             ? `${MONTHS.find(m => m.value === Number(filterMonth))?.label}` 
             : 'Semua_Periode';
-
-        XLSX.writeFile(
-            workbook, 
-            `Buku_Besar_${filterUnit.replace(/[^a-zA-Z0-9]/g, '_')}_${periodStr}.xlsx`
-        );
+        a.download = `Buku_Besar_${filterUnit.replace(/[^a-zA-Z0-9]/g, '_')}_${periodStr}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     // --- LOADING RENDER ---
@@ -849,7 +941,7 @@ export default function BukuBesarPage() {
                                                 <td className="py-4 text-xs font-black text-emerald-600 text-right">
                                                     {selectedJournalItem.nominal.toLocaleString('id-ID')}
                                                 </td>
-                                                <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                                <td className="py-4 text-xs text-slate-355 text-right">-</td>
                                             </tr>
                                             <tr>
                                                 <td className="py-4 text-xs font-black text-slate-500 pl-8">
@@ -875,7 +967,7 @@ export default function BukuBesarPage() {
                                                         <td className="py-4 text-xs font-black text-rose-600 text-right">
                                                             {selectedJournalItem.nominal.toLocaleString('id-ID')}
                                                         </td>
-                                                        <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                                        <td className="py-4 text-xs text-slate-355 text-right">-</td>
                                                     </tr>
                                                     <tr>
                                                         <td className="py-4 text-xs font-black text-slate-500 pl-8">
@@ -896,7 +988,7 @@ export default function BukuBesarPage() {
                                                         <td className="py-4 text-xs font-black text-rose-600 text-right">
                                                             {selectedJournalItem.nominal.toLocaleString('id-ID')}
                                                         </td>
-                                                        <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                                        <td className="py-4 text-xs text-slate-355 text-right">-</td>
                                                     </tr>
                                                     <tr>
                                                         <td className="py-4 text-xs font-black text-slate-500 pl-8">
