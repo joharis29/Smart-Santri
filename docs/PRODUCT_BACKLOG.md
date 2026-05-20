@@ -91,8 +91,8 @@ Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 
 - [x] **Sistem Blokir RKA**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** (`/pengaturan/kontrol-pengajuan`) — Bendahara Pusat dapat mengunci/membuka akses RKA & LPJ secara manual per unit, memberikan fleksibilitas untuk kondisi nyata di mana jadwal kegiatan dapat mundur meskipun dana sudah cair.
 - [x] **Tracking System**: UI interaktif untuk melacak status pengajuan (Pop-up "Lacak" di Dasbor dengan Step Indicator).
-- [ ] **Notifikasi Email**: Pengiriman email otomatis untuk pengajuan yang *urgent* ke Bendahara Pusat.
-- [ ] **Manajemen Penjadwalan Ulang (*Reschedule*)**: Fitur untuk memindahkan kegiatan yang belum terlaksana ke bulan berikutnya beserta kalkulasi sisa saldo.
+- [x] **Notifikasi Email**: Pengiriman email otomatis via **Resend** untuk 6 event trigger: RKA/LPJ disubmit → Bendahara Unit; diteruskan → Kepala Unit; disetujui Kepala → Bendahara Pusat; dana CAIR / SUDAH_DITERIMA → Bendahara Unit + Staf; revisi diminta → Staf Pembuat. Template HTML berbranding Smart Santri.
+- [x] **Manajemen Penjadwalan Ulang (*Reschedule*)**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** — Bendahara Pusat dapat mentoleransi kegiatan yang belum terlaksana dengan mengatur akses pengajuan secara fleksibel per unit. Staf/Bendahara Unit cukup konfirmasi ke Bendahara Pusat tanpa alur digital yang rumit.
 - [x] **Audit Trail Log UI**: Tampilan riwayat aktivitas (*read-only*) terintegrasi (RKA & LPJ) melalui detail pelacakan untuk transparansi mutasi data.
 - [x] **Ultra Compact Dashboard**: Optimalisasi kepadatan informasi untuk monitoring keuangan efisien.
 - [x] **Filter Dasbor Interaktif**: Filter berdasarkan unit & jenis dana dengan penutupan otomatis saat klik di luar komponen.
