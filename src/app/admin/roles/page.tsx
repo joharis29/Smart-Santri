@@ -175,6 +175,11 @@ export default function RoleManagementPage() {
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const optionsDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Level filter states
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('Semua Level');
+  const [isLevelFilterOpen, setIsLevelFilterOpen] = useState(false);
+  const levelFilterRef = useRef<HTMLDivElement>(null);
+
   // Handle outside clicks
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -184,17 +189,24 @@ export default function RoleManagementPage() {
       if (permDropdownRef.current && !permDropdownRef.current.contains(event.target as Node)) {
         setIsPermDropdownOpen(false);
       }
+      if (levelFilterRef.current && !levelFilterRef.current.contains(event.target as Node)) {
+        setIsLevelFilterOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Filters
-  const filteredRoles = roles.filter(role => 
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.level.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRoles = roles.filter(role => {
+    const matchesSearch = role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role.level.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    const matchesLevel = selectedLevelFilter === 'Semua Level' || role.level === selectedLevelFilter;
+    
+    return matchesSearch && matchesLevel;
+  });
 
   const filteredAvailablePermissions = availablePermissions.filter(perm => 
     perm.toLowerCase().includes(permSearchTerm.toLowerCase())
@@ -351,10 +363,59 @@ export default function RoleManagementPage() {
               className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow"
             />
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors">
-              <Filter className="w-4 h-4" /> Filter Level
+          <div className="flex gap-2 w-full sm:w-auto relative" ref={levelFilterRef}>
+            <button 
+              type="button"
+              onClick={() => setIsLevelFilterOpen(!isLevelFilterOpen)}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 border rounded-xl font-bold text-xs transition-all ${
+                selectedLevelFilter !== 'Semua Level' 
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700' 
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" /> 
+              <span>{selectedLevelFilter === 'Semua Level' ? 'Filter Level' : `Level: ${selectedLevelFilter}`}</span>
+              {selectedLevelFilter !== 'Semua Level' && (
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLevelFilter('Semua Level');
+                  }}
+                  className="ml-1 p-0.5 hover:bg-emerald-100 rounded-full text-emerald-850 transition-colors"
+                  title="Bersihkan Filter"
+                >
+                  <X className="w-3 h-3" />
+                </span>
+              )}
             </button>
+
+            {isLevelFilterOpen && (
+              <div className="absolute right-0 mt-11 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
+                <div className="px-3 py-1.5 border-b border-slate-50 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                  Pilih Tingkat Level
+                </div>
+                {['Semua Level', 'Sistem', 'Kritis', 'Eksekutif', 'Menengah', 'Dasar'].map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLevelFilter(lvl);
+                      setIsLevelFilterOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-xs font-semibold transition-colors text-left ${
+                      selectedLevelFilter === lvl 
+                        ? 'text-emerald-700 bg-emerald-50/60' 
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-emerald-600'
+                    }`}
+                  >
+                    <span>{lvl}</span>
+                    {selectedLevelFilter === lvl && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
