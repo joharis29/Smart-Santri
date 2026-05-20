@@ -265,61 +265,84 @@ export default function BukuBesarPage() {
                 });
             });
 
-            // 3. Kredit (Alokasi SPP - Khusus Pusat): Get approved RKAs funded by Central out of SPP
-            // Tampilkan jika filterUnit = Pusat, atau jika super viewer (semua unit)
-            if (!filterUnit || filterUnit === 'Pusat (Yayasan)') {
-                const { data: approvedRkas, error: rkaErr } = await supabase
-                    .from('dokumen_pengajuan')
-                    .select('*, unit:unit_id(name), item_pengajuan(*)')
-                    .eq('jenis', 'RKA')
-                    .eq('status', 'SUDAH_DITERIMA');
+            // 3. Alokasi RKA (Pusat = Kredit, Unit Penerima = Debet)
+            // Ambil semua RKA yang disetujui untuk dicatat mutasi antar unitnya
+            const { data: approvedRkas, error: rkaErr } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, unit:unit_id(name), item_pengajuan(*)')
+                .eq('jenis', 'RKA')
+                .eq('status', 'SUDAH_DITERIMA');
 
-                if (rkaErr) console.error("Error fetching approved RKA outflows:", rkaErr);
+            if (rkaErr) console.error("Error fetching approved RKA outflows:", rkaErr);
 
-                approvedRkas?.forEach((doc: any) => {
-                    const receiverUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Unit';
-                    doc.item_pengajuan?.forEach((item: any) => {
-                        // Extract Yayasan/Pesantren fund split amount
-                        let yayasanAmount = 0;
-                        try {
-                            const details = typeof item.rincian_json === 'string' 
-                                ? JSON.parse(item.rincian_json) 
-                                : (item.rincian_json || {});
-                            const splits = details.fundingSplits || [];
-                            if (Array.isArray(splits) && splits.length > 0) {
-                                splits.forEach((s: any) => {
-                                    const source = (s.source || s.sumber || '').toLowerCase();
-                                    if (source.includes('yayasan') || source.includes('pesantren')) {
-                                        yayasanAmount += Number(s.amount || s.nominal || 0);
-                                    }
-                                });
-                            } else {
-                                const source = (item.sumber_dana || '').toLowerCase();
+            approvedRkas?.forEach((doc: any) => {
+                const receiverUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Unit';
+                
+                // Cek apakah dokumen ini relevan untuk filterUnit aktif (Pusat sbg pemberi, receiverUnitName sbg penerima, atau '' sbg semua)
+                const isRelevantForPusat = (!filterUnit || filterUnit === 'Pusat (Yayasan)');
+                const isRelevantForReceiver = (!filterUnit || filterUnit === receiverUnitName);
+                
+                if (!isRelevantForPusat && !isRelevantForReceiver) return;
+
+                doc.item_pengajuan?.forEach((item: any) => {
+                    // Extract Yayasan/Pesantren fund split amount
+                    let yayasanAmount = 0;
+                    try {
+                        const details = typeof item.rincian_json === 'string' 
+                            ? JSON.parse(item.rincian_json) 
+                            : (item.rincian_json || {});
+                        const splits = details.fundingSplits || [];
+                        if (Array.isArray(splits) && splits.length > 0) {
+                            splits.forEach((s: any) => {
+                                const source = (s.source || s.sumber || '').toLowerCase();
                                 if (source.includes('yayasan') || source.includes('pesantren')) {
-                                    yayasanAmount = Number(item.nominal || 0);
+                                    yayasanAmount += Number(s.amount || s.nominal || 0);
                                 }
+                            });
+                        } else {
+                            const source = (item.sumber_dana || '').toLowerCase();
+                            if (source.includes('yayasan') || source.includes('pesantren')) {
+                                yayasanAmount = Number(item.nominal || 0);
                             }
-                        } catch (e) {}
+                        }
+                    } catch (e) {}
 
-                        if (yayasanAmount > 0) {
+                    if (yayasanAmount > 0) {
+                        const baseEntry = {
+                            id: item.id.substring(0, 8).toUpperCase(),
+                            tanggal: doc.created_at.split('T')[0],
+                            coa: 'DANA SPP', // Standardized to 'DANA SPP'
+                            nominal: yayasanAmount,
+                            saldo: 0,
+                            refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
+                            metode: doc.metode_pencairan || 'Transfer',
+                            bidang: doc.bidang || 'Tanpa Bidang',
+                            tahunAjaran: doc.tahun_ajaran || (doc.periode_tahun ? `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}` : getTahunAjaranFromDate(doc.created_at.split('T')[0]))
+                        };
+
+                        // 1. Catat KREDIT untuk Pusat (Yayasan) jika sedang dilihat oleh Pusat atau Semua Unit
+                        if (isRelevantForPusat) {
                             entries.push({
-                                id: item.id.substring(0, 8).toUpperCase(),
-                                tanggal: doc.created_at.split('T')[0],
-                                keterangan: `Penyaluran RKA ke ${receiverUnitName}: ${item.judul_kegiatan || 'Alokasi Dana'}`,
+                                ...baseEntry,
                                 unit: 'Pusat (Yayasan)',
-                                coa: 'DANA SPP', // Standardized to 'DANA SPP'
                                 tipe: 'KREDIT',
-                                nominal: yayasanAmount,
-                                saldo: 0,
-                                refId: doc.nomor_dokumen || doc.id.substring(0, 8).toUpperCase(),
-                                metode: doc.metode_pencairan || 'Transfer',
-                                bidang: doc.bidang || 'Tanpa Bidang',
-                                tahunAjaran: doc.tahun_ajaran || (doc.periode_tahun ? `${doc.periode_tahun}/${Number(doc.periode_tahun) + 1}` : getTahunAjaranFromDate(doc.created_at.split('T')[0]))
+                                keterangan: `Penyaluran RKA ke ${receiverUnitName}: ${item.judul_kegiatan || 'Alokasi Dana'}`
                             });
                         }
-                    });
+
+                        // 2. Catat DEBET untuk Unit Penerima jika sedang dilihat oleh Unit tersebut atau Semua Unit
+                        // Jangan double-count jika ternyata receiverUnitName == Pusat (Yayasan)
+                        if (isRelevantForReceiver && receiverUnitName !== 'Pusat (Yayasan)') {
+                            entries.push({
+                                ...baseEntry,
+                                unit: receiverUnitName,
+                                tipe: 'DEBET',
+                                keterangan: `Penerimaan Dana RKA dari Pusat: ${item.judul_kegiatan || 'Alokasi Dana'}`
+                            });
+                        }
+                    }
                 });
-            }
+            });
 
             // 4. Sort chronologically by date ascending
             entries.sort((a, b) => {
