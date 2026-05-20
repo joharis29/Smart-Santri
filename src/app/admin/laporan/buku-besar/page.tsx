@@ -16,7 +16,8 @@ import {
     Info,
     ChevronDown,
     FileText,
-    Lock
+    Lock,
+    X
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import * as XLSX from 'xlsx';
@@ -68,6 +69,9 @@ export default function BukuBesarPage() {
     
     const [ledgerData, setLedgerData] = useState<LedgerEntry[]>([]);
     const [isFetching, setIsFetching] = useState<boolean>(false);
+    
+    // Active transaction for the double-entry journal pop-up modal
+    const [selectedJournalItem, setSelectedJournalItem] = useState<LedgerEntry | null>(null);
     
     const filterRef = useRef<HTMLDivElement>(null);
     const periodRef = useRef<HTMLDivElement>(null);
@@ -167,12 +171,18 @@ export default function BukuBesarPage() {
             if (incErr) console.error("Error fetching ledger incomes:", incErr);
 
             incomes?.forEach((item: any) => {
+                // Normalize COA names for SPP to ensure consistency
+                let coaName = item.sumber_dana || 'Dana Pesantren/Yayasan';
+                if (coaName === 'SPP' || coaName === 'Dana SPP') {
+                    coaName = 'DANA SPP';
+                }
+
                 entries.push({
                     id: item.id.substring(0, 8).toUpperCase(),
                     tanggal: item.tanggal,
                     keterangan: item.keterangan || `Pemasukan Dana - ${item.sumber_dana}`,
                     unit: item.unit,
-                    coa: item.sumber_dana,
+                    coa: coaName,
                     tipe: 'DEBET',
                     nominal: Number(item.nominal),
                     saldo: 0,
@@ -193,12 +203,17 @@ export default function BukuBesarPage() {
                 const docUnitName = (Array.isArray(doc.unit) ? doc.unit[0]?.name : doc.unit?.name) || 'Pusat (Yayasan)';
                 if (docUnitName === filterUnit) {
                     doc.item_pengajuan?.forEach((item: any) => {
+                        let coaName = item.sumber_dana || 'Dana Pesantren/Yayasan';
+                        if (coaName === 'SPP' || coaName === 'Dana SPP') {
+                            coaName = 'DANA SPP';
+                        }
+
                         entries.push({
                             id: item.id.substring(0, 8).toUpperCase(),
                             tanggal: doc.tanggal_kebutuhan || doc.created_at.split('T')[0],
                             keterangan: item.judul_kegiatan || 'Realisasi Pengeluaran LPJ',
                             unit: docUnitName,
-                            coa: item.sumber_dana || 'Dana Pesantren/Yayasan',
+                            coa: coaName,
                             tipe: 'KREDIT',
                             nominal: Number(item.nominal),
                             saldo: 0,
@@ -249,7 +264,7 @@ export default function BukuBesarPage() {
                                 tanggal: doc.created_at.split('T')[0],
                                 keterangan: `Penyaluran RKA ke ${receiverUnitName}: ${item.judul_kegiatan || 'Alokasi Dana'}`,
                                 unit: 'Pusat (Yayasan)',
-                                coa: 'SPP',
+                                coa: 'DANA SPP', // Standardized to 'DANA SPP'
                                 tipe: 'KREDIT',
                                 nominal: yayasanAmount,
                                 saldo: 0,
@@ -630,7 +645,7 @@ export default function BukuBesarPage() {
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Debet (Rp)</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Kredit (Rp)</th>
                                 <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right bg-slate-50/50">Saldo (Rp)</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Ref</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Jurnal</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -684,8 +699,12 @@ export default function BukuBesarPage() {
                                             </p>
                                         </td>
                                         <td className="px-6 py-3.5 text-center">
-                                            <button className="p-2 text-slate-300 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-xl transition-all" title="Lihat Dokumen Referensi">
-                                                <ArrowUpRight className="w-4 h-4" />
+                                            <button 
+                                                onClick={() => setSelectedJournalItem(item)}
+                                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-[9px] font-black rounded-lg transition-all uppercase tracking-wider inline-flex items-center gap-1 shadow-sm"
+                                                title="Lihat Jurnal Pembukuan"
+                                            >
+                                                <FileText className="w-3.5 h-3.5" /> Jurnal
                                             </button>
                                         </td>
                                     </tr>
@@ -706,6 +725,163 @@ export default function BukuBesarPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Dynamic Accounting Double-Entry Journal Modal Popup */}
+            {selectedJournalItem && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] border border-slate-100 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+                        
+                        {/* Modal Header */}
+                        <div className="bg-slate-900 text-white p-6 md:p-8 flex justify-between items-center border-b border-slate-800">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-500/20 p-2.5 rounded-2xl text-emerald-400">
+                                    <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight uppercase leading-none mb-1.5">Jurnal Umum Pembukuan</h3>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Pencatatan Sistem Akuntansi Double-Entry</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedJournalItem(null)}
+                                className="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-white/80 hover:text-white transition-all shadow-inner"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Metadata Info */}
+                        <div className="p-6 md:p-8 bg-slate-50/50 border-b border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">No. Bukti / Ref</span>
+                                <span className="text-xs font-black text-slate-850 leading-none">{selectedJournalItem.refId}</span>
+                            </div>
+                            <div>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Tanggal Post</span>
+                                <span className="text-xs font-black text-slate-850 leading-none">{selectedJournalItem.tanggal}</span>
+                            </div>
+                            <div>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Unit Kerja</span>
+                                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg inline-block uppercase leading-none tracking-tighter">{selectedJournalItem.unit}</span>
+                            </div>
+                            <div>
+                                <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Jenis Mutasi</span>
+                                <span className={`text-xs font-black ${selectedJournalItem.tipe === 'DEBET' ? 'text-emerald-600' : 'text-rose-600'} leading-none`}>
+                                    {selectedJournalItem.tipe === 'DEBET' ? 'DEBET (MASUK)' : 'KREDIT (KELUAR)'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Transaction Title */}
+                        <div className="px-6 md:px-8 py-5 bg-white border-b border-slate-100">
+                            <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1.5">Deskripsi Transaksi</span>
+                            <p className="text-xs font-bold text-slate-700 leading-tight">{selectedJournalItem.keterangan}</p>
+                        </div>
+
+                        {/* Double-Entry Journal Table */}
+                        <div className="p-6 md:p-8 flex-1 overflow-y-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="pb-3 text-[9px] font-black uppercase text-slate-400 tracking-wider">Nama Akun (COA)</th>
+                                        <th className="pb-3 text-[9px] font-black uppercase text-slate-400 tracking-wider text-right">Debet (Rp)</th>
+                                        <th className="pb-3 text-[9px] font-black uppercase text-slate-400 tracking-wider text-right">Kredit (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {/* DEBET TRANSACTION TYPE */}
+                                    {selectedJournalItem.tipe === 'DEBET' && (
+                                        <>
+                                            <tr>
+                                                <td className="py-4 text-xs font-black text-slate-800">
+                                                    Kas dan Bank ({selectedJournalItem.coa})
+                                                </td>
+                                                <td className="py-4 text-xs font-black text-emerald-600 text-right">
+                                                    {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                </td>
+                                                <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 text-xs font-black text-slate-500 pl-8">
+                                                    Pendapatan {selectedJournalItem.coa}
+                                                </td>
+                                                <td className="py-4 text-xs text-slate-355 text-right">-</td>
+                                                <td className="py-4 text-xs font-black text-emerald-600 text-right">
+                                                    {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                </td>
+                                            </tr>
+                                        </>
+                                    )}
+
+                                    {/* KREDIT TRANSACTION TYPE */}
+                                    {selectedJournalItem.tipe === 'KREDIT' && (
+                                        <>
+                                            {selectedJournalItem.unit === 'Pusat (Yayasan)' && selectedJournalItem.coa === 'DANA SPP' ? (
+                                                <>
+                                                    <tr>
+                                                        <td className="py-4 text-xs font-black text-slate-800">
+                                                            Beban Penyaluran Dana RKA (SPP Pusat)
+                                                        </td>
+                                                        <td className="py-4 text-xs font-black text-rose-600 text-right">
+                                                            {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                        </td>
+                                                        <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="py-4 text-xs font-black text-slate-500 pl-8">
+                                                            Kas dan Bank (Dompet SPP)
+                                                        </td>
+                                                        <td className="py-4 text-xs text-slate-355 text-right">-</td>
+                                                        <td className="py-4 text-xs font-black text-rose-600 text-right">
+                                                            {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                        </td>
+                                                    </tr>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <tr>
+                                                        <td className="py-4 text-xs font-black text-slate-800">
+                                                            Beban Operasional {selectedJournalItem.coa}
+                                                        </td>
+                                                        <td className="py-4 text-xs font-black text-rose-600 text-right">
+                                                            {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                        </td>
+                                                        <td className="py-4 text-xs text-slate-350 text-right">-</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="py-4 text-xs font-black text-slate-500 pl-8">
+                                                            Kas dan Bank ({selectedJournalItem.coa})
+                                                        </td>
+                                                        <td className="py-4 text-xs text-slate-355 text-right">-</td>
+                                                        <td className="py-4 text-xs font-black text-rose-600 text-right">
+                                                            {selectedJournalItem.nominal.toLocaleString('id-ID')}
+                                                        </td>
+                                                    </tr>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Total Balance Footer */}
+                        <div className="bg-slate-50 p-6 md:p-8 flex justify-between items-center border-t border-slate-100">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Kondisi Jurnal Balans</span>
+                            <div className="flex gap-6">
+                                <div>
+                                    <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Total Debet</span>
+                                    <span className="text-xs font-black text-emerald-600 tracking-tighter italic">Rp {selectedJournalItem.nominal.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Total Kredit</span>
+                                    <span className="text-xs font-black text-rose-600 tracking-tighter italic">Rp {selectedJournalItem.nominal.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
