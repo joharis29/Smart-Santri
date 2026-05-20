@@ -256,6 +256,36 @@ export default function BukuBesarPage() {
                 }
             });
 
+            // 2.5. Pengeluaran Manual (Kredit): Get manual expenditures for active filterUnit
+            const { data: manualExpenses, error: expErr } = await supabase
+                .from('transaksi_pengeluaran')
+                .select('*')
+                .eq('unit', filterUnit);
+
+            if (expErr) console.error("Error fetching manual expenditures:", expErr);
+
+            manualExpenses?.forEach((item: any) => {
+                let coaName = item.sumber_dana || 'Dana Pesantren/Yayasan';
+                if (coaName === 'SPP' || coaName === 'Dana SPP') {
+                    coaName = 'DANA SPP';
+                }
+
+                entries.push({
+                    id: item.id.substring(0, 8).toUpperCase(),
+                    tanggal: item.tanggal,
+                    keterangan: item.keterangan || `Pengeluaran Manual - ${item.sumber_dana}`,
+                    unit: item.unit,
+                    coa: coaName,
+                    tipe: 'KREDIT',
+                    nominal: Number(item.nominal),
+                    saldo: 0,
+                    refId: item.id.substring(0, 8).toUpperCase(),
+                    metode: item.metode_pencairan || 'Transfer',
+                    bidang: 'Pengeluaran Manual',
+                    tahunAjaran: getTahunAjaranFromDate(item.tanggal)
+                });
+            });
+
             // 3. Kredit (Alokasi SPP - Khusus Pusat): Get approved RKAs funded by Central out of SPP
             if (filterUnit === 'Pusat (Yayasan)') {
                 const { data: approvedRkas, error: rkaErr } = await supabase

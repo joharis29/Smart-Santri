@@ -48,6 +48,7 @@ function hasMenuAccess(role: string, path: string): boolean {
             return ['BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
 
         case '/admin/pendapatan/buat': // Input Pendapatan
+        case '/admin/pengeluaran/buat': // Input Pengeluaran Manual
             return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
         case '/admin/pengajuan/buat': // Buat Pengajuan
@@ -224,7 +225,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           hasMenuAccess(activeRole, '/admin/pengajuan/draft-saya') ||
                           hasMenuAccess(activeRole, '/admin/pengajuan/rekap') ||
                           hasMenuAccess(activeRole, '/admin/pengajuan/riwayat') ||
-                          hasMenuAccess(activeRole, '/admin/realisasi/riwayat')) && (
+                          hasMenuAccess(activeRole, '/admin/realisasi/riwayat') ||
+                          hasMenuAccess(activeRole, '/admin/pengeluaran/buat')) && (
                             <div className="pt-1">
                                 <button 
                                     onClick={() => setExpensesOpen(!expensesOpen)}
@@ -239,6 +241,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 
                                 {expensesOpen && (
                                     <div className="mt-1 space-y-1 px-3">
+                                        {hasMenuAccess(activeRole, '/admin/pengeluaran/buat') && (
+                                            <Link href="/admin/pengeluaran/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <PlusCircle className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                                                <span>Input Pengeluaran Manual</span>
+                                            </Link>
+                                        )}
                                         {hasMenuAccess(activeRole, '/admin/pengajuan/buat') && (
                                             <Link href="/admin/pengajuan/buat" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
