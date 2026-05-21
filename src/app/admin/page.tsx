@@ -47,6 +47,7 @@ export default function AdminDashboardPage() {
   const [userRole, setUserRole] = useState<'STAFF' | 'BENDAHARA_UNIT' | 'KEPALA_UNIT' | 'BENDAHARA_PUSAT'>('BENDAHARA_PUSAT');
   const [activeTab, setActiveTab] = useState<'ALL' | 'RKA' | 'LPJ'>('ALL');
   const [userId, setUserId] = useState<string>('');
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
   // --- FILTER & MODAL STATE ---
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -418,6 +419,8 @@ export default function AdminDashboardPage() {
         }
       } catch (err) {
         console.error('Error fetching dashboard user role:', err);
+      } finally {
+        setIsProfileLoaded(true);
       }
     };
     fetchUserRole();
@@ -475,12 +478,13 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
+    if (!isProfileLoaded) return;
     fetchTransactions();
     fetchLiveBalances();
     if (userRole === 'BENDAHARA_UNIT' || userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT') {
         fetchVerificationQueue();
     }
-  }, [userRole, activeUnit]);
+  }, [userRole, activeUnit, isProfileLoaded]);
 
   // --- DERIVED DATA ---
   const category = (unit: string) => {
@@ -584,6 +588,17 @@ export default function AdminDashboardPage() {
     if (status === 'CAIR') return 'Bendahara Unit/Pusat';
     return 'Pusat';
   })() : '';
+
+  if (!isProfileLoaded) {
+    return (
+      <div className="p-4 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memuat Dasbor...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 md:p-4 space-y-4">

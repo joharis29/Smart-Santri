@@ -87,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [activeUnit, setActiveUnit] = useState<string>('Pusat (Yayasan)');
     const [assignedRoles, setAssignedRoles] = useState<{ role: string; unit_name: string }[]>([]);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -155,6 +156,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 });
             } catch (err) {
                 console.error('Error fetching layout profile:', err);
+            } finally {
+                setIsProfileLoaded(true);
             }
         };
 
@@ -221,10 +224,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <nav className="flex-1 px-4 space-y-1">
-                        <Link href="/admin" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
-                            <LayoutGrid className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                            <span className="font-semibold">Dasbor</span>
-                        </Link>
+                        {isProfileLoaded ? (
+                            <>
+                                <Link href="/admin" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
+                                    <LayoutGrid className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                                    <span className="font-semibold">Dasbor</span>
+                                </Link>
 
                         {/* Menu Pengeluaran (Dropdown) */}
                         {(hasMenuAccess(activeRole, '/admin/pengajuan/buat') ||
@@ -391,6 +396,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         )}
                                     </div>
                                 )}
+                            </div>
+                        )}
+                            </>
+                        ) : (
+                            <div className="flex flex-col gap-2 px-3 py-4">
+                                <div className="h-8 bg-emerald-800/30 animate-pulse rounded-lg"></div>
+                                <div className="h-8 bg-emerald-800/30 animate-pulse rounded-lg"></div>
+                                <div className="h-8 bg-emerald-800/30 animate-pulse rounded-lg"></div>
+                                <div className="h-8 bg-emerald-800/30 animate-pulse rounded-lg mt-4"></div>
+                                <div className="h-8 bg-emerald-800/30 animate-pulse rounded-lg"></div>
                             </div>
                         )}
                     </nav>
