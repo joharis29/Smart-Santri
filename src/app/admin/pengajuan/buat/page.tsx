@@ -941,6 +941,7 @@ function BuatPengajuanContent() {
     const isConfirmed = confirm('Simpan data ini ke folder "Draft Saya"?')
     if (!isConfirmed) return
 
+    setLoading(true)
     const payload = {
       id: editId || undefined,
       unit,
@@ -953,6 +954,8 @@ function BuatPengajuanContent() {
     }
 
     const res = await batchSavePengajuan(payload)
+    setLoading(false)
+    
     if (res.success) {
       alert('Draf Berhasil Disimpan!')
       router.push('/admin/pengajuan/draft-saya')
@@ -965,6 +968,7 @@ function BuatPengajuanContent() {
     const isConfirmed = confirm(`Kirim ${isDapurMode ? 'Laporan' : 'Pengajuan'} ini untuk diperiksa Bendahara?`)
     if (!isConfirmed) return
 
+    setLoading(true)
     const payload = {
       id: editId || undefined,
       unit,
@@ -977,6 +981,8 @@ function BuatPengajuanContent() {
     }
 
     const res = await batchSavePengajuan(payload)
+    setLoading(false)
+    
     if (res.success) {
       alert(`${isDapurMode ? 'Laporan' : 'Pengajuan'} Berhasil Dikirim!`)
       router.push('/admin')

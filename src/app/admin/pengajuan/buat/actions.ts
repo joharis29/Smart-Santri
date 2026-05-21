@@ -16,6 +16,7 @@ export async function batchSavePengajuan(payload: {
 }) {
   try {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
     // 1. Get Real Authenticated User
     const { data: userData, error: authError } = await supabase.auth.getUser()
@@ -55,8 +56,29 @@ export async function batchSavePengajuan(payload: {
     let docId = payload.id;
     
     if (docId) {
-      // Update existing
-      const { error: upError } = await supabase
+      // Security Check: Verify ownership or admin role
+      const { data: existingDoc } = await supabase
+        .from('dokumen_pengajuan')
+        .select('pembuat_id')
+        .eq('id', docId)
+        .maybeSingle();
+
+      if (!existingDoc) return { error: 'Dokumen tidak ditemukan.' };
+
+      if (existingDoc.pembuat_id !== pembuat_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', pembuat_id)
+          .maybeSingle();
+
+        if (!['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(profile?.role || '')) {
+          return { error: 'Anda tidak berhak mengubah dokumen ini.' };
+        }
+      }
+
+      // Update existing using admin client to bypass RLS blocks
+      const { error: upError } = await adminSupabase
         .from('dokumen_pengajuan')
         .update({
           periode_bulan: bulanInt,
@@ -74,10 +96,10 @@ export async function batchSavePengajuan(payload: {
       if (upError) return { error: 'Gagal update dokumen: ' + upError.message };
 
       // Delete old items to replace them
-      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+      await adminSupabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
     } else {
       // Create new
-      const { data: dokumen, error: docError } = await supabase
+      const { data: dokumen, error: docError } = await adminSupabase
         .from('dokumen_pengajuan')
         .insert({
           pembuat_id,
@@ -126,7 +148,7 @@ export async function batchSavePengajuan(payload: {
       }
     })
 
-    const { error: itemError } = await supabase
+    const { error: itemError } = await adminSupabase
       .from('item_pengajuan')
       .insert(itemsToInsert)
 
