@@ -1,0 +1,1 @@
+import { NextResponse } from 'next/server'; import { resetUserPasswordByAdmin } from '@/app/admin/users/actions'; export async function GET() { try { const res = await resetUserPasswordByAdmin('invalid-uuid', 'password123'); return NextResponse.json(res); } catch (err: any) { return NextResponse.json({ error: err.message }, { status: 500 }); } }
