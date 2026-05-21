@@ -1037,44 +1037,20 @@ export default function AdminDashboardPage() {
                                 }
                             });
 
-                            // LPJ: Alokasi dari RKA Rujukan
-                            if (parentRkaData) {
-                                const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
-                                const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
-                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
-                                    return rkaActivityName === lpjActivityName;
-                                }) || [];
-                                const rkaItems = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
-
-                                rkaItems.forEach((it: any) => {
-                                    let rkaDetails: any = {};
-                                    try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                    
-                                    const splits = rkaDetails.fundingSplits || [];
-                                    if (Array.isArray(splits)) {
-                                        splits.forEach((s: any) => {
-                                            const source = s.source || s.sumber || 'Lainnya';
-                                            const amount = Number(s.nominal || s.amount || 0);
-                                            if (amount > 0) summary[source] = (summary[source] || 0) + amount;
-                                        });
-                                    }
-                                });
-                            } else {
-                                // Fallback: use LPJ's own splits
-                                selectedTrxForReview.items?.forEach((it: any) => {
-                                    let details: any = {};
-                                    try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
-                                    
-                                    const splits = details.fundingSplits || [];
-                                    if (Array.isArray(splits)) {
-                                        splits.forEach((s: any) => {
-                                            const source = s.source || s.sumber || 'Lainnya';
-                                            const amount = Number(s.nominal || s.amount || 0);
-                                            if (amount > 0) summary[source] = (summary[source] || 0) + amount;
-                                        });
-                                    }
-                                });
-                            }
+                            // LPJ: Akumulasi Dana dari Realisasi LPJ (Bukan RKA)
+                            selectedTrxForReview.items?.forEach((it: any) => {
+                                let details: any = {};
+                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                
+                                const splits = details.fundingSplits || [];
+                                if (Array.isArray(splits)) {
+                                    splits.forEach((s: any) => {
+                                        const source = s.source || s.sumber || 'Lainnya';
+                                        const amount = Number(s.nominal || s.amount || 0);
+                                        if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                    });
+                                }
+                            });
                         }
                         
                         return (
