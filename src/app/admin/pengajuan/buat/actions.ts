@@ -378,7 +378,39 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
 
   // FETCH DOCUMENT INFO
   const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
+  if (!doc) return { error: "Dokumen tidak ditemukan." }
 
+  // RESOLVE & HEAL UNIT_ID AND JENJANG_ID
+  let docUnitId = doc.unit_id;
+  let docJenjangId = doc.jenjang_id;
+  if (!docUnitId || !docJenjangId) {
+    const { data: unitData } = await supabase.from('unit').select('id, jenjang_id').eq('name', doc.unit).maybeSingle();
+    if (unitData) {
+      docUnitId = unitData.id;
+      docJenjangId = unitData.jenjang_id;
+    }
+  }
+
+  // MANUAL AUTHORIZATION CHECK
+  let isAuthorized = false;
+  const userRole = userProfile?.role;
+  if (['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(userRole)) {
+    isAuthorized = true;
+  } else if (['KEPALA_UNIT', 'BENDAHARA_UNIT'].includes(userRole) && userProfile?.unit_id === docUnitId) {
+    isAuthorized = true;
+  } else if (['KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(userRole) && userProfile?.jenjang_id === docJenjangId) {
+    isAuthorized = true;
+  } else {
+    for (const mr of multiRoleProfiles) {
+      if (['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(mr.role) && mr.unit_id === docUnitId) {
+        isAuthorized = true; break;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang untuk merevisi dokumen ini.` }
+  }
   // FETCH CURRENT ITEMS FOR SNAPSHOT
   const { data: currentItems } = await supabase
     .from('item_pengajuan')
@@ -415,13 +447,17 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   let data = null;
   let error = null;
 
-  // Try updating with riwayat_revisi snapshot
-  const mainUpdate = await supabase
+  const adminClient = createAdminClient();
+
+  // Try updating with riwayat_revisi snapshot & auto-heal missing references
+  const mainUpdate = await adminClient
     .from('dokumen_pengajuan')
     .update({ 
       status: 'REVISI',
       catatan_revisi: catatan,
-      riwayat_revisi: updatedHistory
+      riwayat_revisi: updatedHistory,
+      unit_id: docUnitId,
+      jenjang_id: docJenjangId
     })
     .eq('id', id)
     .select();
@@ -432,11 +468,13 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   // Fallback if riwayat_revisi column is not created yet
   if (error) {
     console.warn("riwayat_revisi column might be missing in Supabase, falling back...", error);
-    const fallbackUpdate = await supabase
+    const fallbackUpdate = await adminClient
       .from('dokumen_pengajuan')
       .update({ 
         status: 'REVISI',
-        catatan_revisi: catatan
+        catatan_revisi: catatan,
+        unit_id: docUnitId,
+        jenjang_id: docJenjangId
       })
       .eq('id', id)
       .select();
@@ -463,7 +501,7 @@ Target Status: DRAFT`
   if (itemNotes) {
     for (const [itemId, note] of Object.entries(itemNotes)) {
       if (note !== undefined) {
-        await supabase
+        await adminClient
           .from('item_pengajuan')
           .update({ catatan_revisi: note })
           .eq('id', itemId);
@@ -517,16 +555,52 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string, metod
 
   // FETCH DOCUMENT INFO
   const { data: doc } = await supabase.from('dokumen_pengajuan').select('*').eq('id', id).maybeSingle()
+  if (!doc) return { error: "Dokumen tidak ditemukan." }
 
+  // RESOLVE & HEAL UNIT_ID AND JENJANG_ID
+  let docUnitId = doc.unit_id;
+  let docJenjangId = doc.jenjang_id;
+  if (!docUnitId || !docJenjangId) {
+    const { data: unitData } = await supabase.from('unit').select('id, jenjang_id').eq('name', doc.unit).maybeSingle();
+    if (unitData) {
+      docUnitId = unitData.id;
+      docJenjangId = unitData.jenjang_id;
+    }
+  }
+
+  // MANUAL AUTHORIZATION CHECK
+  let isAuthorized = false;
+  const userRole = userProfile?.role;
+  if (['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(userRole)) {
+    isAuthorized = true;
+  } else if (['KEPALA_UNIT', 'BENDAHARA_UNIT'].includes(userRole) && userProfile?.unit_id === docUnitId) {
+    isAuthorized = true;
+  } else if (['KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(userRole) && userProfile?.jenjang_id === docJenjangId) {
+    isAuthorized = true;
+  } else {
+    for (const mr of multiRoleProfiles) {
+      if (['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(mr.role) && mr.unit_id === docUnitId) {
+        isAuthorized = true; break;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang untuk menyetujui dokumen ini.` }
+  }
+
+  const adminClient = createAdminClient();
   const updatePayload: any = {
-    status: nextStatus || 'MENUNGGU_KEPALA'
+    status: nextStatus || 'MENUNGGU_KEPALA',
+    unit_id: docUnitId,
+    jenjang_id: docJenjangId
   }
 
   if (metodePencairan) {
     updatePayload.metode_pencairan = metodePencairan
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('dokumen_pengajuan')
     .update(updatePayload)
     .eq('id', id)
