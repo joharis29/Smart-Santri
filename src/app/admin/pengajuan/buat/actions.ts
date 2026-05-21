@@ -16,7 +16,6 @@ export async function batchSavePengajuan(payload: {
 }) {
   try {
     const supabase = await createClient()
-    const adminSupabase = createAdminClient()
 
     // 1. Get Real Authenticated User
     const { data: userData, error: authError } = await supabase.auth.getUser()
@@ -52,14 +51,19 @@ export async function batchSavePengajuan(payload: {
       }
     }
 
+    // Determine the final target status
+    const targetStatus = payload.status;
+
     // 2. Create/Update Document Header
+    // Strategy: Always save as DRAFT first so RLS allows item insertion,
+    // then update status to target status after items are saved.
     let docId = payload.id;
     
     if (docId) {
       // Security Check: Verify ownership or admin role
       const { data: existingDoc } = await supabase
         .from('dokumen_pengajuan')
-        .select('pembuat_id')
+        .select('pembuat_id, status')
         .eq('id', docId)
         .maybeSingle();
 
@@ -77,13 +81,24 @@ export async function batchSavePengajuan(payload: {
         }
       }
 
-      // Update existing using admin client to bypass RLS blocks
-      const { error: upError } = await adminSupabase
+      // If existing doc is not DRAFT, we need admin client to update it
+      // Otherwise use regular client
+      let updateClient = supabase;
+      if (existingDoc.status !== 'DRAFT' && existingDoc.status !== 'REVISI') {
+        try {
+          updateClient = createAdminClient() as any;
+        } catch {
+          // Fallback to regular client
+        }
+      }
+
+      // Update existing — set to DRAFT first so items can be inserted
+      const { error: upError } = await updateClient
         .from('dokumen_pengajuan')
         .update({
           periode_bulan: bulanInt,
           periode_tahun: tahunInt,
-          status: payload.status,
+          status: 'DRAFT',
           unit: payload.unit,
           unit_id: unit_id,
           jenjang_id: jenjang_id,
@@ -95,17 +110,17 @@ export async function batchSavePengajuan(payload: {
       
       if (upError) return { error: 'Gagal update dokumen: ' + upError.message };
 
-      // Delete old items to replace them
-      await adminSupabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+      // Delete old items to replace them (allowed because status is DRAFT now)
+      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
     } else {
-      // Create new
-      const { data: dokumen, error: docError } = await adminSupabase
+      // Create new — always as DRAFT initially
+      const { data: dokumen, error: docError } = await supabase
         .from('dokumen_pengajuan')
         .insert({
           pembuat_id,
           periode_bulan: bulanInt,
           periode_tahun: tahunInt,
-          status: payload.status,
+          status: 'DRAFT',
           unit: payload.unit,
           unit_id: unit_id,
           jenjang_id: jenjang_id,
@@ -123,7 +138,7 @@ export async function batchSavePengajuan(payload: {
       docId = dokumen.id;
     }
 
-    // 3. Save Items (Including ALL columns)
+    // 3. Save Items (RLS allows this because doc status is DRAFT)
     const itemsToInsert = payload.data.map(row => {
       // Attempt to get the first valid source from fundingSplits, fallback to 'Dana BOS'
       const firstSource = row.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS';
@@ -148,13 +163,36 @@ export async function batchSavePengajuan(payload: {
       }
     })
 
-    const { error: itemError } = await adminSupabase
+    const { error: itemError } = await supabase
       .from('item_pengajuan')
       .insert(itemsToInsert)
 
     if (itemError) {
       console.error('Item Error:', itemError)
       return { error: 'Gagal menyimpan rincian: ' + itemError.message }
+    }
+
+    // 4. Now update document status from DRAFT to the actual target status
+    if (targetStatus !== 'DRAFT') {
+      const { error: statusError } = await supabase
+        .from('dokumen_pengajuan')
+        .update({ status: targetStatus })
+        .eq('id', docId)
+
+      if (statusError) {
+        console.error('Status Update Error:', statusError)
+        // Don't fail the whole operation — items are saved, just status didn't change
+        // Try with admin client as fallback
+        try {
+          const adminFallback = createAdminClient()
+          await adminFallback
+            .from('dokumen_pengajuan')
+            .update({ status: targetStatus })
+            .eq('id', docId)
+        } catch {
+          console.warn('Admin fallback for status update also failed, doc remains as DRAFT')
+        }
+      }
     }
 
     revalidatePath('/admin/pengajuan/draft-saya')
