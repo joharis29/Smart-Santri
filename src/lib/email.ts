@@ -1,6 +1,9 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resend: Resend | null = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
 
 const MONTH_NAMES: Record<number, string> = {
   1: 'Januari', 2: 'Februari', 3: 'Maret', 4: 'April',
@@ -130,6 +133,11 @@ export async function sendNotifikasiEmail(params: SendEmailParams): Promise<void
 </html>`
 
   try {
+    if (!resend) {
+      console.warn('[Smart Santri Email] Skipping email, RESEND_API_KEY is not set');
+      return;
+    }
+    
     await resend.emails.send({
       from: 'Smart Santri <onboarding@resend.dev>',
       to: toEmail,
