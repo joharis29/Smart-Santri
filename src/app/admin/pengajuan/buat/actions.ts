@@ -640,6 +640,147 @@ Target Status: ${nextStatus}`
   // Email notification berdasarkan nextStatus — non-blocking
   try {
     const supabaseFresh = await createClient()
+
+    // =====================================================================
+    // FINANCIAL MUTATION LOGIC (Bypassing RLS with adminClient)
+    // =====================================================================
+    if (nextStatus === 'SUDAH_DITERIMA' && doc?.jenis === 'RKA') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: items } = await adminClient.from('item_pengajuan').select('*').eq('dokumen_id', id);
+      
+      if (items && items.length > 0) {
+        for (const item of items) {
+          let itemYayasanAmount = 0;
+          const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
+          const splits = details.fundingSplits || [];
+          
+          if (Array.isArray(splits) && splits.length > 0) {
+              splits.forEach((s: any) => {
+                  const source = (s.source || s.sumber || '').toLowerCase();
+                  const amount = Number(s.amount || s.nominal || 0);
+                  if (source.includes('yayasan') || source.includes('pesantren')) {
+                      itemYayasanAmount += amount;
+                  }
+              });
+          } else {
+              const source = (item.sumber_dana || '').toLowerCase();
+              if (source.includes('yayasan') || source.includes('pesantren')) {
+                  itemYayasanAmount = Number(item.nominal || 0);
+              }
+          }
+
+          if (itemYayasanAmount > 0) {
+              const rkaLabel = item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA';
+              const receiverUnit = doc?.unit || 'Unit';
+              const chosenMetode = metodePencairan || 'Transfer';
+
+              // 1. Insert transaksi_pendapatan -> unit penerima (DEBET)
+              const { error: insErr } = await adminClient
+                  .from('transaksi_pendapatan')
+                  .insert([{
+                      tanggal: todayStr,
+                      unit: receiverUnit,
+                      sumber_dana: 'Dana Pesantren/Yayasan',
+                      nominal: itemYayasanAmount,
+                      jenis_penerimaan: chosenMetode,
+                      nama_bank: '-',
+                      keterangan: `Penerimaan Dana RKA dari Pusat: ${rkaLabel} (ID RKA: ${id})`,
+                      created_by: user?.id || null
+                  }]);
+              if (insErr) console.error("Error inserting RKA pendapatan:", insErr);
+
+              // 2. Insert transaksi_pengeluaran -> Pusat (KREDIT)
+              const { error: expErr } = await adminClient
+                  .from('transaksi_pengeluaran')
+                  .insert([{
+                      tanggal: todayStr,
+                      unit: 'Pusat (Yayasan)',
+                      sumber_dana: 'Dana SPP',
+                      nominal: itemYayasanAmount,
+                      metode_pencairan: chosenMetode,
+                      nama_bank: '-',
+                      keterangan: `Penyaluran RKA ke ${receiverUnit}: ${rkaLabel} (ID RKA: ${id})`,
+                      created_by: user?.id || null
+                  }]);
+                  
+              if (expErr) {
+                  console.error("Error inserting RKA pengeluaran Pusat:", expErr);
+                  // Fallback: update dompet SPP Pusat secara manual
+                  const { data: centralWallet } = await adminClient
+                      .from('dompet_dana')
+                      .select('*')
+                      .is('unit_id', null)
+                      .eq('kategori', 'SPP')
+                      .maybeSingle();
+                  if (centralWallet) {
+                      await adminClient
+                          .from('dompet_dana')
+                          .update({
+                              saldo: Math.max(0, Number(centralWallet.saldo) - itemYayasanAmount),
+                              updated_at: new Date().toISOString()
+                          })
+                          .eq('id', centralWallet.id);
+                  }
+              }
+          }
+        }
+      }
+    }
+
+    if (nextStatus === 'SELESAI' && doc?.jenis === 'LPJ') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: items } = await adminClient.from('item_pengajuan').select('*').eq('dokumen_id', id);
+      const lpjUnit = doc?.unit || 'Unit';
+
+      if (items && items.length > 0) {
+        for (const item of items) {
+          const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
+          const splits = details.fundingSplits || [];
+          const activityLabel = item.judul_kegiatan || item.kegiatan || 'Kegiatan LPJ';
+
+          if (Array.isArray(splits) && splits.length > 0) {
+              for (const split of splits) {
+                  const splitAmount = Number(split.amount || split.nominal || 0);
+                  const splitSource = split.source || split.sumber || 'Dana Pesantren/Yayasan';
+
+                  if (splitAmount > 0) {
+                      const { error: lpjExpErr } = await adminClient
+                          .from('transaksi_pengeluaran')
+                          .insert([{
+                              tanggal: todayStr,
+                              unit: lpjUnit,
+                              sumber_dana: splitSource,
+                              nominal: splitAmount,
+                              metode_pencairan: 'Transfer',
+                              nama_bank: '-',
+                              keterangan: `Realisasi LPJ: ${activityLabel} [${splitSource}] (ID LPJ: ${id})`,
+                              created_by: user?.id || null
+                          }]);
+                      if (lpjExpErr) console.error(`Error inserting LPJ pengeluaran (${splitSource}):`, lpjExpErr);
+                  }
+              }
+          } else {
+              const amount = Number(item.nominal || 0);
+              if (amount > 0) {
+                  const { error: lpjExpErr } = await adminClient
+                      .from('transaksi_pengeluaran')
+                      .insert([{
+                          tanggal: todayStr,
+                          unit: lpjUnit,
+                          sumber_dana: item.sumber_dana || 'Dana Pesantren/Yayasan',
+                          nominal: amount,
+                          metode_pencairan: 'Transfer',
+                          nama_bank: '-',
+                          keterangan: `Realisasi LPJ: ${activityLabel} (ID LPJ: ${id})`,
+                          created_by: user?.id || null
+                      }]);
+                  if (lpjExpErr) console.error("Error inserting LPJ pengeluaran fallback:", lpjExpErr);
+              }
+          }
+        }
+      }
+    }
+
     const bulanName = getBulanName(doc?.periode_bulan)
     const tahunStr = String(doc?.periode_tahun || '')
     const baseParams = {
