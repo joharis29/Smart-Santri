@@ -394,22 +394,30 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   // MANUAL AUTHORIZATION CHECK
   let isAuthorized = false;
   const userRole = userProfile?.role;
+  const approverRoles = ['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'];
+
   if (['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(userRole)) {
     isAuthorized = true;
-  } else if (['KEPALA_UNIT', 'BENDAHARA_UNIT'].includes(userRole) && userProfile?.unit_id === docUnitId) {
-    isAuthorized = true;
-  } else if (['KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(userRole) && userProfile?.jenjang_id === docJenjangId) {
-    isAuthorized = true;
   } else {
-    for (const mr of multiRoleProfiles) {
-      if (['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(mr.role) && mr.unit_id === docUnitId) {
-        isAuthorized = true; break;
+    // Check main profile
+    if (approverRoles.includes(userRole)) {
+      if (userProfile?.unit_id === docUnitId || userProfile?.unit_id === docJenjangId || userProfile?.jenjang_id === docJenjangId) {
+        isAuthorized = true;
+      }
+    }
+    // Check multi-roles
+    if (!isAuthorized) {
+      for (const mr of multiRoleProfiles) {
+        if (approverRoles.includes(mr.role) && (mr.unit_id === docUnitId || mr.unit_id === docJenjangId)) {
+          isAuthorized = true; break;
+        }
       }
     }
   }
 
   if (!isAuthorized) {
-    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang untuk merevisi dokumen ini.` }
+    const diag = `Role:${userRole}, U:${userProfile?.unit_id}, J:${userProfile?.jenjang_id}, DocU:${docUnitId}, DocJ:${docJenjangId}`;
+    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang. [DIAG: ${diag}]` }
   }
   // FETCH CURRENT ITEMS FOR SNAPSHOT
   const { data: currentItems } = await supabase
@@ -571,22 +579,30 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string, metod
   // MANUAL AUTHORIZATION CHECK
   let isAuthorized = false;
   const userRole = userProfile?.role;
+  const approverRoles = ['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'];
+
   if (['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(userRole)) {
     isAuthorized = true;
-  } else if (['KEPALA_UNIT', 'BENDAHARA_UNIT'].includes(userRole) && userProfile?.unit_id === docUnitId) {
-    isAuthorized = true;
-  } else if (['KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(userRole) && userProfile?.jenjang_id === docJenjangId) {
-    isAuthorized = true;
   } else {
-    for (const mr of multiRoleProfiles) {
-      if (['KEPALA_UNIT', 'BENDAHARA_UNIT', 'KEPALA_JENJANG', 'BENDAHARA_JENJANG'].includes(mr.role) && mr.unit_id === docUnitId) {
-        isAuthorized = true; break;
+    // Check main profile
+    if (approverRoles.includes(userRole)) {
+      if (userProfile?.unit_id === docUnitId || userProfile?.unit_id === docJenjangId || userProfile?.jenjang_id === docJenjangId) {
+        isAuthorized = true;
+      }
+    }
+    // Check multi-roles
+    if (!isAuthorized) {
+      for (const mr of multiRoleProfiles) {
+        if (approverRoles.includes(mr.role) && (mr.unit_id === docUnitId || mr.unit_id === docJenjangId)) {
+          isAuthorized = true; break;
+        }
       }
     }
   }
 
   if (!isAuthorized) {
-    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang untuk menyetujui dokumen ini.` }
+    const diag = `Role:${userRole}, U:${userProfile?.unit_id}, J:${userProfile?.jenjang_id}, DocU:${docUnitId}, DocJ:${docJenjangId}`;
+    return { error: `Gagal memproses pengajuan: Anda tidak memiliki wewenang. [DIAG: ${diag}]` }
   }
 
   const adminClient = createAdminClient();
