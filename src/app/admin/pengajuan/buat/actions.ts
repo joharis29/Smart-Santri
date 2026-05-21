@@ -731,7 +731,7 @@ Target Status: ${nextStatus}`
                       await adminClient
                           .from('dompet_dana')
                           .update({
-                              saldo: Math.max(0, Number(centralWallet.saldo) - itemYayasanAmount),
+                              saldo: Number(centralWallet.saldo) - itemYayasanAmount,
                               updated_at: new Date().toISOString()
                           })
                           .eq('id', centralWallet.id);

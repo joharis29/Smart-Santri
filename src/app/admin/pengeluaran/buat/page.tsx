@@ -382,21 +382,8 @@ export default function InputPengeluaranPage() {
                 return uName.trim() === currentUserUnit.trim() && w.kategori === categoryEnum;
             });
 
-            const currentBalance = activeWallet ? Number(activeWallet.saldo || 0) : 0;
+            // Allow negative balances as requested
             const inputNominal = Number(nominal);
-            
-            // Calculate delta decrease
-            const oldTxNominal = editingId ? Number(recentTransactions.find(t => t.id === editingId)?.nominal || 0) : 0;
-            const netDecrease = inputNominal - oldTxNominal;
-
-            if (netDecrease > currentBalance) {
-                setMessage({ 
-                    type: 'error', 
-                    text: `Saldo tidak mencukupi! Dompet ${sumberDana} memiliki saldo aktif sebesar Rp ${currentBalance.toLocaleString('id-ID')}, sedangkan nominal pengeluaran Anda sebesar Rp ${inputNominal.toLocaleString('id-ID')}.` 
-                });
-                setIsSubmitting(false);
-                return;
-            }
 
             const { data: { user } } = await supabase.auth.getUser();
 
