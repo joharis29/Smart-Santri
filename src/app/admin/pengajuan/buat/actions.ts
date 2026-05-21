@@ -308,7 +308,22 @@ export async function getPengajuanById(id: string) {
 export async function submitPengajuan(id: string) {
   const supabase = await createClient()
   
-  const { error } = await supabase
+  // 1. Get current authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized: User not logged in' }
+
+  // 2. Fetch the document using standard client first to ensure RLS access
+  const { data: doc, error: fetchError } = await supabase
+    .from('dokumen_pengajuan')
+    .select('pembuat_id, status')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchError || !doc) return { error: 'Dokumen tidak ditemukan atau akses ditolak.' }
+
+  // 3. Perform the update using the admin client to bypass RLS limits
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
     .from('dokumen_pengajuan')
     .update({ status: 'MENUNGGU_VERIFIKASI' })
     .eq('id', id)
