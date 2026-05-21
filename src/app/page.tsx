@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import {
     ShieldCheck,
     Menu,
@@ -21,6 +22,20 @@ import Link from 'next/link';
 
 export default function LandingPage() {
     const [open, setOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) setIsLoggedIn(true);
+            } catch (err) {
+                console.error('Error checking auth state:', err);
+            }
+        };
+        checkAuth();
+    }, []);
 
     return (
         <div className="font-sans text-slate-900 bg-white overflow-x-hidden relative min-h-screen">
@@ -53,7 +68,9 @@ export default function LandingPage() {
                             <a href="#features" className="font-medium text-secondary hover:text-accent transition-colors">Artikel</a>
                             <a href="#about" className="font-medium text-secondary hover:text-accent transition-colors">Tentang Kami</a>
                             <div className="flex items-center gap-4">
-                                <Link href="/admin" className="px-5 py-2 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent hover:text-white transition-all">Log In</Link>
+                                <Link href="/admin" className="px-5 py-2 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent hover:text-white transition-all">
+                                    {isLoggedIn ? 'Dasbor' : 'Log In'}
+                                </Link>
                                 <a href="#" className="px-5 py-2 bg-accent text-white font-semibold rounded-lg shadow-lg shadow-amber-200 hover:bg-accent-hover transition-all">Hubungi Kami</a>
                             </div>
                         </div>
@@ -69,7 +86,9 @@ export default function LandingPage() {
                         <a href="#features" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Artikel</a>
                         <a href="#about" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Tentang Kami</a>
                         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
-                            <Link href="/admin" onClick={() => setOpen(false)} className="text-center py-2 border-2 border-accent text-accent rounded-lg font-semibold">Log In</Link>
+                            <Link href="/admin" onClick={() => setOpen(false)} className="text-center py-2 border-2 border-accent text-accent rounded-lg font-semibold">
+                                {isLoggedIn ? 'Dasbor' : 'Log In'}
+                            </Link>
                             <a href="#" onClick={() => setOpen(false)} className="text-center py-2 bg-accent text-white rounded-lg font-semibold">Hubungi Kami</a>
                         </div>
                     </div>
