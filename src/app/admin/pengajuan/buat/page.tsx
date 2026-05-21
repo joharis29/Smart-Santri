@@ -953,14 +953,19 @@ function BuatPengajuanContent() {
       data: isDapurMode ? dapurRows : rows
     }
 
-    const res = await batchSavePengajuan(payload)
-    setLoading(false)
-    
-    if (res.success) {
-      alert('Draf Berhasil Disimpan!')
-      router.push('/admin/pengajuan/draft-saya')
-    } else {
-      alert('Gagal menyimpan draf: ' + res.error)
+    try {
+      const res = await batchSavePengajuan(payload)
+      
+      if (res.success) {
+        alert('Draf Berhasil Disimpan!')
+        router.push('/admin/pengajuan/draft-saya')
+      } else {
+        alert('Gagal menyimpan draf: ' + res.error)
+      }
+    } catch (err: any) {
+      alert("Terjadi kesalahan sistem/jaringan: " + err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -980,14 +985,19 @@ function BuatPengajuanContent() {
       data: isDapurMode ? dapurRows : rows
     }
 
-    const res = await batchSavePengajuan(payload)
-    setLoading(false)
-    
-    if (res.success) {
-      alert(`${isDapurMode ? 'Laporan' : 'Pengajuan'} Berhasil Dikirim!`)
-      router.push('/admin')
-    } else {
-      alert('Gagal mengirim pengajuan: ' + res.error)
+    try {
+      const res = await batchSavePengajuan(payload)
+      
+      if (res.success) {
+        alert(`${isDapurMode ? 'Laporan' : 'Pengajuan'} Berhasil Dikirim!`)
+        router.push('/admin')
+      } else {
+        alert('Gagal mengirim pengajuan: ' + res.error)
+      }
+    } catch (err: any) {
+      alert("Terjadi kesalahan sistem/jaringan: " + err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
