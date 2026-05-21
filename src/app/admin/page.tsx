@@ -227,34 +227,6 @@ export default function AdminDashboardPage() {
         }
         
         if (action === 'APPROVE') {
-            let res: any;
-            
-            let docUnitId = selectedTrxForReview.unit_id || null;
-            let docJenjangId = selectedTrxForReview.jenjang_id || null;
-
-            if (!docUnitId || !docJenjangId) {
-                const { data: unitData } = await supabase.from('unit').select('id, jenjang_id').eq('name', selectedTrxForReview.unit).maybeSingle();
-                if (unitData) {
-                    docUnitId = unitData.id;
-                    docJenjangId = unitData.jenjang_id;
-                }
-            }
-
-            let metode: string | undefined = undefined;
-            if (calculatedNextStatus === 'CAIR') {
-                const pencairanDetails = paymentDetails[selectedTrxForReview.id];
-                if (pencairanDetails && pencairanDetails.metodePencairan) {
-                    metode = pencairanDetails.metodePencairan;
-                }
-            }
-
-            res = await verifikasiPengajuan(selectedTrxForReview.id, calculatedNextStatus, metode);
-
-            if (res.error) {
-                alert(res.error);
-                return;
-            }
-
             fetchLiveBalances();
         }
 
