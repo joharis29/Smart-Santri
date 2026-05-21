@@ -22,6 +22,7 @@ import {
 import { createClient } from '@/utils/supabase/client';
 
 import { revisiPengajuan } from '../buat/actions';
+import { forwardPengajuanToKepala } from './actions';
 import { notifyKepalaForwarded } from '../buat/actions';
 
 export default function RekapitulasiDraftPage() {
@@ -208,15 +209,12 @@ export default function RekapitulasiDraftPage() {
         }
 
         setIsForwarding(true);
-        const { error } = await supabase
-            .from('dokumen_pengajuan')
-            .update({ status: 'MENUNGGU_KEPALA' })
-            .in('id', selectedDocIds);
+        const res = await forwardPengajuanToKepala(selectedDocIds);
 
-        if (error) {
-            alert("Gagal meneruskan pengajuan: " + error.message);
+        if (res.error) {
+            alert("Gagal meneruskan pengajuan: " + res.error);
         } else {
-            alert(`Berhasil meneruskan ${selectedDocIds.length} pengajuan ke Kepala Unit.`);
+            alert(`Berhasil meneruskan ${res.count || selectedDocIds.length} pengajuan ke Kepala Unit.`);
             // Send email notification to Kepala Unit (non-blocking)
             notifyKepalaForwarded(selectedDocIds).catch(err => console.error('[notifyKepalaForwarded]', err));
             // Update local queues to remove forwarded items
