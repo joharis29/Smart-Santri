@@ -665,24 +665,28 @@ Target Status: ${nextStatus}`
       
       if (items && items.length > 0) {
         for (const item of items) {
-          // Proses semua sumber dana dari RKA
-          const splitsToProcess: Array<{ source: string, amount: number }> = [];
+          // Sesuai aturan bisnis: HANYA Dana Pesantren/Yayasan yang otomatis cair/ditransfer saat RKA disetujui.
+          // Dana eksternal seperti BOS/BPOPP diinput manual oleh Bendahara Unit melalui Input Pendapatan.
+          let itemYayasanAmount = 0;
           const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
           const splits = details.fundingSplits || [];
           
           if (Array.isArray(splits) && splits.length > 0) {
               splits.forEach((s: any) => {
-                  const source = s.source || s.sumber || 'Dana Pesantren/Yayasan';
+                  const source = (s.source || s.sumber || '').toLowerCase();
                   const amount = Number(s.amount || s.nominal || 0);
-                  if (amount > 0) splitsToProcess.push({ source, amount });
+                  if (source.includes('yayasan') || source.includes('pesantren')) {
+                      itemYayasanAmount += amount;
+                  }
               });
           } else {
-              const source = item.sumber_dana || 'Dana Pesantren/Yayasan';
-              const amount = Number(item.nominal || 0);
-              if (amount > 0) splitsToProcess.push({ source, amount });
+              const source = (item.sumber_dana || '').toLowerCase();
+              if (source.includes('yayasan') || source.includes('pesantren')) {
+                  itemYayasanAmount = Number(item.nominal || 0);
+              }
           }
 
-          for (const split of splitsToProcess) {
+          if (itemYayasanAmount > 0) {
               const rkaLabel = item.judul_kegiatan || item.kegiatan || 'Pengajuan RKA';
               const receiverUnit = doc?.unit || 'Unit';
               const chosenMetode = metodePencairan || 'Transfer';
@@ -693,50 +697,46 @@ Target Status: ${nextStatus}`
                   .insert([{
                       tanggal: todayStr,
                       unit: receiverUnit,
-                      sumber_dana: split.source,
-                      nominal: split.amount,
+                      sumber_dana: 'Dana Pesantren/Yayasan',
+                      nominal: itemYayasanAmount,
                       jenis_penerimaan: chosenMetode,
                       nama_bank: '-',
-                      keterangan: `Penerimaan Dana RKA dari Pusat: ${rkaLabel} [${split.source}] (ID RKA: ${id})`,
+                      keterangan: `Penerimaan Dana RKA dari Pusat: ${rkaLabel} (ID RKA: ${id})`,
                       created_by: user?.id || null
                   }]);
-              if (insErr) console.error(`Error inserting RKA pendapatan (${split.source}):`, insErr);
+              if (insErr) console.error("Error inserting RKA pendapatan:", insErr);
 
               // 2. Insert transaksi_pengeluaran -> Pusat (KREDIT)
-              // Catatan: Pusat selalu mengeluarkan dana dari SPP/Yayasan untuk menutupi transfer ini (hanya jika sumbernya Yayasan/SPP)
-              // Jika BOS, dana biasanya turun langsung ke Unit, jadi Pusat tidak perlu mengeluarkan transaksi KREDIT.
-              if (split.source.toLowerCase().includes('yayasan') || split.source.toLowerCase().includes('spp') || split.source.toLowerCase().includes('pesantren')) {
-                  const { error: expErr } = await adminClient
-                      .from('transaksi_pengeluaran')
-                      .insert([{
-                          tanggal: todayStr,
-                          unit: 'Pusat (Yayasan)',
-                          sumber_dana: 'Dana SPP',
-                          nominal: split.amount,
-                          metode_pencairan: chosenMetode,
-                          nama_bank: '-',
-                          keterangan: `Penyaluran RKA ke ${receiverUnit}: ${rkaLabel} [${split.source}] (ID RKA: ${id})`,
-                          created_by: user?.id || null
-                      }]);
-                  
-                  if (expErr) {
-                      console.error(`Error inserting RKA pengeluaran Pusat (${split.source}):`, expErr);
-                      // Fallback: update dompet SPP Pusat secara manual
-                      const { data: centralWallet } = await adminClient
+              const { error: expErr } = await adminClient
+                  .from('transaksi_pengeluaran')
+                  .insert([{
+                      tanggal: todayStr,
+                      unit: 'Pusat (Yayasan)',
+                      sumber_dana: 'Dana SPP',
+                      nominal: itemYayasanAmount,
+                      metode_pencairan: chosenMetode,
+                      nama_bank: '-',
+                      keterangan: `Penyaluran RKA ke ${receiverUnit}: ${rkaLabel} (ID RKA: ${id})`,
+                      created_by: user?.id || null
+                  }]);
+              
+              if (expErr) {
+                  console.error("Error inserting RKA pengeluaran Pusat:", expErr);
+                  // Fallback: update dompet SPP Pusat secara manual
+                  const { data: centralWallet } = await adminClient
+                      .from('dompet_dana')
+                      .select('*')
+                      .is('unit_id', null)
+                      .eq('kategori', 'SPP')
+                      .maybeSingle();
+                  if (centralWallet) {
+                      await adminClient
                           .from('dompet_dana')
-                          .select('*')
-                          .is('unit_id', null)
-                          .eq('kategori', 'SPP')
-                          .maybeSingle();
-                      if (centralWallet) {
-                          await adminClient
-                              .from('dompet_dana')
-                              .update({
-                                  saldo: Number(centralWallet.saldo) - split.amount,
-                                  updated_at: new Date().toISOString()
-                              })
-                              .eq('id', centralWallet.id);
-                      }
+                          .update({
+                              saldo: Number(centralWallet.saldo) - itemYayasanAmount,
+                              updated_at: new Date().toISOString()
+                          })
+                          .eq('id', centralWallet.id);
                   }
               }
           }
