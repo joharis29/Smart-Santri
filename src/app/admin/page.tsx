@@ -177,6 +177,8 @@ export default function AdminDashboardPage() {
         if (action === 'APPROVE') {
             if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
                 calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'MENUNGGU_KEPALA' : 'REKAP_BENDAHARA';
+            } else if (selectedTrxForReview.rawStatus === 'REKAP_BENDAHARA') {
+                calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
@@ -412,13 +414,23 @@ export default function AdminDashboardPage() {
 
   const fetchVerificationQueue = async () => {
     const supabase = createClient();
+    
+    let statusFilters = ['MENUNGGU_VERIFIKASI'];
+    if (userRole === 'BENDAHARA_UNIT') {
+      statusFilters = ['MENUNGGU_VERIFIKASI'];
+    } else if (userRole === 'KEPALA_UNIT') {
+      statusFilters = ['REKAP_BENDAHARA', 'MENUNGGU_KEPALA'];
+    } else if (userRole === 'BENDAHARA_PUSAT') {
+      statusFilters = ['MENUNGGU_PUSAT', 'DISETUJUI', 'MENUNGGU_CAIR'];
+    }
+
     const { data, error } = await supabase
         .from('dokumen_pengajuan')
         .select(`
             *,
             item_pengajuan(nominal)
         `)
-        .eq('status', 'MENUNGGU_VERIFIKASI')
+        .in('status', statusFilters)
         .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -456,6 +468,7 @@ export default function AdminDashboardPage() {
             let statusColor = 'bg-slate-100 text-slate-500';
             
             if (doc.status === 'MENUNGGU_VERIFIKASI') statusColor = 'bg-sky-100 text-sky-700';
+            else if (doc.status === 'REKAP_BENDAHARA') statusColor = 'bg-purple-100 text-purple-700';
             else if (doc.status === 'MENUNGGU_KEPALA') statusColor = 'bg-amber-100 text-amber-700';
             else if (doc.status === 'MENUNGGU_PUSAT') statusColor = 'bg-orange-100 text-orange-700';
             else if (doc.status === 'DISETUJUI') statusColor = 'bg-emerald-100 text-emerald-700';
@@ -617,7 +630,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchTransactions();
     fetchLiveBalances();
-    if (userRole === 'BENDAHARA_UNIT') {
+    if (userRole === 'BENDAHARA_UNIT' || userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT') {
         fetchVerificationQueue();
     }
   }, [userRole, activeUnit]);
@@ -672,7 +685,7 @@ export default function AdminDashboardPage() {
     // 4. Role-Based Visibility (Workflow Logic Simulation)
     if (userRole === 'BENDAHARA_PUSAT') {
       // Pusat hanya melihat yang sudah disetujui Kepala Unit (MENUNGGU PUSAT) ke atas
-      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REKAP BENDAHARA', 'MENUNGGU KEPALA', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'KEPALA_UNIT') {
       // Kepala Unit melihat yang butuh persetujuannya (MENUNGGU KEPALA) atau yang sudah berjalan lebih lanjut
       if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
@@ -695,7 +708,7 @@ export default function AdminDashboardPage() {
     if (status === 'MENUNGGU VERIFIKASI') {
       return userRole === 'BENDAHARA_UNIT' || userRole === 'BENDAHARA_PUSAT';
     }
-    if (status === 'MENUNGGU KEPALA') {
+    if (status === 'REKAP BENDAHARA' || status === 'MENUNGGU KEPALA') {
       return userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT';
     }
     if (status === 'MENUNGGU PUSAT') {
@@ -716,6 +729,7 @@ export default function AdminDashboardPage() {
   const requiredRoleName = selectedTrxForReview ? (() => {
     const status = selectedTrxForReview.status;
     if (status === 'MENUNGGU VERIFIKASI') return 'Bendahara Unit/Jenjang';
+    if (status === 'REKAP BENDAHARA') return 'Kepala Unit/Jenjang';
     if (status === 'MENUNGGU KEPALA') return 'Kepala Unit/Jenjang';
     if (status === 'MENUNGGU PUSAT') return 'Bendahara Pusat';
     if (status === 'DISETUJUI') return 'Bendahara Pusat';
@@ -1708,7 +1722,7 @@ export default function AdminDashboardPage() {
             {/* Footer Actions - Fixed Bottom */}
             <div className="p-4 bg-white border-t border-slate-100 flex gap-3 shrink-0">
                 {canReview ? (
-                    ['MENUNGGU VERIFIKASI', 'MENUNGGU PUSAT', 'MENUNGGU KEPALA'].includes(selectedTrxForReview.status) ? (
+                    ['MENUNGGU VERIFIKASI', 'REKAP BENDAHARA', 'MENUNGGU PUSAT', 'MENUNGGU KEPALA'].includes(selectedTrxForReview.status) ? (
                         <>
                             <button 
                                 onClick={() => handleReviewAction('REJECT')}
