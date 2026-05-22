@@ -110,7 +110,7 @@ export default function LandingPage() {
                             <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                                 Wujudkan Tata Kelola Keuangan Pesantren yang <span className="text-accent italic">Amanah</span>, Transparan, dan Sesuai Syariah.
                             </h1>
-                                Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SMART SANTRI—Sistem Informasi Akuntansi berbasis web untuk menjaga kemurnian harta pesantren.
+                            Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SMART SANTRI—Sistem Informasi Akuntansi berbasis web untuk menjaga kemurnian harta pesantren.
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <Link href="/register" className="px-8 py-4 bg-accent text-primary font-bold rounded-xl text-center hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
                                     <PlayCircle className="w-5 h-5" /> Coba Demo Sistem
@@ -225,7 +225,7 @@ export default function LandingPage() {
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><ArrowUpRightFromCircle className="w-10 h-10" /></div>
                                 <h4 className="text-white font-bold text-xl mb-2">Validasi Peruntukan</h4>
-                                <p className="text-emerald-50/70 text-sm">Mencegah penggunaan Dana Wakaf untuk keperluan operasional yang tidak sesuai akad.</p>
+                                <p className="text-emerald-50/70 text-sm">Mencegah penggunaan Dana Zakat/Wakaf untuk keperluan operasional yang tidak sesuai akad serta Dana BOS yang tidak sesuai regulasi.</p>
                             </div>
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><Lock className="w-10 h-10" /></div>
@@ -300,21 +300,9 @@ export default function LandingPage() {
                             <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
                                 <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">5</div>
                                 <h4 className="font-bold text-primary text-sm lg:text-base">Pimpinan</h4>
-                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Otorisasi strategis & pengawasan</p>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Pengawasan & pemantauan strategis</p>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-12 bg-gray-50 border-y border-gray-100 relative z-10">
-                <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Didukung Oleh Teknologi Modern</p>
-                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 grayscale opacity-60">
-                        <span className="text-2xl font-black text-slate-800">ASTRO</span>
-                        <span className="text-2xl font-black text-slate-800">SUPABASE</span>
-                        <span className="text-2xl font-black text-slate-800">CLOUDINARY</span>
-                        <span className="text-2xl font-black text-slate-800">TAILWIND</span>
                     </div>
                 </div>
             </section>
@@ -322,11 +310,8 @@ export default function LandingPage() {
             <footer className="bg-primary text-white pt-20 pb-10 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Akuntabilitas Ganda: <br /><span className="text-accent underline decoration-wavy underline-offset-8">Kepada Umat dan Kepada Tuhan.</span></h2>
+                        <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Akuntabilitas Ganda: <br /><span className="text-accent underline decoration-wavy underline-offset-8">Kepada Umat dan Kepada Allah SWT.</span></h2>
                         <p className="text-emerald-200 text-lg mt-6">Smart Santri - Mendigitalkan Kepercayaan, Menjamin Kepatuhan Syariah.</p>
-                        <div className="mt-10">
-                            <Link href="/admin" className="inline-block px-10 py-4 bg-accent text-primary font-black rounded-full hover:scale-110 transition-transform">Dapatkan Akses Sekarang</Link>
-                        </div>
                     </div>
 
                     <hr className="border-emerald-800 mb-8" />
@@ -336,7 +321,7 @@ export default function LandingPage() {
                             <div className="bg-accent p-1 rounded">
                                 <ShieldCheck className="text-primary w-4 h-4" />
                             </div>
-                            <span className="font-bold text-white">Smart Santri © 2024</span>
+                            <span className="font-bold text-white">Smart Santri © 2026</span>
                         </div>
                         <div className="text-center md:text-right">
                             <p>Dikembangkan oleh: <span className="text-white font-semibold">Sidqi Alaudin Johari</span></p>
@@ -368,7 +353,7 @@ export default function LandingPage() {
                                     <p className="text-lg font-black text-slate-800">Admin Sidqi</p>
                                 </div>
                             </div>
-                            
+
                             <div className="flex flex-col gap-3">
                                 <a href="mailto:sidqi.johari@gmail.com" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
                                     <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
@@ -376,7 +361,7 @@ export default function LandingPage() {
                                     </div>
                                     <span className="text-slate-600 font-medium group-hover:text-emerald-700">sidqi.johari@gmail.com</span>
                                 </a>
-                                
+
                                 <a href="https://wa.me/628141986019" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
                                     <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
                                         <Phone className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
