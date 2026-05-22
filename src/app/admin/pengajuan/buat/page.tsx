@@ -440,6 +440,7 @@ function BuatPengajuanContent() {
 
   const [userRole, setUserRole] = useState('')
   const [assignedUnit, setAssignedUnit] = useState('')
+  const isGuest = userRole === 'GUEST'
 
   const [isRkaActive, setIsRkaActive] = useState<boolean>(true)
   const [checkingActive, setCheckingActive] = useState<boolean>(true)
@@ -569,7 +570,13 @@ function BuatPengajuanContent() {
 
   useEffect(() => {
     const fetchCustomMetadata = async () => {
-      if (!unit) return;
+      if (!unit || isGuest) {
+        if (isGuest) {
+            setAvailableBidangs([]);
+            setAvailableSources([]);
+        }
+        return;
+      }
       try {
         const supabase = createClient();
         
@@ -618,7 +625,7 @@ function BuatPengajuanContent() {
 
   // Load Edit Data if ID present
   useEffect(() => {
-    if (editId) {
+    if (editId && !isGuest) {
       const loadData = async () => {
         const res = await getPengajuanById(editId)
         if (res.data) {

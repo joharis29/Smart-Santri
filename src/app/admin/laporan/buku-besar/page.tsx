@@ -199,6 +199,11 @@ export default function BukuBesarPage() {
     const fetchLedger = async () => {
         setIsFetching(true);
         try {
+            if (userRole === 'GUEST') {
+                setLedgerData([]);
+                return;
+            }
+
             const supabase = createClient();
             const entries: LedgerEntry[] = [];
 
@@ -522,7 +527,8 @@ export default function BukuBesarPage() {
 
     // --- ACCESS ENFORCEMENT CONTROL ---
     // Pimpinan & Administrator juga berhak melihat Buku Besar
-    const isAuthorized = isSuperViewer || userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_JENJANG' || userRole === 'BENDAHARA_UNIT' || authorizedUnits.length > 0;
+    // GUEST (Freemium) diizinkan melihat UI kosong
+    const isAuthorized = isSuperViewer || userRole === 'BENDAHARA_PUSAT' || userRole === 'BENDAHARA_JENJANG' || userRole === 'BENDAHARA_UNIT' || userRole === 'GUEST' || authorizedUnits.length > 0;
 
     if (!isAuthorized) {
         return (

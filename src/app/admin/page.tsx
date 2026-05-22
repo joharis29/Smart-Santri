@@ -48,6 +48,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'ALL' | 'RKA' | 'LPJ'>('ALL');
   const [userId, setUserId] = useState<string>('');
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // --- FILTER & MODAL STATE ---
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -416,6 +417,7 @@ export default function AdminDashboardPage() {
 
           setActiveUnit(finalUnit);
           setUserRole(mapProfileRoleToDashboard(savedRole));
+          setIsGuest(cleanRole === 'GUEST');
         }
       } catch (err) {
         console.error('Error fetching dashboard user role:', err);
@@ -479,12 +481,21 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!isProfileLoaded) return;
+    
+    // Jika user adalah tamu/baru (freemium), paksa data kosong dan jangan ambil dari database
+    if (isGuest) {
+      setTransactions([]);
+      setVerificationQueue([]);
+      setBalances({ yayasan: 0, bos: 0, spp: 0 });
+      return;
+    }
+
     fetchTransactions();
     fetchLiveBalances();
     if (userRole === 'BENDAHARA_UNIT' || userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT') {
         fetchVerificationQueue();
     }
-  }, [userRole, activeUnit, isProfileLoaded]);
+  }, [userRole, activeUnit, isProfileLoaded, isGuest]);
 
   // --- DERIVED DATA ---
   const category = (unit: string) => {

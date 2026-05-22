@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { switchActiveProfile } from './users/actions';
@@ -22,7 +23,8 @@ import {
     ShieldAlert,
     PlusCircle,
     Banknote,
-    ToggleLeft
+    ToggleLeft,
+    Lock
 } from 'lucide-react';
 
 const UNITS = [
@@ -34,8 +36,8 @@ function hasMenuAccess(role: string, path: string): boolean {
     if (!role) return true; // Default fallback to avoid layout break while loading
     const cleanRole = role.toUpperCase();
     
-    // Admin has access to everything
-    if (cleanRole === 'ADMINISTRATOR') return true;
+    // Admin has access to everything. GUEST sees everything on sidebar (but restricted on page).
+    if (cleanRole === 'ADMINISTRATOR' || cleanRole === 'GUEST') return true;
 
     switch (path) {
         case '/admin/users': // Manajemen Pengguna
@@ -76,6 +78,7 @@ function hasMenuAccess(role: string, path: string): boolean {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [expensesOpen, setExpensesOpen] = useState(false);
@@ -523,11 +526,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </div>
                         </div>
                     </div>
+                    {/* Main content area */}
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-6 lg:p-8 relative">
+                        {/* Premium Freemium Lock Screen */}
+                        {activeRole === 'GUEST' && !['/admin', '/admin/pengajuan/buat', '/admin/laporan/buku-besar'].includes(pathname) ? (
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-md animate-in fade-in duration-300">
+                                <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-200 max-w-md text-center transform hover:scale-105 transition-transform duration-500">
+                                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-8 ring-emerald-50">
+                                        <Lock className="w-10 h-10" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-3">Fitur Terkunci</h2>
+                                    <p className="text-slate-500 mb-8 leading-relaxed text-sm">
+                                        Anda saat ini menggunakan akun dengan akses terbatas. Berlangganan atau hubungi Administrator untuk menikmati fitur ini secara penuh.
+                                    </p>
+                                    <Link 
+                                        href="/#problem"
+                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <ShieldCheck className="w-5 h-5" />
+                                        Berlangganan Sekarang
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            children
+                        )}
+                    </main>
                 </header>
-
-                <div className="flex-1 bg-slate-50/50">
-                    {children}
-                </div>
             </main>
         </div>
     );
