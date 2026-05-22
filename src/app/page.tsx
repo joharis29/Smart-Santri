@@ -20,7 +20,10 @@ import {
     Mail,
     Phone,
     MapPin,
-    ChevronDown
+    ChevronDown,
+    FileText,
+    BarChart3,
+    ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -123,13 +126,79 @@ export default function LandingPage() {
                         </div>
                         <div className="relative">
                             <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl">
-                                <div className="bg-slate-800 rounded-xl aspect-video flex items-center justify-center overflow-hidden border border-slate-700 relative group">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src="/dashboard-preview.png" alt="Pratinjau Dasbor Smart Santri" className="opacity-90 group-hover:scale-105 transition-transform duration-700 w-full h-full object-cover" />
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="bg-primary/80 p-4 rounded-full">
-                                            <LayoutDashboard className="w-12 h-12 text-accent" />
+                                <div className="bg-slate-50 rounded-xl aspect-[4/3] overflow-hidden border border-slate-200 relative group flex flex-col shadow-inner">
+                                    
+                                    {/* Top Navigation Mock */}
+                                    <div className="h-8 md:h-10 bg-white border-b border-slate-200 flex items-center px-4 justify-between z-10 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                                            <span className="text-[10px] md:text-xs font-bold text-primary tracking-tight">Smart Santri</span>
                                         </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-16 h-3 bg-slate-100 rounded-full hidden sm:block"></div>
+                                            <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-100 border border-emerald-200"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-1 overflow-hidden">
+                                        {/* Sidebar Mock */}
+                                        <div className="w-12 md:w-16 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-4 z-10 shadow-sm">
+                                            <div className="w-6 h-6 md:w-8 md:h-8 rounded bg-emerald-50 border border-emerald-100 flex items-center justify-center"><LayoutDashboard className="w-3 h-3 md:w-4 md:h-4 text-emerald-600"/></div>
+                                            <div className="w-6 h-6 md:w-8 md:h-8 rounded hover:bg-slate-50 flex items-center justify-center transition-colors"><FileText className="w-3 h-3 md:w-4 md:h-4 text-slate-400"/></div>
+                                            <div className="w-6 h-6 md:w-8 md:h-8 rounded hover:bg-slate-50 flex items-center justify-center transition-colors"><BarChart3 className="w-3 h-3 md:w-4 md:h-4 text-slate-400"/></div>
+                                        </div>
+                                        
+                                        {/* Main Content Mock */}
+                                        <div className="flex-1 p-4 md:p-6 bg-slate-50 flex flex-col gap-4">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <div className="text-[9px] md:text-[11px] text-slate-500 mb-1 font-medium">Total Saldo Yayasan</div>
+                                                    <div className="text-sm md:text-lg font-black text-slate-800 tracking-tight">Rp 1.250.000.000</div>
+                                                </div>
+                                                <div className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[8px] md:text-[10px] font-bold rounded">Bulan Ini</div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                                <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+                                                    <div className="text-[8px] md:text-[10px] text-slate-500 mb-1 font-medium">Pemasukan</div>
+                                                    <div className="text-xs md:text-sm font-bold text-emerald-600">+ Rp 150.000.000</div>
+                                                </div>
+                                                <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+                                                    <div className="text-[8px] md:text-[10px] text-slate-500 mb-1 font-medium">Pengeluaran</div>
+                                                    <div className="text-xs md:text-sm font-bold text-red-500">- Rp 45.000.000</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex-1">
+                                                <div className="text-[9px] md:text-xs font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">Aktivitas Terakhir</div>
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2 md:gap-3">
+                                                            <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center"><ChevronRight className="w-3 h-3 text-emerald-500"/></div>
+                                                            <div className="text-[9px] md:text-[11px] text-slate-600 font-medium">Penerimaan SPP</div>
+                                                        </div>
+                                                        <div className="text-[9px] md:text-[11px] font-bold text-emerald-600">+ Rp 2.500.000</div>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2 md:gap-3">
+                                                            <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-red-50 border border-red-100 flex items-center justify-center"><ChevronRight className="w-3 h-3 text-red-500"/></div>
+                                                            <div className="text-[9px] md:text-[11px] text-slate-600 font-medium">Operasional Dapur</div>
+                                                        </div>
+                                                        <div className="text-[9px] md:text-[11px] font-bold text-red-500">- Rp 1.200.000</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Interactive Overlay */}
+                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/90 transition-colors duration-500 flex flex-col items-center justify-center pointer-events-none z-20">
+                                        <div className="opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-500 bg-white p-4 rounded-full shadow-2xl mb-3">
+                                            <LayoutDashboard className="w-8 h-8 text-primary" />
+                                        </div>
+                                        <p className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 text-emerald-50 font-bold text-sm tracking-wide">
+                                            Masuk ke Dasbor
+                                        </p>
                                     </div>
                                 </div>
                             </div>
