@@ -70,7 +70,7 @@ export default function LandingPage() {
 
                         <div className="hidden md:flex items-center space-x-8">
                             <Link href="/artikel" className="font-medium text-secondary hover:text-accent transition-colors">Artikel</Link>
-                            <a href="#about" className="font-medium text-secondary hover:text-accent transition-colors">Tentang Kami</a>
+                            <Link href="/tentang-kami" className="font-medium text-secondary hover:text-accent transition-colors">Tentang Kami</Link>
                             <div className="flex items-center gap-4">
                                 <Link href="/admin" className="px-5 py-2 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent hover:text-white transition-all">
                                     {isLoggedIn ? 'Dasbor' : 'Log In'}
@@ -88,7 +88,7 @@ export default function LandingPage() {
                 {open && (
                     <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-4 shadow-lg absolute w-full">
                         <Link href="/artikel" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Artikel</Link>
-                        <a href="#about" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Tentang Kami</a>
+                        <Link href="/tentang-kami" onClick={() => setOpen(false)} className="block font-medium py-2 text-secondary hover:text-primary">Tentang Kami</Link>
                         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
                             <Link href="/admin" onClick={() => setOpen(false)} className="text-center py-2 border-2 border-accent text-accent rounded-lg font-semibold">
                                 {isLoggedIn ? 'Dasbor' : 'Log In'}
