@@ -30,16 +30,16 @@ export default function TentangKamiPage() {
             </div>
 
             {/* Content Section */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10 -mt-16">
-                <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 md:p-12 border border-slate-100 space-y-16">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 -mt-16">
+                <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 md:p-8 border border-slate-100 space-y-8">
                     
                     {/* Apa itu */}
                     <section>
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><LayoutDashboard className="w-6 h-6" /></div>
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3 mb-3">
+                            <div className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg"><LayoutDashboard className="w-5 h-5" /></div>
                             Apa Itu Smart Santri?
                         </h2>
-                        <p className="text-slate-600 leading-relaxed text-lg">
+                        <p className="text-slate-600 leading-relaxed text-base">
                             <strong className="text-slate-800 font-black">Smart Santri</strong> adalah Sistem Informasi Akuntansi berbasis web yang dirancang secara khusus untuk mendigitalkan dan menjaga tata kelola keuangan di lingkungan pondok pesantren. Kami menyebutnya sebagai <i>"Digital Guard"</i> atau penjaga amanah di era modern. Smart Santri menjembatani nilai-nilai kepercayaan lisan (tradisional) pesantren dengan sistem pencatatan terintegrasi, transparan, dan dapat diaudit secara profesional.
                         </p>
                     </section>
@@ -48,11 +48,11 @@ export default function TentangKamiPage() {
 
                     {/* Tujuan */}
                     <section>
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-amber-100 text-amber-700 rounded-lg"><Target className="w-6 h-6" /></div>
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3 mb-3">
+                            <div className="p-1.5 bg-amber-100 text-amber-700 rounded-lg"><Target className="w-5 h-5" /></div>
                             Tujuan Kami
                         </h2>
-                        <p className="text-slate-600 leading-relaxed text-lg mb-6">
+                        <p className="text-slate-600 leading-relaxed text-base mb-4">
                             Tujuan utama dari Smart Santri adalah <strong className="text-emerald-700 font-black">"Menjaga Kemurnian Harta Pesantren"</strong>. Kami memahami bahwa dana yang dikelola pesantren (seperti Dana BOS, Zakat, Wakaf, Infaq, dan SPP) memiliki pertanggungjawaban ganda: kepada umat (donatur/wali santri/pemerintah) dan kepada Allah SWT. Oleh karena itu, Smart Santri diciptakan agar pesantren senantiasa patuh terhadap ISAK 335, Pedoman Akuntansi Pesantren (PAP), Juknis BOS dan SOP Pesantren itu sendiri dengan cara:
                         </p>
                         <ul className="space-y-4">
@@ -61,8 +61,8 @@ export default function TentangKamiPage() {
                                 'Mempercepat siklus pengeluaran dan pelaporan keuangan tanpa mengorbankan ketelitian.',
                                 'Menciptakan Jejak Audit digital yang permanen demi pertanggungjawaban yang jelas.'
                             ].map((item, i) => (
-                                <li key={i} className="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <div className="w-6 h-6 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">{i+1}</div>
+                                <li key={i} className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
+                                    <div className="w-5 h-5 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">{i+1}</div>
                                     <span className="text-slate-700">{item}</span>
                                 </li>
                             ))}
@@ -73,40 +73,40 @@ export default function TentangKamiPage() {
 
                     {/* Keunggulan */}
                     <section>
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-8">
-                            <div className="p-2 bg-blue-100 text-blue-700 rounded-lg"><Shield className="w-6 h-6" /></div>
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3 mb-4">
+                            <div className="p-1.5 bg-blue-100 text-blue-700 rounded-lg"><Shield className="w-5 h-5" /></div>
                             Keunggulan Utama
                         </h2>
                         
-                        <div className="grid md:grid-cols-2 gap-8">
+                        <div className="grid md:grid-cols-2 gap-4">
                             {/* Card 1 */}
-                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-6 hover:shadow-lg transition-shadow group">
-                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors text-emerald-700">
-                                    <ShieldCheck className="w-6 h-6" />
+                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-4 hover:shadow-lg transition-shadow group">
+                                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors text-emerald-700">
+                                    <ShieldCheck className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-lg text-slate-800 mb-2">1. Kepatuhan Syariah, ISAK 335 dan PAP</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">1. Kepatuhan Syariah, ISAK 335 dan PAP</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed">
                                     Sistem pertama yang dilengkapi dengan <i>Automated Sharia Compliance Validator</i>. Smart Santri secara otomatis mendeteksi dan mencegah penggunaan dana yang tidak sesuai dengan akadnya. Misalnya, menolak (<i>auto-reject</i>) percobaan penggunaan Dana Wakaf untuk operasional rutin.
                                 </p>
                             </div>
 
                             {/* Card 2 */}
-                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-6 hover:shadow-lg transition-shadow group">
-                                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-500 group-hover:text-white transition-colors text-amber-700">
-                                    <Users className="w-6 h-6" />
+                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-4 hover:shadow-lg transition-shadow group">
+                                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-amber-500 group-hover:text-white transition-colors text-amber-700">
+                                    <Users className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-lg text-slate-800 mb-2">2. Pengendalian Internal Berbasis COSO</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">2. Pengendalian Internal Berbasis COSO</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed">
                                     Menerapkan struktur otorisasi berjenjang (Mulai dari Staf, Bendahara Unit, Kepala Unit, Bendahara Pusat hingga Pimpinan). Secara drastis menekan risiko <i>human error</i> dan manipulasi (<i>fraud</i>) karena setiap pergerakan tercatat transparan.
                                 </p>
                             </div>
 
                             {/* Card 3 */}
-                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-6 hover:shadow-lg transition-shadow group">
-                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors text-blue-700">
-                                    <Layers className="w-6 h-6" />
+                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-4 hover:shadow-lg transition-shadow group">
+                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors text-blue-700">
+                                    <Layers className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-lg text-slate-800 mb-2">3. Pemisahan Dana (Fund Accounting)</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">3. Pemisahan Dana (Fund Accounting)</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed">
                                     Secara bawaan, dompet dana dibagi mutlak:<br/>
                                     • <strong>Dana Dengan Pembatasan:</strong> Zakat, Wakaf Terikat, Titipan.<br/>
@@ -116,11 +116,11 @@ export default function TentangKamiPage() {
                             </div>
 
                             {/* Card 4 */}
-                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-6 hover:shadow-lg transition-shadow group">
-                                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors text-purple-700">
-                                    <LayoutDashboard className="w-6 h-6" />
+                            <div className="bg-white border-2 border-emerald-50 rounded-2xl p-4 hover:shadow-lg transition-shadow group">
+                                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition-colors text-purple-700">
+                                    <LayoutDashboard className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-lg text-slate-800 mb-2">4. Transisi yang Mudah (User-Friendly)</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">4. Transisi yang Mudah (User-Friendly)</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed">
                                     Meski menggunakan standar akuntansi profesional tinggi, antarmuka (UI/UX) Smart Santri didesain secara elegan dan sederhana agar mudah dipahami oleh staf pesantren tanpa latar belakang akuntansi formal.
                                 </p>
@@ -128,9 +128,9 @@ export default function TentangKamiPage() {
                         </div>
                     </section>
 
-                    <div className="bg-slate-900 text-white p-8 rounded-2xl text-center relative overflow-hidden">
+                    <div className="bg-slate-900 text-white p-6 rounded-2xl text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
-                        <p className="font-serif text-xl md:text-2xl font-bold relative z-10 italic">
+                        <p className="font-serif text-lg md:text-xl font-bold relative z-10 italic">
                             &quot;Smart Santri – Digitizing Trust, Ensuring Sharia Compliance.&quot;
                         </p>
                     </div>
