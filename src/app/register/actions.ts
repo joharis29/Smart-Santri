@@ -32,6 +32,10 @@ export async function signup(formData: FormData) {
     redirect('/register?error=' + encodeURIComponent(error.message))
   }
 
+  // Mencegah auto-login bawaan Supabase ketika "Confirm Email" dimatikan
+  // Dengan ini, pengguna dipaksa untuk mengisi form login secara manual
+  await supabase.auth.signOut()
+
   // Redirect to register page with success message
-  redirect('/register?message=' + encodeURIComponent('Pendaftaran berhasil! Silakan periksa kotak masuk email Anda untuk melakukan verifikasi akun.'))
+  redirect('/register?message=' + encodeURIComponent('Pendaftaran berhasil! Silakan klik "Masuk di sini" untuk masuk dengan email dan kata sandi Anda.'))
 }
