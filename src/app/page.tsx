@@ -19,7 +19,8 @@ import {
     Layers,
     Mail,
     Phone,
-    MapPin
+    MapPin,
+    ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -137,6 +138,13 @@ export default function LandingPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#problem" className="text-accent hover:text-white transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8 opacity-80" />
+                    </a>
                 </div>
             </section>
 
