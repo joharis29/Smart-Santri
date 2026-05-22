@@ -137,11 +137,14 @@ export default function BukuBesarPage() {
                     .maybeSingle() as any;
 
                 if (!profile) {
+                    setUserRole('GUEST');
+                    setUserUnit('Pusat (Yayasan)');
+                    setAuthorizedUnits([]);
                     setIsLoading(false);
                     return;
                 }
 
-                const role = profile.role || '';
+                const role = profile.role || 'GUEST';
                 const primaryUnit = profile.unit?.name || 'Pusat (Yayasan)';
                 setUserRole(role);
                 setUserUnit(primaryUnit);

@@ -532,15 +532,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </div>
                         </div>
                     </div>
-                    {/* Main content area */}
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-6 lg:p-8 relative">
+                </header>
+                {/* Main content area */}
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-6 lg:p-8 relative">
                         {/* Premium Freemium Lock Screen */}
                         {(!isProfileLoaded) ? (
                             <div className="flex items-center justify-center min-h-[60vh]">
                                 <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         ) : activeRole === 'GUEST' && !['/admin', '/admin/pengajuan/buat', '/admin/laporan/buku-besar'].includes(pathname) ? (
-                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-md animate-in fade-in duration-300">
+                            <div className="flex flex-col items-center justify-center min-h-[70vh] animate-in fade-in duration-300">
                                 <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-200 max-w-md text-center transform hover:scale-105 transition-transform duration-500">
                                     <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-8 ring-emerald-50">
                                         <Lock className="w-10 h-10" />
@@ -562,7 +563,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             children
                         )}
                     </main>
-                </header>
             </main>
         </div>
     );
