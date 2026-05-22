@@ -125,7 +125,7 @@ export default function LandingPage() {
                             <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl">
                                 <div className="bg-slate-800 rounded-xl aspect-video flex items-center justify-center overflow-hidden border border-slate-700 relative group">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" alt="Pratinjau Dasbor" className="opacity-80 group-hover:scale-110 transition-transform duration-500 w-full h-full object-cover" />
+                                    <img src="/dashboard-preview.png" alt="Pratinjau Dasbor Smart Santri" className="opacity-90 group-hover:scale-105 transition-transform duration-700 w-full h-full object-cover" />
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                         <div className="bg-primary/80 p-4 rounded-full">
                                             <LayoutDashboard className="w-12 h-12 text-accent" />
@@ -195,7 +195,7 @@ export default function LandingPage() {
                             <div className="relative">
                                 <div className="absolute -top-4 -left-4 w-64 h-64 bg-accent/20 rounded-full blur-3xl"></div>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src="https://images.unsplash.com/photo-1584291527905-f930791814b0?auto=format&fit=crop&q=80&w=800" alt="Philosophy" className="rounded-3xl shadow-2xl relative z-10 border-8 border-white w-full h-auto" />
+                                <img src="/philosophy-logo.png" alt="Logo Filosofi Smart Santri" className="rounded-3xl shadow-2xl relative z-10 border-8 border-white w-full h-auto object-cover aspect-square" />
                             </div>
                         </div>
                         <div className="lg:w-1/2">
