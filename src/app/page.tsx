@@ -16,13 +16,17 @@ import {
     ArrowUpRightFromCircle,
     Lock,
     BookOpen,
-    Layers
+    Layers,
+    Mail,
+    Phone,
+    MapPin
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LandingPage() {
     const [open, setOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -71,7 +75,7 @@ export default function LandingPage() {
                                 <Link href="/admin" className="px-5 py-2 border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent hover:text-white transition-all">
                                     {isLoggedIn ? 'Dasbor' : 'Log In'}
                                 </Link>
-                                <a href="#" className="px-5 py-2 bg-accent text-white font-semibold rounded-lg shadow-lg shadow-amber-200 hover:bg-accent-hover transition-all">Hubungi Kami</a>
+                                <button onClick={(e) => { e.preventDefault(); setIsContactModalOpen(true); }} className="px-5 py-2 bg-accent text-white font-semibold rounded-lg shadow-lg shadow-amber-200 hover:bg-accent-hover transition-all">Hubungi Kami</button>
                             </div>
                         </div>
 
@@ -89,7 +93,7 @@ export default function LandingPage() {
                             <Link href="/admin" onClick={() => setOpen(false)} className="text-center py-2 border-2 border-accent text-accent rounded-lg font-semibold">
                                 {isLoggedIn ? 'Dasbor' : 'Log In'}
                             </Link>
-                            <a href="#" onClick={() => setOpen(false)} className="text-center py-2 bg-accent text-white rounded-lg font-semibold">Hubungi Kami</a>
+                            <button onClick={(e) => { e.preventDefault(); setOpen(false); setIsContactModalOpen(true); }} className="text-center py-2 bg-accent text-white rounded-lg font-semibold">Hubungi Kami</button>
                         </div>
                     </div>
                 )}
@@ -338,6 +342,61 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
+
+            {/* Contact Modal */}
+            {isContactModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsContactModalOpen(false)}></div>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-emerald-100">
+                        <div className="bg-primary p-6 text-white text-center relative">
+                            <button onClick={() => setIsContactModalOpen(false)} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                            <h3 className="font-serif text-2xl font-bold mb-2 tracking-tight">Hubungi Kami</h3>
+                            <p className="text-emerald-100 text-sm">Ada pertanyaan? Kami siap membantu Anda.</p>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="flex items-center gap-4 group">
+                                <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors shadow-inner">
+                                    <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Administrator</p>
+                                    <p className="text-lg font-black text-slate-800">Admin Sidqi</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-3">
+                                <a href="mailto:sidqi.johari@gmail.com" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
+                                    <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
+                                        <Mail className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
+                                    </div>
+                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">sidqi.johari@gmail.com</span>
+                                </a>
+                                
+                                <a href="https://wa.me/628141986019" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
+                                    <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
+                                        <Phone className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
+                                    </div>
+                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">+62 814 1986 019</span>
+                                </a>
+
+                                <div className="flex items-start gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100 mt-2">
+                                    <div className="p-2 bg-white rounded-lg shadow-sm mt-1 shrink-0">
+                                        <MapPin className="w-5 h-5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 mb-1">Kantor Pusat</p>
+                                        <p className="text-[13px] text-slate-500 leading-relaxed">
+                                            Jl. Ir.H. Djuanda No.78, Sentul, Kota Bogor, Jawa Barat 16810
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
