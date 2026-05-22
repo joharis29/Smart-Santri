@@ -297,18 +297,11 @@ export default function BukuBesarPage() {
         }
     };
 
-    // Re-fetch transactions when active filterUnit is updated (Bendahara)
+    // Trigger fetch ONLY after access checking is done
     useEffect(() => {
+        if (isLoading) return;
         fetchLedger();
-    }, [filterUnit]);
-
-    // Khusus super viewer (Pimpinan/Admin): filterUnit tetap '' sehingga
-    // useEffect filterUnit tidak re-trigger. Fetch manual saat isSuperViewer siap.
-    useEffect(() => {
-        if (isSuperViewer) {
-            fetchLedger();
-        }
-    }, [isSuperViewer]);
+    }, [filterUnit, isSuperViewer, isLoading, userRole]);
 
 
     // --- DYNAMIC IN-MEMORY QUERY FILTERS ---
