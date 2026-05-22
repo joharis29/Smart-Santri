@@ -179,6 +179,13 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#about" className="text-emerald-600/40 hover:text-emerald-600 transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8" />
+                    </a>
+                </div>
             </section>
 
             <section id="about" className="py-20 overflow-hidden bg-white relative z-10">
@@ -209,6 +216,13 @@ export default function LandingPage() {
                             </ul>
                         </div>
                     </div>
+                </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#features" className="text-emerald-600/40 hover:text-emerald-600 transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8" />
+                    </a>
                 </div>
             </section>
 
@@ -243,9 +257,16 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#pondasi" className="text-emerald-600/40 hover:text-emerald-600 transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8" />
+                    </a>
+                </div>
             </section>
 
-            <section className="py-20 bg-slate-50 relative z-10">
+            <section id="pondasi" className="py-20 bg-slate-50 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="font-serif text-center text-3xl md:text-4xl font-bold text-primary mb-16">Dua Pondasi Kokoh</h2>
                     <div className="grid md:grid-cols-2 gap-0 rounded-3xl overflow-hidden shadow-xl">
@@ -276,9 +297,16 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#alur" className="text-emerald-600/40 hover:text-emerald-600 transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8" />
+                    </a>
+                </div>
             </section>
 
-            <section className="py-20 bg-white relative z-10">
+            <section id="alur" className="py-20 bg-white relative z-10">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="font-serif text-center text-3xl font-bold text-primary mb-16">Alur Kerja Sistem Keuangan</h2>
                     <div className="relative">
@@ -313,9 +341,16 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Blinking Scroll Arrow */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce z-20">
+                    <a href="#footer" className="text-emerald-600/40 hover:text-emerald-600 transition-colors" aria-label="Scroll Down">
+                        <ChevronDown className="w-8 h-8" />
+                    </a>
+                </div>
             </section>
 
-            <footer className="bg-primary text-white pt-20 pb-10 relative z-10">
+            <footer id="footer" className="bg-primary text-white pt-20 pb-10 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Akuntabilitas Ganda: <br /><span className="text-accent underline decoration-wavy underline-offset-8">Kepada Umat dan Kepada Allah SWT.</span></h2>
