@@ -220,7 +220,7 @@ export default function LandingPage() {
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
                                 <div className="text-accent mb-4"><FileSearch2 className="w-10 h-10" /></div>
                                 <h4 className="text-white font-bold text-xl mb-2">Deteksi Akad Otomatis</h4>
-                                <p className="text-emerald-50/70 text-sm">Kecerdasan buatan yang mengklasifikasikan transaksi sesuai standar ISAK 335.</p>
+                                <p className="text-emerald-50/70 text-sm">Kecerdasan buatan yang mengklasifikasikan transaksi sesuai standar ISAK 335, Pedoman Akuntansi Pesantren (PAP), dan Juknis BOS.</p>
                             </div>
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><ArrowUpRightFromCircle className="w-10 h-10" /></div>
@@ -230,7 +230,7 @@ export default function LandingPage() {
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><Lock className="w-10 h-10" /></div>
                                 <h4 className="text-white font-bold text-xl mb-2">Pencegahan Preventif</h4>
-                                <p className="text-emerald-50/70 text-sm">Fitur <i>Tolak Otomatis</i> jika sistem mendeteksi ketidaksesuaian antara dana dan akad.</p>
+                                <p className="text-emerald-50/70 text-sm">Memberikan rekomendasi audit cerdas melalui teknologi <i>Retrieval-Augmented Generation (RAG)</i> saat terdeteksi ketidaksesuaian antara dana dan akad.</p>
                             </div>
                         </div>
                     </div>

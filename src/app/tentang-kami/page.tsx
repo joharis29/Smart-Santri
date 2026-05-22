@@ -86,7 +86,7 @@ export default function TentangKamiPage() {
                                 </div>
                                 <h3 className="font-bold text-base text-slate-800 mb-1.5">1. Kepatuhan Syariah, ISAK 335 dan PAP</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed text-justify">
-                                    Sistem pertama yang dilengkapi dengan <i>Validator Kepatuhan Syariah Otomatis</i>. Smart Santri secara otomatis mendeteksi dan mencegah penggunaan dana yang tidak sesuai dengan akadnya. Misalnya, menolak (<i>tolak otomatis</i>) percobaan penggunaan Dana Wakaf untuk operasional rutin.
+                                    Sistem pertama yang dilengkapi dengan <i>Validator Kepatuhan Syariah Otomatis</i>. Smart Santri secara cerdas mendeteksi ketidaksesuaian penggunaan dana dengan akadnya. Melalui teknologi <i>Retrieval-Augmented Generation (RAG)</i>, sistem akan memberikan rekomendasi audit kepada Pimpinan jika terdapat potensi penyimpangan, seperti percobaan penggunaan Dana Wakaf untuk operasional rutin.
                                 </p>
                             </div>
 
