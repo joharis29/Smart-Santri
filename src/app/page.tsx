@@ -124,7 +124,7 @@ export default function LandingPage() {
                             <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl">
                                 <div className="bg-slate-800 rounded-xl aspect-video flex items-center justify-center overflow-hidden border border-slate-700 relative group">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" alt="Dashboard Preview" className="opacity-80 group-hover:scale-110 transition-transform duration-500 w-full h-full object-cover" />
+                                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" alt="Pratinjau Dasbor" className="opacity-80 group-hover:scale-110 transition-transform duration-500 w-full h-full object-cover" />
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                         <div className="bg-primary/80 p-4 rounded-full">
                                             <LayoutDashboard className="w-12 h-12 text-accent" />
@@ -152,7 +152,7 @@ export default function LandingPage() {
                             <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500 transition-colors">
                                 <AlertTriangle className="text-red-600 group-hover:text-white" />
                             </div>
-                            <h3 className="font-bold text-xl mb-3 text-primary">Fund Commingling</h3>
+                            <h3 className="font-bold text-xl mb-3 text-primary">Percampuran Dana</h3>
                             <p className="text-slate-600 leading-relaxed">Risiko tercampurnya dana zakat, wakaf, dan operasional yang membahayakan kepatuhan syariah.</p>
                         </div>
                         <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-xl transition-shadow group">
@@ -185,7 +185,7 @@ export default function LandingPage() {
                         </div>
                         <div className="lg:w-1/2">
                             <span className="text-accent font-bold tracking-widest uppercase text-sm">Filosofi Kami</span>
-                            <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mt-4 mb-6">Digital Guard: Penjaga Amanah di Era Modern</h2>
+                            <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mt-4 mb-6">Garda Digital: Penjaga Amanah di Era Modern</h2>
                             <p className="text-slate-600 text-lg mb-6 leading-relaxed">
                                 Kami percaya bahwa teknologi bukan sekadar alat, melainkan wasilah untuk memastikan setiap rupiah yang dititipkan umat dikelola dengan standar akuntansi tertinggi.
                             </p>
@@ -212,8 +212,8 @@ export default function LandingPage() {
                         </div>
 
                         <div className="relative z-10 text-center mb-12">
-                            <h2 className="font-serif text-3xl md:text-5xl font-bold text-white mb-4">Automated Sharia Compliance Validator</h2>
-                            <p className="text-emerald-100 text-lg">Fitur premium pertama yang menjamin kepatuhan syariah secara real-time.</p>
+                            <h2 className="font-serif text-3xl md:text-5xl font-bold text-white mb-4">Validator Kepatuhan Syariah Otomatis</h2>
+                            <p className="text-emerald-100 text-lg">Fitur premium pertama yang menjamin kepatuhan syariah secara waktu nyata (real-time).</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8 relative z-10">
@@ -230,7 +230,7 @@ export default function LandingPage() {
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><Lock className="w-10 h-10" /></div>
                                 <h4 className="text-white font-bold text-xl mb-2">Pencegahan Preventif</h4>
-                                <p className="text-emerald-50/70 text-sm">Fitur <i>Auto-Reject</i> jika sistem mendeteksi ketidaksesuaian antara dana dan akad.</p>
+                                <p className="text-emerald-50/70 text-sm">Fitur <i>Tolak Otomatis</i> jika sistem mendeteksi ketidaksesuaian antara dana dan akad.</p>
                             </div>
                         </div>
                     </div>
@@ -256,14 +256,14 @@ export default function LandingPage() {
                         <div className="bg-white p-12 text-slate-800 border-y md:border-y-0 md:border-r">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3 bg-primary rounded-lg text-accent"><Layers /></div>
-                                <h3 className="text-2xl font-bold text-primary">Pengendalian Internal (COSO Framework)</h3>
+                                <h3 className="text-2xl font-bold text-primary">Pengendalian Internal (Kerangka COSO)</h3>
                             </div>
                             <p className="text-slate-600 leading-relaxed mb-6">
                                 Mengurangi risiko <i>human error</i> dan <i>fraud</i> melalui sistem otorisasi berjenjang dan pencatatan jejak audit digital yang permanen.
                             </p>
                             <div className="flex gap-4">
                                 <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold uppercase tracking-wider">Otorisasi</span>
-                                <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold uppercase tracking-wider">Audit Trail</span>
+                                <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold uppercase tracking-wider">Jejak Audit</span>
                             </div>
                         </div>
                     </div>
@@ -309,7 +309,7 @@ export default function LandingPage() {
 
             <section className="py-12 bg-gray-50 border-y border-gray-100 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Powering by Modern Tech Stack</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Didukung Oleh Teknologi Modern</p>
                     <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 grayscale opacity-60">
                         <span className="text-2xl font-black text-slate-800">ASTRO</span>
                         <span className="text-2xl font-black text-slate-800">SUPABASE</span>
@@ -323,7 +323,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Akuntabilitas Ganda: <br /><span className="text-accent underline decoration-wavy underline-offset-8">Kepada Umat dan Kepada Tuhan.</span></h2>
-                        <p className="text-emerald-200 text-lg mt-6">Smart Santri - Digitizing Trust, Ensuring Sharia Compliance.</p>
+                        <p className="text-emerald-200 text-lg mt-6">Smart Santri - Mendigitalkan Kepercayaan, Menjamin Kepatuhan Syariah.</p>
                         <div className="mt-10">
                             <Link href="/admin" className="inline-block px-10 py-4 bg-accent text-primary font-black rounded-full hover:scale-110 transition-transform">Dapatkan Akses Sekarang</Link>
                         </div>

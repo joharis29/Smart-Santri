@@ -40,7 +40,7 @@ export default function TentangKamiPage() {
                             Apa Itu Smart Santri?
                         </h2>
                         <p className="text-slate-600 leading-relaxed text-base text-justify">
-                            <strong className="text-slate-800 font-black">Smart Santri</strong> adalah Sistem Informasi Akuntansi berbasis web yang dirancang secara khusus untuk mendigitalkan dan menjaga tata kelola keuangan di lingkungan pondok pesantren. Kami menyebutnya sebagai <i>"Digital Guard"</i> atau penjaga amanah di era modern. Smart Santri menjembatani nilai-nilai kepercayaan lisan (tradisional) pesantren dengan sistem pencatatan terintegrasi, transparan, dan dapat diaudit secara profesional.
+                            <strong className="text-slate-800 font-black">Smart Santri</strong> adalah Sistem Informasi Akuntansi berbasis web yang dirancang secara khusus untuk mendigitalkan dan menjaga tata kelola keuangan di lingkungan pondok pesantren. Kami menyebutnya sebagai <i>"Garda Digital"</i> atau penjaga amanah di era modern. Smart Santri menjembatani nilai-nilai kepercayaan lisan (tradisional) pesantren dengan sistem pencatatan terintegrasi, transparan, dan dapat diaudit secara profesional.
                         </p>
                     </section>
 
@@ -57,7 +57,7 @@ export default function TentangKamiPage() {
                         </p>
                         <ul className="space-y-4">
                             {[
-                                'Mencegah praktik Fund Commingling (tercampurnya dana terikat dan dana operasional umum).',
+                                'Mencegah praktik Percampuran Dana (tercampurnya dana terikat dan dana operasional umum).',
                                 'Mempercepat siklus pengeluaran dan pelaporan keuangan tanpa mengorbankan ketelitian.',
                                 'Menciptakan Jejak Audit digital yang permanen demi pertanggungjawaban yang jelas.'
                             ].map((item, i) => (
@@ -86,7 +86,7 @@ export default function TentangKamiPage() {
                                 </div>
                                 <h3 className="font-bold text-base text-slate-800 mb-1.5">1. Kepatuhan Syariah, ISAK 335 dan PAP</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed text-justify">
-                                    Sistem pertama yang dilengkapi dengan <i>Automated Sharia Compliance Validator</i>. Smart Santri secara otomatis mendeteksi dan mencegah penggunaan dana yang tidak sesuai dengan akadnya. Misalnya, menolak (<i>auto-reject</i>) percobaan penggunaan Dana Wakaf untuk operasional rutin.
+                                    Sistem pertama yang dilengkapi dengan <i>Validator Kepatuhan Syariah Otomatis</i>. Smart Santri secara otomatis mendeteksi dan mencegah penggunaan dana yang tidak sesuai dengan akadnya. Misalnya, menolak (<i>tolak otomatis</i>) percobaan penggunaan Dana Wakaf untuk operasional rutin.
                                 </p>
                             </div>
 
@@ -95,9 +95,9 @@ export default function TentangKamiPage() {
                                 <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-amber-500 group-hover:text-white transition-colors text-amber-700">
                                     <Users className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-base text-slate-800 mb-1.5">2. Pengendalian Internal Berbasis COSO</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">2. Pengendalian Internal Berbasis Kerangka COSO</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed text-justify">
-                                    Menerapkan struktur otorisasi berjenjang (Mulai dari Staf, Bendahara Unit, Kepala Unit, Bendahara Pusat hingga Pimpinan). Secara drastis menekan risiko <i>human error</i> dan manipulasi (<i>fraud</i>) karena setiap pergerakan tercatat transparan.
+                                    Menerapkan struktur otorisasi berjenjang (Mulai dari Staf, Bendahara Unit, Kepala Unit, Bendahara Pusat hingga Pimpinan). Secara drastis menekan risiko <i>kesalahan manusia</i> dan manipulasi (<i>kecurangan</i>) karena setiap pergerakan tercatat transparan.
                                 </p>
                             </div>
 
@@ -106,7 +106,7 @@ export default function TentangKamiPage() {
                                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors text-blue-700">
                                     <Layers className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-base text-slate-800 mb-1.5">3. Pemisahan Dana (Fund Accounting)</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">3. Pemisahan Dana (Akuntansi Dana)</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed text-justify">
                                     Secara bawaan, dompet dana dibagi mutlak:<br/>
                                     • <strong>Dana Dengan Pembatasan:</strong> Zakat, Wakaf Terikat, Titipan.<br/>
@@ -120,7 +120,7 @@ export default function TentangKamiPage() {
                                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition-colors text-purple-700">
                                     <LayoutDashboard className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-base text-slate-800 mb-1.5">4. Transisi yang Mudah (User-Friendly)</h3>
+                                <h3 className="font-bold text-base text-slate-800 mb-1.5">4. Transisi yang Mudah (Ramah Pengguna)</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed text-justify">
                                     Meski menggunakan standar akuntansi profesional tinggi, antarmuka (UI/UX) Smart Santri didesain secara elegan dan sederhana agar mudah dipahami oleh staf pesantren tanpa latar belakang akuntansi formal.
                                 </p>
@@ -131,7 +131,7 @@ export default function TentangKamiPage() {
                     <div className="bg-slate-900 text-white p-6 rounded-2xl text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
                         <p className="font-serif text-lg md:text-xl font-bold relative z-10 italic">
-                            &quot;Smart Santri – Digitizing Trust, Ensuring Sharia Compliance.&quot;
+                            &quot;Smart Santri – Mendigitalkan Kepercayaan, Menjamin Kepatuhan Syariah.&quot;
                         </p>
                     </div>
 
