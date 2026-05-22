@@ -110,9 +110,7 @@ export default function LandingPage() {
                             <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                                 Wujudkan Tata Kelola Keuangan Pesantren yang <span className="text-accent italic">Amanah</span>, Transparan, dan Sesuai Syariah.
                             </h1>
-                            <p className="text-emerald-100 text-lg md:text-xl mb-8 leading-relaxed">
-                                Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SMART SANTRI—Sistem Informasi Akuntansi Kas berbasis web untuk menjaga kemurnian harta pesantren.
-                            </p>
+                                Tinggalkan pencatatan manual yang berisiko. Beralihlah ke SMART SANTRI—Sistem Informasi Akuntansi berbasis web untuk menjaga kemurnian harta pesantren.
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <Link href="/register" className="px-8 py-4 bg-accent text-primary font-bold rounded-xl text-center hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
                                     <PlayCircle className="w-5 h-5" /> Coba Demo Sistem
@@ -135,7 +133,7 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="absolute -bottom-6 -left-6 bg-accent p-4 rounded-lg shadow-xl hidden md:block z-20">
-                                <p className="text-primary font-bold text-sm">✓ Terintegrasi ISAK 35</p>
+                                <p className="text-primary font-bold text-sm">✓ Terintegrasi ISAK 335</p>
                             </div>
                         </div>
                     </div>
@@ -146,7 +144,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-16">
                         <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary mb-4">Mengubah &quot;Kepercayaan Lisan&quot; Menjadi &quot;Sistem Terintegrasi&quot;</h2>
-                        <p className="text-slate-600 italic">Smart Santri hadir mendigitalkan Siklus Pengeluaran Kas untuk menjaga amanah.</p>
+                        <p className="text-slate-600 italic">Smart Santri hadir mendigitalkan Tata Kelola Keuangan untuk menjaga amanah.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
@@ -222,7 +220,7 @@ export default function LandingPage() {
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
                                 <div className="text-accent mb-4"><FileSearch2 className="w-10 h-10" /></div>
                                 <h4 className="text-white font-bold text-xl mb-2">Deteksi Akad Otomatis</h4>
-                                <p className="text-emerald-50/70 text-sm">Kecerdasan buatan yang mengklasifikasikan transaksi sesuai standar ISAK 35.</p>
+                                <p className="text-emerald-50/70 text-sm">Kecerdasan buatan yang mengklasifikasikan transaksi sesuai standar ISAK 335.</p>
                             </div>
                             <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                                 <div className="text-accent mb-4"><ArrowUpRightFromCircle className="w-10 h-10" /></div>
@@ -246,7 +244,7 @@ export default function LandingPage() {
                         <div className="bg-emerald-800 p-12 text-white">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3 bg-accent rounded-lg text-primary"><BookOpen /></div>
-                                <h3 className="text-2xl font-bold">Kepatuhan Syariah & Regulasi (ISAK 35)</h3>
+                                <h3 className="text-2xl font-bold">Kepatuhan Syariah, ISAK 335 & PAP</h3>
                             </div>
                             <p className="text-emerald-100 leading-relaxed mb-6">
                                 Menjamin transparansi dengan memisahkan Dana Dengan Pembatasan (Zakat/Wakaf Terikat) dan Dana Tanpa Pembatasan (Operasional/Infaq Umum).
@@ -278,26 +276,31 @@ export default function LandingPage() {
                     <div className="relative">
                         <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-emerald-100 -translate-y-1/2"></div>
 
-                        <div className="grid md:grid-cols-4 gap-8 relative z-10">
-                            <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
-                                <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">1</div>
-                                <h4 className="font-bold text-primary">Staf Unit</h4>
-                                <p className="text-xs text-slate-500 mt-2">Input pengajuan dana & unggah bukti/RAB</p>
+                        <div className="grid md:grid-cols-5 gap-4 relative z-10">
+                            <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">1</div>
+                                <h4 className="font-bold text-primary text-sm lg:text-base">Staf Unit</h4>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Input pengajuan dana & unggah bukti</p>
                             </div>
-                            <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
-                                <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">2</div>
-                                <h4 className="font-bold text-primary">Kepala Unit</h4>
-                                <p className="text-xs text-slate-500 mt-2">Verifikasi kesesuaian program & anggaran</p>
+                            <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">2</div>
+                                <h4 className="font-bold text-primary text-sm lg:text-base">Bendahara Unit</h4>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Verifikasi awal & ketersediaan dana</p>
                             </div>
-                            <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
-                                <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">3</div>
-                                <h4 className="font-bold text-primary">Pimpinan</h4>
-                                <p className="text-xs text-slate-500 mt-2">Otorisasi strategis (Persetujuan Akhir)</p>
+                            <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">3</div>
+                                <h4 className="font-bold text-primary text-sm lg:text-base">Kepala Unit</h4>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Persetujuan program & anggaran</p>
                             </div>
-                            <div className="bg-white p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
-                                <div className="w-12 h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-4 font-bold">4</div>
-                                <h4 className="font-bold text-primary">Bendahara</h4>
-                                <p className="text-xs text-slate-500 mt-2">Eksekusi pembayaran & pencatatan jurnal</p>
+                            <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">4</div>
+                                <h4 className="font-bold text-primary text-sm lg:text-base">Bendahara Pusat</h4>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Validasi akhir & eksekusi pencairan</p>
+                            </div>
+                            <div className="bg-white p-4 lg:p-6 rounded-xl border-2 border-emerald-50 text-center shadow-lg">
+                                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary text-accent rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4 font-bold text-sm lg:text-base">5</div>
+                                <h4 className="font-bold text-primary text-sm lg:text-base">Pimpinan</h4>
+                                <p className="text-[11px] lg:text-xs text-slate-500 mt-2 leading-relaxed">Otorisasi strategis & pengawasan</p>
                             </div>
                         </div>
                     </div>
