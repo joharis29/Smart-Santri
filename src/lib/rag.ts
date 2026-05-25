@@ -1,18 +1,7 @@
 import { GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { createClient } from '@/utils/supabase/server'
 
-// Inisialisasi model
-const embeddings = new GoogleGenerativeAIEmbeddings({
-  apiKey: process.env.GEMINI_API_KEY,
-  modelName: 'gemini-embedding-2', // Harus sesuai dengan dimensi vektor database (3072)
-})
-
-const llm = new ChatGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  model: 'gemini-1.5-flash',
-  temperature: 0, // 0 = Paling kaku dan patuh aturan (tidak halusinasi)
-  maxOutputTokens: 512,
-})
+// Inisialisasi model dipindahkan ke dalam fungsi untuk mencegah error build Vercel
 
 export interface AuditResult {
   status: 'AMAN' | 'ANOMALI'
@@ -31,6 +20,19 @@ export async function auditNarasi(
   const supabase = await createClient()
 
   try {
+    // Inisialisasi model (ditaruh di sini agar tidak memicu error saat Vercel static build time)
+    const embeddings = new GoogleGenerativeAIEmbeddings({
+      apiKey: process.env.GEMINI_API_KEY,
+      modelName: 'gemini-embedding-2',
+    })
+
+    const llm = new ChatGoogleGenerativeAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: 'gemini-1.5-flash',
+      temperature: 0,
+      maxOutputTokens: 512,
+    })
+
     // 1. Embed query (Ubah teks narasi menjadi angka vektor)
     const queryVector = await embeddings.embedQuery(narasi)
 
