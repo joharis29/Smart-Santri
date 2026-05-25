@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.local' })
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
   apiKey: process.env.GEMINI_API_KEY,
-  modelName: 'gemini-embedding-2', // 3072 dimensi dari Google Gemini
+  modelName: 'gemini-embedding-001', // 3072 dimensi dari Google Gemini
 })
 
 const splitter = new RecursiveCharacterTextSplitter({
@@ -29,6 +29,14 @@ const REGULASI_DIR = path.join(process.cwd(), 'docs', 'regulasi')
 
 async function ingest() {
   console.log('Memulai proses ingestion dokumen regulasi...')
+  
+  console.log('Menghapus data chunks lama dari database...')
+  const { error: deleteError } = await supabase.from('document_chunks').delete().not('id', 'is', null)
+  if (deleteError) {
+    console.error('Gagal menghapus data lama:', deleteError)
+    return
+  }
+  console.log('Data lama berhasil dihapus.\n')
   
   // Baca semua folder di dalam docs/regulasi
   const sources = ['ISAK335', 'PAP', 'JUKNIS_BOS', 'SOP_PESANTREN']
@@ -69,47 +77,48 @@ async function ingest() {
         const chunks = await splitter.splitText(text)
         console.log(`    → Dokumen dipecah menjadi ${chunks.length} chunks`)
         
-        // Batch embedding (max 20 per request) untuk menghindari rate limit API Gemini Free Tier
-        for (let i = 0; i < chunks.length; i += 20) {
-          const batch = chunks.slice(i, i + 20)
-          console.log(`    → Embedding batch ${Math.floor(i/20) + 1}...`)
+        // Embedding satu per satu untuk menghindari bug empty array atau rate limit dari Gemini
+        for (let i = 0; i < chunks.length; i++) {
+          const content = chunks[i]
+          console.log(`    → Embedding chunk ${i + 1}/${chunks.length}...`)
           
-          let vectors: number[][] = [];
+          let vector: number[] = [];
           let retries = 0;
           while (retries < 5) {
             try {
-              vectors = await embeddings.embedDocuments(batch)
-              if (vectors && vectors.length > 0 && vectors[0].length > 0) {
+              const res = await embeddings.embedDocuments([content])
+              if (res && res.length > 0 && res[0].length > 0) {
+                vector = res[0];
                 break; // Berhasil
               }
             } catch (err: any) {
-              console.log(`      [Retry] API Error: ${err.message}`)
+              console.log(`      [Retry] API Error:`, err)
             }
             
-            console.warn(`    ⚠️ Gagal mendapatkan embedding (Rate limit/Error). Menunggu 15 detik sebelum retry ke-${retries + 1}...`)
-            await new Promise(resolve => setTimeout(resolve, 15000))
+            console.warn(`    ⚠️ Gagal mendapatkan embedding. Menunggu 5 detik sebelum retry ke-${retries + 1}...`)
+            await new Promise(resolve => setTimeout(resolve, 5000))
             retries++;
           }
           
-          if (retries >= 5 || !vectors || vectors.length === 0 || vectors[0].length === 0) {
-             console.error(`    ❌ Gagal total mendapatkan embedding setelah 5 retry. Melewati batch ini.`)
-             continue
+          if (retries >= 5 || !vector || vector.length === 0) {
+             console.error(`    ❌ Gagal total mendapatkan embedding setelah 5 retry. Menghentikan proses untuk file ini.`)
+             break; // Stop file ini jika gagal beruntun
           }
 
-          const rows = batch.map((content, j) => ({
+          const row = {
             source: source,
-            content,
-            embedding: vectors[j],
-            metadata: { file_name: file, chunk_index: i + j }
-          }))
+            content: content,
+            embedding: vector,
+            metadata: { file_name: file, chunk_index: i }
+          }
           
-          const { error } = await supabase.from('document_chunks').insert(rows)
+          const { error } = await supabase.from('document_chunks').insert(row)
           if (error) {
-             console.error(`    ❌ Gagal insert batch:`, error.message)
+             console.error(`    ❌ Gagal insert chunk ${i}:`, error.message)
           }
 
-          // Delay 4.5 detik antar batch agar aman dari limit 15 request per minute (4 detik = 15 request)
-          await new Promise(resolve => setTimeout(resolve, 4500))
+          // Delay 2 detik antar chunk agar aman dari rate limit (15 request per minute free tier = 4 detik, tapi kita coba 2 detik)
+          await new Promise(resolve => setTimeout(resolve, 2000))
         }
         console.log(`    ✅ File ${file} selesai diproses`)
       } catch (err: any) {

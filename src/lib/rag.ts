@@ -24,7 +24,7 @@ export async function auditNarasi(
     // Inisialisasi model (ditaruh di sini agar tidak memicu error saat Vercel static build time)
     const embeddings = new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GEMINI_API_KEY,
-      modelName: 'gemini-embedding-2',
+      modelName: 'gemini-embedding-001',
     })
 
     const llm = new ChatGoogleGenerativeAI({
