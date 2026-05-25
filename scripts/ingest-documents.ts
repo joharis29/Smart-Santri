@@ -1,4 +1,4 @@
-import { OpenAIEmbeddings } from '@langchain/openai'
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { createClient } from '@supabase/supabase-js'
 import * as fs from 'fs'
@@ -9,9 +9,9 @@ const pdf = require('pdf-parse')
 // Load env vars
 dotenv.config({ path: '.env.local' })
 
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: process.env.OPENAI_API_KEY,
-  modelName: 'text-embedding-3-small',  // 1536 dimensi, hemat biaya
+const embeddings = new GoogleGenerativeAIEmbeddings({
+  apiKey: process.env.GEMINI_API_KEY,
+  modelName: 'gemini-embedding-2', // 3072 dimensi dari Google Gemini
 })
 
 const splitter = new RecursiveCharacterTextSplitter({
@@ -69,12 +69,33 @@ async function ingest() {
         const chunks = await splitter.splitText(text)
         console.log(`    → Dokumen dipecah menjadi ${chunks.length} chunks`)
         
-        // Batch embedding (max 100 per request) untuk menghindari limit API
-        for (let i = 0; i < chunks.length; i += 100) {
-          const batch = chunks.slice(i, i + 100)
-          console.log(`    → Embedding batch ${Math.floor(i/100) + 1}...`)
-          const vectors = await embeddings.embedDocuments(batch)
+        // Batch embedding (max 20 per request) untuk menghindari rate limit API Gemini Free Tier
+        for (let i = 0; i < chunks.length; i += 20) {
+          const batch = chunks.slice(i, i + 20)
+          console.log(`    → Embedding batch ${Math.floor(i/20) + 1}...`)
           
+          let vectors: number[][] = [];
+          let retries = 0;
+          while (retries < 5) {
+            try {
+              vectors = await embeddings.embedDocuments(batch)
+              if (vectors && vectors.length > 0 && vectors[0].length > 0) {
+                break; // Berhasil
+              }
+            } catch (err: any) {
+              console.log(`      [Retry] API Error: ${err.message}`)
+            }
+            
+            console.warn(`    ⚠️ Gagal mendapatkan embedding (Rate limit/Error). Menunggu 15 detik sebelum retry ke-${retries + 1}...`)
+            await new Promise(resolve => setTimeout(resolve, 15000))
+            retries++;
+          }
+          
+          if (retries >= 5 || !vectors || vectors.length === 0 || vectors[0].length === 0) {
+             console.error(`    ❌ Gagal total mendapatkan embedding setelah 5 retry. Melewati batch ini.`)
+             continue
+          }
+
           const rows = batch.map((content, j) => ({
             source: source,
             content,
@@ -86,6 +107,9 @@ async function ingest() {
           if (error) {
              console.error(`    ❌ Gagal insert batch:`, error.message)
           }
+
+          // Delay 4.5 detik antar batch agar aman dari limit 15 request per minute (4 detik = 15 request)
+          await new Promise(resolve => setTimeout(resolve, 4500))
         }
         console.log(`    ✅ File ${file} selesai diproses`)
       } catch (err: any) {

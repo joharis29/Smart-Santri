@@ -20,7 +20,8 @@ import {
     AlertTriangle,
     Activity,
     Tag,
-    GraduationCap
+    GraduationCap,
+    Bot
 } from 'lucide-react';
 import Link from 'next/link';
 import ExcelJS from 'exceljs';
@@ -64,6 +65,41 @@ export default function RiwayatDokumenPage() {
     const [detailRkaDoc, setDetailRkaDoc] = useState<any>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [selectedRevisionSnapshot, setSelectedRevisionSnapshot] = useState<any>(null);
+    
+    // AI Audit States
+    const [isAuditing, setIsAuditing] = useState(false);
+    const [auditResult, setAuditResult] = useState<any>(null);
+
+    const handleAuditAI = async () => {
+        if (!selectedItemForDetail?.itemId) return;
+        setIsAuditing(true);
+        setAuditResult(null);
+        try {
+            const res = await fetch('/api/audit-lpj', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: selectedItemForDetail.itemId, jenis: 'LPJ' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAuditResult(data.result);
+                // Update local detail object so it persists in UI without refresh
+                if (detailLpjDoc && detailLpjDoc.item_pengajuan) {
+                    const idx = detailLpjDoc.item_pengajuan.findIndex((it: any) => it.id === selectedItemForDetail.itemId);
+                    if (idx > -1) {
+                        detailLpjDoc.item_pengajuan[idx].status_audit_ai = data.result.status;
+                        detailLpjDoc.item_pengajuan[idx].catatan_ai = data.result;
+                    }
+                }
+            } else {
+                alert("Audit gagal: " + (data.error || "Unknown error"));
+            }
+        } catch (e: any) {
+            alert("Terjadi kesalahan jaringan saat Audit AI.");
+        } finally {
+            setIsAuditing(false);
+        }
+    };
 
     const handleViewDetail = async (item: RiwayatDokumen) => {
         setSelectedItemForDetail(item);
@@ -1318,11 +1354,49 @@ export default function RiwayatDokumenPage() {
                                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-50/30">
                                     {/* Status & Summary Bar */}
                                     <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status LPJ:</span>
-                                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                SELESAI & DIARSIPKAN
-                                            </span>
+                                        <div className="flex flex-col gap-2 w-full md:w-auto">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status LPJ:</span>
+                                                <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                    SELESAI & DIARSIPKAN
+                                                </span>
+                                            </div>
+
+                                            {/* AI Audit Status & Button */}
+                                            {(() => {
+                                                const lpjItem = selectedRevisionSnapshot && selectedRevisionSnapshot.type === 'LPJ'
+                                                    ? selectedRevisionSnapshot.items?.[0]
+                                                    : detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+                                                
+                                                const aiStatus = auditResult?.status || lpjItem?.status_audit_ai || 'PENDING';
+                                                
+                                                return (
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <button
+                                                            onClick={handleAuditAI}
+                                                            disabled={isAuditing}
+                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isAuditing ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95 cursor-pointer'}`}
+                                                        >
+                                                            {isAuditing ? (
+                                                                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <Bot className="w-3.5 h-3.5 text-blue-100" />
+                                                            )}
+                                                            {isAuditing ? 'Menganalisis...' : 'Audit Smart AI'}
+                                                        </button>
+                                                        
+                                                        {aiStatus !== 'PENDING' && (
+                                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
+                                                                aiStatus === 'AMAN' 
+                                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                                                    : 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse'
+                                                            }`}>
+                                                                {aiStatus === 'AMAN' ? '✅ Lolos Audit AI' : '⚠️ Anomali Ditemukan'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         
                                         {detailRkaDoc && (() => {
@@ -1586,12 +1660,41 @@ export default function RiwayatDokumenPage() {
                                         
                                         return (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* Left: Notes */}
-                                                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2 shadow-sm">
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Catatan & Penjelasan LPJ:</p>
-                                                    <p className="text-xs text-slate-700 italic leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold">
-                                                        {lpjDetails.narasi || 'Tidak ada catatan khusus yang disertakan.'}
-                                                    </p>
+                                                {/* Left: Notes & AI Audit */}
+                                                <div className="space-y-4">
+                                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2 shadow-sm">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Catatan & Penjelasan LPJ:</p>
+                                                        <p className="text-xs text-slate-700 italic leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold">
+                                                            {lpjDetails.narasi || 'Tidak ada catatan khusus yang disertakan.'}
+                                                        </p>
+                                                    </div>
+
+                                                    {(auditResult || lpjItem?.catatan_ai) && (() => {
+                                                        const aiNotes = auditResult || lpjItem?.catatan_ai;
+                                                        const isAman = aiNotes.status === 'AMAN';
+                                                        return (
+                                                            <div className={`bg-white p-4 rounded-2xl border space-y-3 shadow-sm ${isAman ? 'border-emerald-200' : 'border-rose-200'}`}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Bot className={`w-4 h-4 ${isAman ? 'text-emerald-600' : 'text-rose-600'}`} />
+                                                                    <p className={`text-[9px] font-black uppercase tracking-widest ${isAman ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                        Hasil Analisis Smart AI: {isAman ? 'AMAN' : 'ANOMALI'}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                                                    {aiNotes.alasan?.map((alasan: string, i: number) => (
+                                                                        <div key={i} className={`text-[10px] font-bold p-2.5 rounded-lg border leading-relaxed ${isAman ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-rose-50 text-rose-800 border-rose-100'}`}>
+                                                                            • {alasan}
+                                                                        </div>
+                                                                    ))}
+                                                                    {aiNotes.rekomendasi && (
+                                                                        <div className="text-[10px] font-bold p-2.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-100 mt-2 leading-relaxed">
+                                                                            💡 Saran Tindakan: {aiNotes.rekomendasi}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 {/* Right: Bukti Lampiran Nota / Kuitansi */}
