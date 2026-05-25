@@ -1684,8 +1684,17 @@ export default function RiwayatDokumenPage() {
                                                         </p>
                                                     </div>
 
-                                                    {(auditResult || lpjItem?.catatan_ai) && (() => {
-                                                        const aiNotes = auditResult || lpjItem?.catatan_ai;
+                                                    {(() => {
+                                                        const aiNotes = auditResult || (() => {
+                                                            if (!lpjItem?.catatan_ai) return null;
+                                                            try {
+                                                                const parsed = typeof lpjItem.catatan_ai === 'string' ? JSON.parse(lpjItem.catatan_ai) : lpjItem.catatan_ai;
+                                                                return { ...parsed, status: lpjItem.status_audit_ai };
+                                                            } catch(e) { return null; }
+                                                        })();
+                                                        
+                                                        if (!aiNotes) return null;
+
                                                         const isAman = aiNotes.status === 'AMAN';
                                                         return (
                                                             <div className={`bg-white p-4 rounded-2xl border space-y-3 shadow-sm ${isAman ? 'border-emerald-200' : 'border-rose-200'}`}>
@@ -1696,11 +1705,11 @@ export default function RiwayatDokumenPage() {
                                                                     </p>
                                                                 </div>
                                                                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                                                                    {aiNotes.alasan?.map((alasan: string, i: number) => (
-                                                                        <div key={i} className={`text-[10px] font-bold p-2.5 rounded-lg border leading-relaxed ${isAman ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-rose-50 text-rose-800 border-rose-100'}`}>
-                                                                            • {alasan}
+                                                                    {aiNotes.alasan && (
+                                                                        <div className={`text-[10px] font-bold p-2.5 rounded-lg border leading-relaxed ${isAman ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-rose-50 text-rose-800 border-rose-100'}`}>
+                                                                            • {aiNotes.alasan}
                                                                         </div>
-                                                                    ))}
+                                                                    )}
                                                                     {aiNotes.rekomendasi && (
                                                                         <div className="text-[10px] font-bold p-2.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-100 mt-2 leading-relaxed">
                                                                             💡 Saran Tindakan: {aiNotes.rekomendasi}
