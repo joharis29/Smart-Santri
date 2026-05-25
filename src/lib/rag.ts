@@ -87,10 +87,11 @@ ${konteks}`
 Berikan output dalam bentuk JSON murni dengan format berikut:
 {
   "status": "AMAN" atau "ANOMALI",
-  "alasan": "berikan 1-2 kalimat alasan singkat dan tegas mengapa aman atau anomali berdasarkan regulasi",
+  "alasan": "berikan 1-2 kalimat alasan singkat dan tegas mengapa aman atau anomali. PENTING: JANGAN gunakan tanda kutip ganda (\") atau baris baru (enter/newline) di dalam teks alasan ini agar JSON tidak rusak",
   "referensi": ["tuliskan nama dokumen atau bab yang mendasari keputusan Anda dari konteks yang ada"],
   "skor_kepatuhan": angka 0 sampai 100
-}`
+}
+HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kurawal { }.`
 
     // 5. Panggil LLM
     const response = await llm.invoke([
@@ -100,8 +101,16 @@ Berikan output dalam bentuk JSON murni dengan format berikut:
 
     // 6. Parsing Output JSON
     const responseText = response.content.toString()
-    // Membersihkan format markdown jika Gemini masih memberikan backticks
-    const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim()
+    
+    // Ekstraksi hanya blok JSON
+    let jsonString = responseText;
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonString = jsonMatch[0];
+    }
+    
+    // Membersihkan sisa markdown jika ada
+    jsonString = jsonString.replace(/```json/gi, '').replace(/```/g, '').trim()
     
     return JSON.parse(jsonString) as AuditResult
 
