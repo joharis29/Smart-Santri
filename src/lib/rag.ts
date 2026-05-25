@@ -109,7 +109,7 @@ Berikan output dalam bentuk JSON murni dengan format berikut:
     console.error('[RAG Audit Error]', error)
     return {
       status: 'AMAN', // Fail-safe: jika AI error, jangan blokir proses
-      alasan: 'Gagal melakukan audit AI secara otomatis karena gangguan sistem.',
+      alasan: 'Gagal melakukan audit AI secara otomatis karena gangguan sistem. Detail Error: ' + (error?.message || 'Unknown Error'),
       referensi: [],
       skor_kepatuhan: 50
     }
