@@ -84,7 +84,8 @@ export default function RiwayatDokumenPage() {
             narasi: lpjDetails.narasi || lpjItem?.judul_kegiatan || 'Realisasi anggaran',
             kategoriCoa: lpjItem?.kategori_coa || selectedItemForDetail.bidang || 'Lainnya',
             sumberDana: lpjItem?.sumber_dana || selectedItemForDetail.sumber || 'Yayasan',
-            nominal: Number(lpjItem?.nominal || selectedItemForDetail.nominal || 0)
+            nominal: Number(lpjItem?.nominal || selectedItemForDetail.nominal || 0),
+            rincian: lpjDetails.items || []
         };
 
         setIsAuditing(true);

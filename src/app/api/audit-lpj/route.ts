@@ -11,14 +11,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { jenis, id, narasi, kategoriCoa, sumberDana, nominal } = await req.json()
+    const { jenis, id, narasi, kategoriCoa, sumberDana, nominal, rincian } = await req.json()
 
     if (!jenis || !id || !narasi || !kategoriCoa || !sumberDana || nominal === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Eksekusi RAG Audit dengan Gemini
-    const result = await auditNarasi(jenis, narasi, kategoriCoa, sumberDana, nominal)
+    const result = await auditNarasi(jenis, narasi, kategoriCoa, sumberDana, nominal, rincian)
 
     const catatan = JSON.stringify({
       alasan: result.alasan,

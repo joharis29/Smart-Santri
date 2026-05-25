@@ -15,7 +15,8 @@ export async function auditNarasi(
   narasi: string,
   kategoriCoa: string,
   sumberDana: string,
-  nominalRp: number
+  nominalRp: number,
+  rincian?: any[]
 ): Promise<AuditResult> {
   const supabase = await createClient()
 
@@ -77,12 +78,17 @@ ATURAN AUDIT:
 KONTEKS REGULASI:
 ${konteks}`
 
+    let rincianText = '';
+    if (rincian && rincian.length > 0) {
+      rincianText = '\n\nRincian Item Belanja:\n' + rincian.map(it => `- ${it.name} (${it.qty} ${it.unit}): Rp ${Number(it.total).toLocaleString('id-ID')}`).join('\n');
+    }
+
     const userPrompt = `Lakukan audit pada transaksi berikut:
 - Jenis Dokumen: ${jenis}
 - Narasi Pengeluaran: "${narasi}"
 - Kategori Akun (COA): ${kategoriCoa}
 - Sumber Dana: ${sumberDana}
-- Nominal: Rp ${nominalRp.toLocaleString('id-ID')}
+- Nominal Total: Rp ${nominalRp.toLocaleString('id-ID')}${rincianText}
 
 Berikan output dalam bentuk JSON murni dengan format berikut:
 {
