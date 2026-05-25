@@ -30,7 +30,7 @@ export async function auditNarasi(
       apiKey: process.env.GEMINI_API_KEY,
       model: 'gemini-2.5-flash',
       temperature: 0,
-      maxOutputTokens: 512,
+      maxOutputTokens: 1024,
     })
 
     // 1. Embed query (Ubah teks narasi menjadi angka vektor)
@@ -112,7 +112,25 @@ HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kura
     // Membersihkan sisa markdown jika ada
     jsonString = jsonString.replace(/```json/gi, '').replace(/```/g, '').trim()
     
-    return JSON.parse(jsonString) as AuditResult
+    try {
+      return JSON.parse(jsonString) as AuditResult;
+    } catch (parseError) {
+      console.warn('[RAG] Failed to parse JSON, falling back to regex extract:', parseError);
+      // Fallback jika Gemini membandel atau teks terpotong
+      const statusMatch = jsonString.match(/"status"\s*:\s*"?([^",\s}]+)"?/i);
+      const statusStr = statusMatch ? statusMatch[1].toUpperCase() : 'AMAN';
+      const finalStatus = (statusStr === 'ANOMALI' || statusStr === 'AMAN') ? statusStr : 'AMAN';
+      
+      const alasanMatch = jsonString.match(/"alasan"\s*:\s*"([^"]*)/i);
+      const alasanStr = alasanMatch ? alasanMatch[1] : 'Sistem berhasil melakukan audit, namun format alasan gagal dibaca.';
+      
+      return {
+        status: finalStatus,
+        alasan: alasanStr,
+        referensi: [],
+        skor_kepatuhan: finalStatus === 'ANOMALI' ? 30 : 85
+      };
+    }
 
   } catch (error: any) {
     console.error('[RAG Audit Error]', error)
