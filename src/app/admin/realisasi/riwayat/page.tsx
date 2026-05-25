@@ -72,13 +72,28 @@ export default function RiwayatDokumenPage() {
 
     const handleAuditAI = async () => {
         if (!selectedItemForDetail?.itemId) return;
+        
+        // Extract data for payload
+        const lpjItem = detailLpjDoc?.item_pengajuan?.find((it: any) => it.id === selectedItemForDetail.itemId) || detailLpjDoc?.item_pengajuan?.[0];
+        let lpjDetails: any = {};
+        try { lpjDetails = typeof lpjItem?.rincian_json === 'string' ? JSON.parse(lpjItem.rincian_json) : (lpjItem?.rincian_json || {}); } catch(e) {}
+        
+        const payload = {
+            id: selectedItemForDetail.itemId,
+            jenis: 'LPJ',
+            narasi: lpjDetails.narasi || lpjItem?.judul_kegiatan || 'Realisasi anggaran',
+            kategoriCoa: lpjItem?.kategori_coa || selectedItemForDetail.bidang || 'Lainnya',
+            sumberDana: lpjItem?.sumber_dana || selectedItemForDetail.sumber || 'Yayasan',
+            nominal: Number(lpjItem?.nominal || selectedItemForDetail.nominal || 0)
+        };
+
         setIsAuditing(true);
         setAuditResult(null);
         try {
             const res = await fetch('/api/audit-lpj', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: selectedItemForDetail.itemId, jenis: 'LPJ' })
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (data.success) {
