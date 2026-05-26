@@ -202,6 +202,7 @@ export default function RiwayatPengajuanPage() {
                             mapped.push({
                                 id: doc.id,
                                 itemId: it.id,
+                                isRevision: !!doc.parent_id,
                                 tanggal_pencairan: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('id-ID') : new Date(doc.created_at).toLocaleDateString('id-ID'),
                                 tanggal: new Date(doc.created_at).toLocaleDateString('id-ID'),
                                 bulan: monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan),
@@ -999,7 +1000,14 @@ export default function RiwayatPengajuanPage() {
  
                                         {/* 3. Program / Kegiatan */}
                                         <td className="px-3 py-2.5 align-middle">
-                                            <p className="text-xs font-extrabold text-slate-800 leading-tight">{item.kegiatan || item.program}</p>
+                                            <div className="flex items-center gap-1.5">
+                                                {item.isRevision && (
+                                                    <span className="bg-amber-100 text-amber-700 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-widest border border-amber-200 shrink-0">
+                                                        Revisi
+                                                    </span>
+                                                )}
+                                                <p className="text-xs font-extrabold text-slate-800 leading-tight">{item.kegiatan || item.program}</p>
+                                            </div>
                                         </td>
  
                                         {/* 4. Sumber & Metode */}

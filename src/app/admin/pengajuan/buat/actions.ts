@@ -12,6 +12,7 @@ export async function batchSavePengajuan(payload: {
   tahun_ajaran: string,
   mode: 'RKA' | 'DAPUR',
   status: 'DRAFT' | 'MENUNGGU_VERIFIKASI' | 'MENUNGGU_KEPALA' | 'REVISI',
+  parent_id?: string,
   data: any[]
 }) {
   try {
@@ -104,7 +105,8 @@ export async function batchSavePengajuan(payload: {
           jenjang_id: jenjang_id,
           bidang: payload.bidang,
           jenis: payload.mode,
-          total_nominal: total_nominal
+          total_nominal: total_nominal,
+          parent_id: payload.parent_id || null
         })
         .eq('id', docId);
       
@@ -126,7 +128,8 @@ export async function batchSavePengajuan(payload: {
           jenjang_id: jenjang_id,
           bidang: payload.bidang,
           jenis: payload.mode,
-          total_nominal: total_nominal
+          total_nominal: total_nominal,
+          parent_id: payload.parent_id || null
         })
         .select('id')
         .single();
@@ -659,7 +662,7 @@ Target Status: ${nextStatus}`
     // =====================================================================
     // FINANCIAL MUTATION LOGIC (Bypassing RLS with adminClient)
     // =====================================================================
-    if (nextStatus === 'SUDAH_DITERIMA' && doc?.jenis === 'RKA') {
+    if (nextStatus === 'SUDAH_DITERIMA' && doc?.jenis === 'RKA' && !doc?.parent_id) {
       const todayStr = new Date().toISOString().split('T')[0];
       const { data: items } = await adminClient.from('item_pengajuan').select('*').eq('dokumen_id', id);
       
