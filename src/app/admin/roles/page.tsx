@@ -86,6 +86,7 @@ const INITIAL_ROLES: RoleData[] = [
       'Input Pendapatan',
       'Input Pengeluaran Manual',
       'Buat Pengajuan (RKA)',
+      'Buat Revisi RKA',
       'Buat Realisasi Anggaran (LPJ)',
       'Draft Saya (Personal)',
       'Rekap Draft (Bendahara)',
@@ -116,6 +117,7 @@ const INITIAL_ROLES: RoleData[] = [
     level: 'Dasar',
     permissions: [
       'Buat Pengajuan (RKA)',
+      'Buat Revisi RKA',
       'Buat Realisasi Anggaran (LPJ)',
       'Draft Saya (Personal)',
       'Riwayat Pengajuan (Read-Only)',
@@ -135,6 +137,7 @@ const INITIAL_PERMISSIONS_MASTER = [
   'Input Pendapatan',
   'Input Pengeluaran Manual',
   'Buat Pengajuan (RKA)',
+  'Buat Revisi RKA',
   'Buat Realisasi Anggaran (LPJ)',
   'Draft Saya (Personal)',
   'Rekap Draft (Bendahara)',
