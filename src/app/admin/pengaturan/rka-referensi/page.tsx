@@ -469,7 +469,7 @@ export default function RKAReferencePage() {
         const unitName = filterUnit ? filterUnit.toUpperCase() : 'SEMUA UNIT / JENJANG';
         const titleRow1 = ['PROGRAM KEGIATAN TAHUN AJARAN 2025/2026'];
         const titleRow2 = [`(${unitName})`];
-        const emptyRow = [];
+        const emptyRow: string[] = [];
         
         const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas', 'Indikator Keberhasilan'];
 
