@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2, ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import * as XLSX from 'xlsx';
 
 interface RKAReference {
     id: string;
@@ -459,6 +460,35 @@ export default function RKAReferencePage() {
         }
     };
 
+    const handleExportExcel = () => {
+        if (sortedData.length === 0) {
+            alert('Tidak ada data untuk diekspor.');
+            return;
+        }
+
+        const exportData = sortedData.map((item, index) => ({
+            'No': index + 1,
+            'Unit / Jenjang': item.unit,
+            'Bidang / Departemen': item.bidang,
+            'Standar': item.standar,
+            'Program': item.program,
+            'Kegiatan': item.namaKegiatan,
+            'Detail Kegiatan': item.kegiatan || '-',
+            'Pelaksana': item.pelaksana || '-',
+            'Sasaran': item.sasaran || '-',
+            'Prioritas': item.prioritas || '-'
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Program Referensi");
+
+        // Generate filename with current date and filtered unit
+        const dateStr = new Date().toISOString().split('T')[0];
+        const unitStr = filterUnit ? filterUnit.replace(/[^a-zA-Z0-9]/g, '_') : 'Semua_Unit';
+        XLSX.writeFile(wb, `RKA_Referensi_${unitStr}_${dateStr}.xlsx`);
+    };
+
     return (
         <div className="p-3 md:p-4 space-y-3 bg-slate-50/50 min-h-screen">
             {/* Compact Header */}
@@ -473,12 +503,20 @@ export default function RKAReferencePage() {
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Katalog Program & Kegiatan Institusi</p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleOpenAdd}
-                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-md shadow-emerald-100 uppercase tracking-widest w-full sm:w-auto justify-center"
-                    >
-                        <Plus className="w-3.5 h-3.5" /> Tambah Program
-                    </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={handleExportExcel}
+                            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-slate-100 uppercase tracking-widest flex-1 sm:flex-none justify-center"
+                        >
+                            <Download className="w-3.5 h-3.5" /> Ekspor Excel
+                        </button>
+                        <button
+                            onClick={handleOpenAdd}
+                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-md shadow-emerald-100 uppercase tracking-widest flex-1 sm:flex-none justify-center"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Tambah Program
+                        </button>
+                    </div>
                 </div>
             </div>
 
