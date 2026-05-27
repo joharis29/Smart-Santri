@@ -41,10 +41,14 @@ export default function RKAReferencePage() {
     const [filterUnit, setFilterUnit] = useState('');
     const [filterBidang, setFilterBidang] = useState('');
 
+    const [userRole, setUserRole] = useState<string>('');
+    const [userUnit, setUserUnit] = useState<string>('');
+    const [isCentral, setIsCentral] = useState(true);
+
     const supabase = createClient();
 
     // Fetch Data from Supabase
-    const fetchData = async () => {
+    const fetchData = async (unitParam?: string) => {
         setIsLoading(true);
         try {
             let allData: any[] = [];
@@ -52,13 +56,18 @@ export default function RKAReferencePage() {
             let from = 0;
             const step = 1000;
 
+            let query = supabase
+                .from('program_kegiatan')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .order('id', { ascending: true }); // Deterministic sort
+                
+            if (unitParam && unitParam !== 'Pusat (Yayasan)' && unitParam !== 'Administrator') {
+                query = query.eq('unit', unitParam);
+            }
+
             while (hasMore) {
-                const { data: result, error } = await supabase
-                    .from('program_kegiatan')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .order('id', { ascending: true }) // Deterministic sort
-                    .range(from, from + step - 1);
+                const { data: result, error } = await query.range(from, from + step - 1);
 
                 if (error) throw error;
 
@@ -104,7 +113,32 @@ export default function RKAReferencePage() {
     };
 
     useEffect(() => {
-        fetchData();
+        const initUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                if (profile) {
+                    setUserRole(profile.role);
+                    setUserUnit(profile.unit);
+                    
+                    const central = profile.role === 'Administrator' || profile.unit === 'Pusat (Yayasan)';
+                    setIsCentral(central);
+                    
+                    if (!central && profile.unit) {
+                        setFilterUnit(profile.unit);
+                        setFormData(prev => ({ ...prev, unit: profile.unit }));
+                        fetchData(profile.unit);
+                    } else {
+                        fetchData();
+                    }
+                } else {
+                    fetchData();
+                }
+            } else {
+                fetchData();
+            }
+        };
+        initUser();
     }, []);
 
     // Custom State logic (now mostly derived from actual data, but still allows adding new locally before save)
@@ -390,19 +424,21 @@ export default function RKAReferencePage() {
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <select
-                        className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                        value={filterUnit}
-                        onChange={(e) => {
-                            setFilterUnit(e.target.value);
-                            setFilterBidang('');
-                        }}
-                    >
-                        <option value="">Semua Unit</option>
-                        {units.map(unit => (
-                            <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                    </select>
+                    {isCentral && (
+                        <select
+                            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                            value={filterUnit}
+                            onChange={(e) => {
+                                setFilterUnit(e.target.value);
+                                setFilterBidang('');
+                            }}
+                        >
+                            <option value="">Semua Unit</option>
+                            {units.map(unit => (
+                                <option key={unit} value={unit}>{unit}</option>
+                            ))}
+                        </select>
+                    )}
                     <select
                         className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                         value={filterBidang}
@@ -540,7 +576,8 @@ export default function RKAReferencePage() {
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Unit / Jenjang</label>
                                         <select
                                             required
-                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                            disabled={!isCentral}
+                                            className={`w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all appearance-none cursor-pointer ${!isCentral ? 'bg-slate-100 cursor-not-allowed opacity-80' : 'bg-slate-50 focus:bg-white'}`}
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value, bidang: '' })}
                                         >
