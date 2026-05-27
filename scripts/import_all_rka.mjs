@@ -20,7 +20,10 @@ async function importAllRKA() {
   const allRecords = [];
   
   for (const file of files) {
-    const unitName = file.replace('RKA ', '').replace('.xlsx', '').trim();
+    let unitName = file.replace('RKA ', '').replace('.xlsx', '').trim();
+    if (unitName === 'Pesantren-Yayasan') {
+      unitName = 'Pesantren/Yayasan';
+    }
     const filePath = path.join(dirPath, file);
     const workbook = new ExcelJS.Workbook();
     
@@ -113,11 +116,11 @@ async function importAllRKA() {
         const colIndikator = idxIndikator > -1 && values[idxIndikator] ? String(values[idxIndikator]).trim() : '';
         
         // Update hierarki
-        if (colStandarBidang && !colStandarBidang.toLowerCase().includes('standar') && !colStandarBidang.toLowerCase().includes('bidang') && !colStandarBidang.toLowerCase().includes('kategori')) {
+        if (colStandarBidang && colStandarBidang.toUpperCase() !== headerStandarBidangName.toUpperCase()) {
           currentStandarBidang = colStandarBidang;
         }
         
-        if (colProgram && !colProgram.toLowerCase().includes('program')) {
+        if (colProgram && colProgram.toUpperCase() !== 'PROGRAM') {
           currentProgram = colProgram;
         }
         

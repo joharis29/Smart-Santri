@@ -47,15 +47,40 @@ export default function RKAReferencePage() {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const { data: result, error } = await supabase
-                .from('program_kegiatan')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let allData: any[] = [];
+            let hasMore = true;
+            let from = 0;
+            const step = 1000;
 
-            if (error) throw error;
+            while (hasMore) {
+                const { data: result, error } = await supabase
+                    .from('program_kegiatan')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .order('id', { ascending: true }) // Deterministic sort
+                    .range(from, from + step - 1);
 
-            if (result) {
-                const formattedData: RKAReference[] = result.map(item => ({
+                if (error) throw error;
+
+                if (result && result.length > 0) {
+                    allData = [...allData, ...result];
+                    if (result.length < step) {
+                        hasMore = false;
+                    } else {
+                        from += step;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            if (allData.length > 0) {
+                // Remove any duplicates just in case (e.g. from tied timestamps during pagination)
+                const uniqueDataMap = new Map();
+                allData.forEach(item => uniqueDataMap.set(item.id, item));
+                const uniqueAllData = Array.from(uniqueDataMap.values());
+
+                const formattedData: RKAReference[] = uniqueAllData.map((item: any) => ({
                     id: item.id,
                     unit: item.unit,
                     bidang: item.bidang,
@@ -591,14 +616,14 @@ export default function RKAReferencePage() {
                                             value={formData.standar}
                                             onChange={(e) => setFormData({ ...formData, standar: e.target.value })}
                                         >
-                                            <option value="Kompetensi Lulusan">Kompetensi Lulusan</option>
                                             <option value="Isi">Isi</option>
-                                            <option value="Proses">Proses</option>
-                                            <option value="Pendidik Dan Tenaga Kependidikan">Pendidik Dan Tenaga Kependidikan</option>
-                                            <option value="Pengembangan Sarana Dan Prasarana">Pengembangan Sarana Dan Prasarana</option>
+                                            <option value="Pengembangan Proses">Pengembangan Proses</option>
+                                            <option value="Pengembangan Penilaian">Pengembangan Penilaian</option>
+                                            <option value="Kompetensi Lulusan">Kompetensi Lulusan</option>
+                                            <option value="Pengembangan Pendidik dan Tenaga Pendidikan">Pengembangan Pendidik dan Tenaga Pendidikan</option>
                                             <option value="Pengembangan Pengelolaan">Pengembangan Pengelolaan</option>
                                             <option value="Pengembangan Pembiayaan">Pengembangan Pembiayaan</option>
-                                            <option value="Pengembangan Penilaian">Pengembangan Penilaian</option>
+                                            <option value="Pengembangan Sarana dan Prasarana">Pengembangan Sarana dan Prasarana</option>
                                             <option value="(-)">(-)</option>
                                         </select>
                                     </div>
