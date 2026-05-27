@@ -471,7 +471,7 @@ export default function RKAReferencePage() {
         const titleRow2 = [`(${unitName})`];
         const emptyRow = [];
         
-        const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas'];
+        const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas', 'Indikator Keberhasilan'];
 
         const dataRows = sortedData.map((item, index) => [
             index + 1,
@@ -483,7 +483,8 @@ export default function RKAReferencePage() {
             item.kegiatan || '-',
             item.pelaksana || '-',
             item.sasaran || '-',
-            item.prioritas || '-'
+            item.prioritas || '-',
+            item.indikator || '-'
         ]);
 
         const worksheetData = [titleRow1, titleRow2, emptyRow, headers, ...dataRows];
@@ -546,7 +547,8 @@ export default function RKAReferencePage() {
             { wch: 25 },  // Detail
             { wch: 20 },  // Pelaksana
             { wch: 20 },  // Sasaran
-            { wch: 20 }   // Prioritas
+            { wch: 20 },  // Prioritas
+            { wch: 30 }   // Indikator
         ];
 
         const wb = XLSX.utils.book_new();
