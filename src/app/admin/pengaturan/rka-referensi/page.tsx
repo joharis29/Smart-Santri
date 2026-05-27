@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
 interface RKAReference {
@@ -194,6 +194,72 @@ export default function RKAReferencePage() {
         });
     }, [data, searchQuery, filterUnit, filterBidang]);
 
+    const [sortConfig, setSortConfig] = useState<{ key: keyof RKAReference, direction: 'asc' | 'desc' } | null>(null);
+    const [openSortMenu, setOpenSortMenu] = useState<string | null>(null);
+
+    const handleSort = (key: keyof RKAReference, direction: 'asc' | 'desc') => {
+        setSortConfig({ key, direction });
+        setOpenSortMenu(null);
+    };
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig) return filteredData;
+        return [...filteredData].sort((a, b) => {
+            const valA = (a[sortConfig.key] || '').toString().toLowerCase();
+            const valB = (b[sortConfig.key] || '').toString().toLowerCase();
+            
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredData, sortConfig]);
+
+    const renderSortableHeader = (label: string, sortKey: keyof RKAReference, minWidthClass: string = '') => {
+        const isActive = sortConfig?.key === sortKey;
+        const isOpen = openSortMenu === sortKey;
+
+        return (
+            <th className={`px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest ${minWidthClass} relative sort-menu-container`}>
+                <div 
+                    className="flex items-center gap-1.5 cursor-pointer hover:text-slate-600 transition-colors group select-none"
+                    onClick={() => setOpenSortMenu(isOpen ? null : sortKey)}
+                >
+                    <span>{label}</span>
+                    {isActive ? (
+                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-500" /> : <ArrowDown className="w-3 h-3 text-emerald-500" />
+                    ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                </div>
+                
+                {isOpen && (
+                    <div className="absolute top-full left-3 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                            onClick={() => handleSort(sortKey, 'asc')}
+                            className="w-full text-left px-3 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-50 hover:text-emerald-600 flex items-center gap-2"
+                        >
+                            <ArrowUp className="w-3.5 h-3.5" /> Sort Ascending
+                        </button>
+                        <button
+                            onClick={() => handleSort(sortKey, 'desc')}
+                            className="w-full text-left px-3 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-50 hover:text-emerald-600 flex items-center gap-2"
+                        >
+                            <ArrowDown className="w-3.5 h-3.5" /> Sort Descending
+                        </button>
+                        {isActive && (
+                            <button
+                                onClick={() => { setSortConfig(null); setOpenSortMenu(null); }}
+                                className="w-full text-left px-3 py-2 text-[10px] font-bold text-rose-500 hover:bg-rose-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-1.5"
+                            >
+                                <X className="w-3.5 h-3.5" /> Hapus Sort
+                            </button>
+                        )}
+                    </div>
+                )}
+            </th>
+        );
+    };
+
     const units = useMemo(() => Object.keys(STRUKTUR_BIDANG), []);
     
     // Dynamic Dropdowns derived from DB + Local Custom Additions
@@ -223,11 +289,15 @@ export default function RKAReferencePage() {
     // Handle Click Outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (programDropdownRef.current && !programDropdownRef.current.contains(event.target as Node)) {
+            const target = event.target as Element;
+            if (programDropdownRef.current && !programDropdownRef.current.contains(target as Node)) {
                 setIsProgramDropdownOpen(false);
             }
-            if (kegiatanDropdownRef.current && !kegiatanDropdownRef.current.contains(event.target as Node)) {
+            if (kegiatanDropdownRef.current && !kegiatanDropdownRef.current.contains(target as Node)) {
                 setIsKegiatanDropdownOpen(false);
+            }
+            if (!target.closest('.sort-menu-container')) {
+                setOpenSortMenu(null);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -470,18 +540,18 @@ export default function RKAReferencePage() {
                         <thead className="bg-slate-50/50 border-b border-slate-100">
                             <tr>
                                 <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-10 text-center">No</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[110px]">Unit / Bidang</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Standar</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[160px]">Program</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[140px]">Kegiatan</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[220px]">Detail</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[120px]">Pelaksana</th>
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[100px]">Sasaran</th>
+                                {renderSortableHeader('Unit / Bidang', 'unit', 'min-w-[110px]')}
+                                {renderSortableHeader('Standar', 'standar', 'min-w-[120px]')}
+                                {renderSortableHeader('Program', 'program', 'min-w-[160px]')}
+                                {renderSortableHeader('Kegiatan', 'namaKegiatan', 'min-w-[140px]')}
+                                {renderSortableHeader('Detail', 'kegiatan', 'min-w-[220px]')}
+                                {renderSortableHeader('Pelaksana', 'pelaksana', 'min-w-[120px]')}
+                                {renderSortableHeader('Sasaran', 'sasaran', 'min-w-[100px]')}
                                 <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {!isLoading && filteredData.length === 0 ? (
+                            {!isLoading && sortedData.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} className="px-3 py-16 text-center">
                                         <div className="flex flex-col items-center gap-1.5 text-slate-350">
@@ -491,7 +561,7 @@ export default function RKAReferencePage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredData.map((item, index) => (
+                                sortedData.map((item, index) => (
                                     <tr key={item.id} className="hover:bg-slate-50/25 transition-colors group">
                                         <td className="px-3 py-2 text-center text-[10px] font-bold text-slate-450">{index + 1}</td>
                                         <td className="px-3 py-2">
