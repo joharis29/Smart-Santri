@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 interface RKAReference {
     id: string;
@@ -27,20 +28,61 @@ const STRUKTUR_BIDANG: Record<string, string[]> = {
     'MA': ['Kurikulum', 'Bimbingan & Konseling (BK)', 'Lembaga Pengembangan Bahasa Asing (LPBA)', 'Kesantrian', 'Humas', 'Kordinator Piket', 'Pembina RG-UG', 'Kordinator Ektrakurikuler', 'Perpustakaan', 'Tilawah & Hifdzil Qur\'an (THQ)', 'Mudir', 'Tenaga Administari Madrasah (TAM)', 'Operator', 'Kordinator Pengembangan Prestasi', 'Pendidik & Tenaga Kependidikan (PTK)', 'Lab Komputer', 'Lab Sains', 'Bendahara'],
     'THQ': ['Kurikulum', 'Kesantrian', 'Sarana', 'Humas'],
     'Asrama Putra': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
-    'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan']
+    'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
+    'Dapur': []
 };
 
-const REFERENCE_RKA: Record<string, Record<string, string[]>> = {};
-
-const INITIAL_DATA: RKAReference[] = [];
-
 export default function RKAReferencePage() {
-    const [data, setData] = useState<RKAReference[]>(INITIAL_DATA);
+    const [data, setData] = useState<RKAReference[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    
     const [searchQuery, setSearchQuery] = useState('');
     const [filterUnit, setFilterUnit] = useState('');
     const [filterBidang, setFilterBidang] = useState('');
 
-    // Custom Bidangs State
+    const supabase = createClient();
+
+    // Fetch Data from Supabase
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const { data: result, error } = await supabase
+                .from('program_kegiatan')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (result) {
+                const formattedData: RKAReference[] = result.map(item => ({
+                    id: item.id,
+                    unit: item.unit,
+                    bidang: item.bidang,
+                    standar: item.standar,
+                    program: item.program,
+                    namaKegiatan: item.nama_kegiatan,
+                    kegiatan: item.detail_kegiatan || '',
+                    pelaksana: item.pelaksana || '',
+                    sasaran: item.sasaran || '',
+                    prioritas: item.prioritas || '',
+                    indikator: item.indikator || ''
+                }));
+                setData(formattedData);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            alert('Gagal memuat data referensi RKA.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    // Custom State logic (now mostly derived from actual data, but still allows adding new locally before save)
     const [customBidangs, setCustomBidangs] = useState<Record<string, string[]>>({});
     const [customPrograms, setCustomPrograms] = useState<Record<string, string[]>>({});
     const [customKegiatans, setCustomKegiatans] = useState<Record<string, Record<string, string[]>>>({});
@@ -62,7 +104,8 @@ export default function RKAReferencePage() {
     const [newBidangName, setNewBidangName] = useState('');
     const [newProgramName, setNewProgramName] = useState('');
     const [newKegiatanName, setNewKegiatanName] = useState('');
-    const [formData, setFormData] = useState<Omit<RKAReference, 'id'>>({
+    
+    const defaultFormState = {
         unit: 'Asrama Putra',
         bidang: '',
         standar: '(-)',
@@ -73,14 +116,17 @@ export default function RKAReferencePage() {
         sasaran: '',
         prioritas: 'Program Tetap & Wajib',
         indikator: ''
-    });
+    };
+    
+    const [formData, setFormData] = useState<Omit<RKAReference, 'id'>>(defaultFormState);
 
     const filteredData = useMemo(() => {
         return data.filter(item => {
+            const searchLower = searchQuery.toLowerCase();
             const matchesSearch =
-                item.program.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.namaKegiatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.kegiatan.toLowerCase().includes(searchQuery.toLowerCase());
+                item.program.toLowerCase().includes(searchLower) ||
+                item.namaKegiatan.toLowerCase().includes(searchLower) ||
+                item.kegiatan.toLowerCase().includes(searchLower);
             const matchesUnit = filterUnit === '' || item.unit === filterUnit;
             const matchesBidang = filterBidang === '' || item.bidang === filterBidang;
             return matchesSearch && matchesUnit && matchesBidang;
@@ -88,27 +134,30 @@ export default function RKAReferencePage() {
     }, [data, searchQuery, filterUnit, filterBidang]);
 
     const units = useMemo(() => Object.keys(STRUKTUR_BIDANG), []);
+    
+    // Dynamic Dropdowns derived from DB + Local Custom Additions
     const availableBidangs = useMemo(() => {
         const base = STRUKTUR_BIDANG[formData.unit] || [];
+        const dbBidangs = data.filter(d => d.unit === formData.unit).map(d => d.bidang);
         const custom = customBidangs[formData.unit] || [];
-        return [...base, ...custom];
-    }, [formData.unit, customBidangs]);
+        return Array.from(new Set([...base, ...dbBidangs, ...custom])).filter(Boolean);
+    }, [data, formData.unit, customBidangs]);
 
     const availablePrograms = useMemo(() => {
-        const base = Object.keys(REFERENCE_RKA[formData.unit] || {});
+        const dbPrograms = data.filter(d => d.unit === formData.unit && (formData.bidang === '' || d.bidang === formData.bidang)).map(d => d.program);
         const custom = customPrograms[formData.unit] || [];
-        const all = Array.from(new Set([...base, ...custom]));
+        const all = Array.from(new Set([...dbPrograms, ...custom])).filter(Boolean);
         if (!programSearch) return all;
         return all.filter(p => p.toLowerCase().includes(programSearch.toLowerCase()));
-    }, [formData.unit, customPrograms, programSearch]);
+    }, [data, formData.unit, formData.bidang, customPrograms, programSearch]);
 
     const availableKegiatans = useMemo(() => {
-        const base = (REFERENCE_RKA[formData.unit] || {})[formData.program] || [];
+        const dbKegiatans = data.filter(d => d.unit === formData.unit && d.program === formData.program).map(d => d.namaKegiatan);
         const custom = (customKegiatans[formData.unit] || {})[formData.program] || [];
-        const all = Array.from(new Set([...base, ...custom]));
+        const all = Array.from(new Set([...dbKegiatans, ...custom])).filter(Boolean);
         if (!kegiatanSearch) return all;
         return all.filter(k => k.toLowerCase().includes(kegiatanSearch.toLowerCase()));
-    }, [formData.unit, formData.program, customKegiatans, kegiatanSearch]);
+    }, [data, formData.unit, formData.program, customKegiatans, kegiatanSearch]);
 
     // Handle Click Outside
     useEffect(() => {
@@ -125,10 +174,11 @@ export default function RKAReferencePage() {
     }, []);
 
     const filterBidangOptions = useMemo(() => {
-        const filteredByUnit = filterUnit ? (STRUKTUR_BIDANG[filterUnit] || []) : Object.values(STRUKTUR_BIDANG).flat();
+        const dbBidangs = filterUnit ? data.filter(d => d.unit === filterUnit).map(d => d.bidang) : data.map(d => d.bidang);
+        const staticBidangs = filterUnit ? (STRUKTUR_BIDANG[filterUnit] || []) : Object.values(STRUKTUR_BIDANG).flat();
         const customByUnit = filterUnit ? (customBidangs[filterUnit] || []) : Object.values(customBidangs).flat();
-        return Array.from(new Set([...filteredByUnit, ...customByUnit]));
-    }, [filterUnit, customBidangs]);
+        return Array.from(new Set([...staticBidangs, ...dbBidangs, ...customByUnit])).filter(Boolean);
+    }, [data, filterUnit, customBidangs]);
 
     const handleOpenAdd = () => {
         setEditingItem(null);
@@ -142,18 +192,7 @@ export default function RKAReferencePage() {
         setNewBidangName('');
         setNewProgramName('');
         setNewKegiatanName('');
-        setFormData({
-            unit: 'Asrama Putra',
-            bidang: '',
-            standar: '(-)',
-            program: '',
-            namaKegiatan: '',
-            kegiatan: '',
-            pelaksana: '',
-            sasaran: '',
-            prioritas: 'Program Tetap & Wajib',
-            indikator: ''
-        });
+        setFormData(defaultFormState);
         setIsModalOpen(true);
     };
 
@@ -175,18 +214,25 @@ export default function RKAReferencePage() {
             standar: item.standar || '(-)',
             program: item.program,
             namaKegiatan: item.namaKegiatan || '',
-            kegiatan: item.kegiatan,
-            pelaksana: item.pelaksana,
-            sasaran: item.sasaran,
-            prioritas: item.prioritas,
-            indikator: item.indikator
+            kegiatan: item.kegiatan || '',
+            pelaksana: item.pelaksana || '',
+            sasaran: item.sasaran || '',
+            prioritas: item.prioritas || '',
+            indikator: item.indikator || ''
         });
         setIsModalOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Apakah Anda yakin ingin menghapus program referensi ini?')) {
-            setData(prev => prev.filter(item => item.id !== id));
+            try {
+                const { error } = await supabase.from('program_kegiatan').delete().eq('id', id);
+                if (error) throw error;
+                setData(prev => prev.filter(item => item.id !== id));
+            } catch (err) {
+                console.error("Error deleting:", err);
+                alert("Gagal menghapus data.");
+            }
         }
     };
 
@@ -229,15 +275,57 @@ export default function RKAReferencePage() {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingItem) {
-            setData(prev => prev.map(item => item.id === editingItem.id ? { ...formData, id: item.id } : item));
-        } else {
-            const newId = (Math.max(0, ...data.map(item => parseInt(item.id))) + 1).toString();
-            setData(prev => [...prev, { ...formData, id: newId }]);
+        setIsSaving(true);
+        
+        const payload = {
+            unit: formData.unit,
+            bidang: formData.bidang,
+            standar: formData.standar,
+            program: formData.program,
+            nama_kegiatan: formData.namaKegiatan,
+            detail_kegiatan: formData.kegiatan,
+            pelaksana: formData.pelaksana,
+            sasaran: formData.sasaran,
+            prioritas: formData.prioritas,
+            indikator: formData.indikator
+        };
+
+        try {
+            if (editingItem) {
+                const { data: updated, error } = await supabase
+                    .from('program_kegiatan')
+                    .update(payload)
+                    .eq('id', editingItem.id)
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                if (updated) {
+                    setData(prev => prev.map(item => item.id === editingItem.id ? { ...formData, id: updated.id } : item));
+                }
+            } else {
+                const { data: inserted, error } = await supabase
+                    .from('program_kegiatan')
+                    .insert(payload)
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                if (inserted) {
+                    setData(prev => [{ ...formData, id: inserted.id }, ...prev]);
+                }
+            }
+            setIsModalOpen(false);
+        } catch (err) {
+            console.error("Error saving:", err);
+            alert("Gagal menyimpan data referensi.");
+        } finally {
+            setIsSaving(false);
         }
-        setIsModalOpen(false);
     };
 
     return (
@@ -304,7 +392,16 @@ export default function RKAReferencePage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[300px]">
+                {isLoading && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">Memuat Data...</p>
+                        </div>
+                    </div>
+                )}
+                
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/50 border-b border-slate-100">
@@ -321,9 +418,9 @@ export default function RKAReferencePage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredData.length === 0 ? (
+                            {!isLoading && filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-3 py-8 text-center">
+                                    <td colSpan={9} className="px-3 py-16 text-center">
                                         <div className="flex flex-col items-center gap-1.5 text-slate-350">
                                             <AlertCircle className="w-6 h-6 opacity-30" />
                                             <p className="text-[10px] font-black uppercase tracking-widest">Tidak ada data ditemukan</p>
@@ -351,13 +448,13 @@ export default function RKAReferencePage() {
                                             <p className="text-[10px] font-black text-emerald-700 leading-snug">{item.namaKegiatan}</p>
                                         </td>
                                         <td className="px-3 py-2">
-                                            <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan}</p>
+                                            <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan || '-'}</p>
                                         </td>
                                         <td className="px-3 py-2">
-                                            <p className="text-[10px] font-bold text-slate-650 leading-none">{item.pelaksana}</p>
+                                            <p className="text-[10px] font-bold text-slate-650 leading-none">{item.pelaksana || '-'}</p>
                                         </td>
                                         <td className="px-3 py-2">
-                                            <p className="text-[10px] font-bold text-slate-450 leading-none">{item.sasaran}</p>
+                                            <p className="text-[10px] font-bold text-slate-450 leading-none">{item.sasaran || '-'}</p>
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="flex items-center justify-center gap-1">
@@ -693,9 +790,8 @@ export default function RKAReferencePage() {
                                 <div className="space-y-0.5">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Detail Rincian Kegiatan</label>
                                     <textarea
-                                        required
                                         className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none min-h-[50px] transition-all resize-none leading-normal"
-                                        placeholder="Detail kegiatan..."
+                                        placeholder="Detail kegiatan (opsional)..."
                                         value={formData.kegiatan}
                                         onChange={(e) => setFormData({ ...formData, kegiatan: e.target.value })}
                                     />
@@ -715,15 +811,21 @@ export default function RKAReferencePage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+                                        disabled={isSaving}
+                                        className="flex-1 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 disabled:opacity-50"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-[2] py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-md shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5"
+                                        disabled={isSaving}
+                                        className="flex-[2] py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-md shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                     >
-                                        <Save className="w-3.5 h-3.5" /> Simpan Data
+                                        {isSaving ? (
+                                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan...</>
+                                        ) : (
+                                            <><Save className="w-3.5 h-3.5" /> Simpan Data</>
+                                        )}
                                     </button>
                                 </div>
                             </form>
