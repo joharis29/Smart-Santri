@@ -116,21 +116,23 @@ export default function RKAReferencePage() {
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                if (profile) {
-                    setUserRole(profile.role);
-                    setUserUnit(profile.unit);
-                    
-                    const central = profile.role === 'Administrator' || profile.unit === 'Pusat (Yayasan)';
-                    setIsCentral(central);
-                    
-                    if (!central && profile.unit) {
-                        setFilterUnit(profile.unit);
-                        setFormData(prev => ({ ...prev, unit: profile.unit }));
-                        fetchData(profile.unit);
-                    } else {
-                        fetchData();
-                    }
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                
+                const activeRoleKey = `activeRole_${user.id}`;
+                const activeUnitKey = `activeUnit_${user.id}`;
+                const savedRole = localStorage.getItem(activeRoleKey) || (profile ? profile.role : 'GUEST');
+                const savedUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
+
+                setUserRole(savedRole);
+                setUserUnit(savedUnit);
+                
+                const central = savedRole === 'Administrator' || savedUnit === 'Pusat (Yayasan)';
+                setIsCentral(central);
+                
+                if (!central && savedUnit) {
+                    setFilterUnit(savedUnit);
+                    setFormData(prev => ({ ...prev, unit: savedUnit }));
+                    fetchData(savedUnit);
                 } else {
                     fetchData();
                 }
