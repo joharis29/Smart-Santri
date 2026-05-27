@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2, ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 interface RKAReference {
     id: string;
@@ -466,24 +466,92 @@ export default function RKAReferencePage() {
             return;
         }
 
-        const exportData = sortedData.map((item, index) => ({
-            'No': index + 1,
-            'Unit / Jenjang': item.unit,
-            'Bidang / Departemen': item.bidang,
-            'Standar': item.standar,
-            'Program': item.program,
-            'Kegiatan': item.namaKegiatan,
-            'Detail Kegiatan': item.kegiatan || '-',
-            'Pelaksana': item.pelaksana || '-',
-            'Sasaran': item.sasaran || '-',
-            'Prioritas': item.prioritas || '-'
-        }));
+        const unitName = filterUnit ? filterUnit.toUpperCase() : 'SEMUA UNIT / JENJANG';
+        const titleRow1 = ['PROGRAM KEGIATAN TAHUN AJARAN 2025/2026'];
+        const titleRow2 = [`(${unitName})`];
+        const emptyRow = [];
+        
+        const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas'];
 
-        const ws = XLSX.utils.json_to_sheet(exportData);
+        const dataRows = sortedData.map((item, index) => [
+            index + 1,
+            item.unit,
+            item.bidang,
+            item.standar,
+            item.program,
+            item.namaKegiatan,
+            item.kegiatan || '-',
+            item.pelaksana || '-',
+            item.sasaran || '-',
+            item.prioritas || '-'
+        ]);
+
+        const worksheetData = [titleRow1, titleRow2, emptyRow, headers, ...dataRows];
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+        const borderStyle = {
+            top: { style: 'thin', color: { rgb: "000000" } },
+            bottom: { style: 'thin', color: { rgb: "000000" } },
+            left: { style: 'thin', color: { rgb: "000000" } },
+            right: { style: 'thin', color: { rgb: "000000" } }
+        };
+
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+        
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellRef]) continue;
+
+                // Title styling (Rows 0 and 1)
+                if (R === 0 || R === 1) {
+                    ws[cellRef].s = {
+                        font: { bold: true, sz: 12 },
+                        alignment: { horizontal: 'center', vertical: 'center' }
+                    };
+                } 
+                // Header styling (Row 3)
+                else if (R === 3) {
+                    ws[cellRef].s = {
+                        font: { bold: true },
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        border: borderStyle
+                    };
+                }
+                // Data styling (Row 4 onwards)
+                else if (R >= 4) {
+                    ws[cellRef].s = {
+                        alignment: { vertical: 'center', wrapText: true },
+                        border: borderStyle
+                    };
+                    if (C === 0) { // Center align 'No' column
+                        ws[cellRef].s.alignment.horizontal = 'center';
+                    }
+                }
+            }
+        }
+
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } }
+        ];
+
+        ws['!cols'] = [
+            { wch: 5 },   // No
+            { wch: 15 },  // Unit
+            { wch: 20 },  // Bidang
+            { wch: 20 },  // Standar
+            { wch: 35 },  // Program
+            { wch: 35 },  // Kegiatan
+            { wch: 25 },  // Detail
+            { wch: 20 },  // Pelaksana
+            { wch: 20 },  // Sasaran
+            { wch: 20 }   // Prioritas
+        ];
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Program Referensi");
 
-        // Generate filename with current date and filtered unit
         const dateStr = new Date().toISOString().split('T')[0];
         const unitStr = filterUnit ? filterUnit.replace(/[^a-zA-Z0-9]/g, '_') : 'Semua_Unit';
         XLSX.writeFile(wb, `RKA_Referensi_${unitStr}_${dateStr}.xlsx`);
