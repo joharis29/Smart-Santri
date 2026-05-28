@@ -31,7 +31,7 @@ export async function registerUserByAdmin(userData: {
       // Jika email belum ada di Auth, buat akun baru (auto confirms email)
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: userData.email,
-        password: userData.password || 'SmartSantri123!',
+        password: userData.password || crypto.randomUUID(),
         email_confirm: true,
         user_metadata: {
           full_name: userData.name

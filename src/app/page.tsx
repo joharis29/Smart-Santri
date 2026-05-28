@@ -446,7 +446,7 @@ export default function LandingPage() {
             {/* Contact Modal */}
             {isContactModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsContactModalOpen(false)}></div>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsContactModalOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsContactModalOpen(false); }} role="button" tabIndex={0} aria-label="Tutup modal kontak"></div>
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-emerald-100">
                         <div className="bg-primary p-6 text-white text-center relative">
                             <button onClick={() => setIsContactModalOpen(false)} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">

@@ -663,7 +663,7 @@ export default function InputPendapatanPage() {
                                 {isFilterOpen && (
                                     <>
                                         {/* Backdrop overlay to close when clicking outside */}
-                                        <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)}></div>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsFilterOpen(false); }} role="button" tabIndex={0} aria-label="Tutup menu filter"></div>
                                         
                                         <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">

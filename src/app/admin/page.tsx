@@ -812,7 +812,7 @@ export default function AdminDashboardPage() {
 
                 return (
                     <div key={unit} className={`border rounded-xl overflow-hidden transition-all duration-200 ${isExpanded ? 'border-emerald-100 bg-white shadow-sm' : 'border-slate-50 bg-white'}`}>
-                        <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-slate-50/50" onClick={() => setExpandedUnit(isExpanded ? null : unit)}>
+                        <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-slate-50/50" onClick={() => setExpandedUnit(isExpanded ? null : unit)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpandedUnit(isExpanded ? null : unit); }} role="button" tabIndex={0} aria-label="Toggle Expand Unit">
                             <div className="flex items-center gap-3">
                                 <Building className={`w-3.5 h-3.5 ${isExpanded ? 'text-emerald-600' : 'text-slate-600'}`} />
                                 <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight">{unit}</span>

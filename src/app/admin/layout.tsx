@@ -213,6 +213,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {sidebarOpen && (
                 <div
                     onClick={() => setSidebarOpen(false)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') setSidebarOpen(false);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Tutup menu sidebar"
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                 ></div>
             )}
@@ -432,6 +438,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         {/* Interactive User Info Card / Switch Trigger */}
                         <div 
                             onClick={() => (actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) && setProfileMenuOpen(!profileMenuOpen)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    if (actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) {
+                                        setProfileMenuOpen(!profileMenuOpen);
+                                    }
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                             className={`flex items-center justify-between p-2 rounded-xl transition-all ${
                                 (actualRole === 'ADMINISTRATOR' || actualRole === 'BENDAHARA_PUSAT' || assignedRoles.length > 1) 
                                     ? 'hover:bg-emerald-800/40 cursor-pointer border border-transparent hover:border-emerald-700/30' 

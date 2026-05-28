@@ -440,7 +440,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6" onClick={() => activeDropdownId && setActiveDropdownId(null)}>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6" onClick={() => activeDropdownId && setActiveDropdownId(null)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (activeDropdownId) setActiveDropdownId(null); } }} role="presentation">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

@@ -224,6 +224,9 @@ export default function RKAReferencePage() {
                 <div 
                     className="flex items-center gap-1.5 cursor-pointer hover:text-slate-600 transition-colors group select-none"
                     onClick={() => setOpenSortMenu(isOpen ? null : sortKey)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSortMenu(isOpen ? null : sortKey); }}
+                    role="button"
+                    tabIndex={0}
                 >
                     <span>{label}</span>
                     {isActive ? (
