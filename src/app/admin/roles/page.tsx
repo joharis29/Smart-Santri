@@ -384,6 +384,9 @@ export default function RoleManagementPage() {
                     e.stopPropagation();
                     setSelectedLevelFilter('Semua Level');
                   }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setSelectedLevelFilter('Semua Level'); } }}
+                  role="button"
+                  tabIndex={0}
                   className="ml-1 p-0.5 hover:bg-emerald-100 rounded-full text-emerald-850 transition-colors"
                   title="Bersihkan Filter"
                 >
@@ -522,6 +525,10 @@ export default function RoleManagementPage() {
           <div 
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsModalOpen(false)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsModalOpen(false); }}
+            role="button"
+            tabIndex={0}
+            aria-label="Tutup modal"
           ></div>
           <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             {/* Modal Header */}
@@ -610,6 +617,9 @@ export default function RoleManagementPage() {
                   <div 
                     className={`min-h-[42px] w-full p-1.5 text-sm border ${isPermDropdownOpen ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'} rounded-xl transition-all bg-white cursor-text flex flex-wrap gap-1.5 items-center relative z-20`}
                     onClick={() => setIsPermDropdownOpen(true)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPermDropdownOpen(true); }}
+                    role="button"
+                    tabIndex={0}
                   >
                     <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                     <div className="flex flex-wrap gap-1.5 pl-8 w-full items-center">
@@ -714,6 +724,10 @@ export default function RoleManagementPage() {
           <div 
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsDeleteModalOpen(false)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsDeleteModalOpen(false); }}
+            role="button"
+            tabIndex={0}
+            aria-label="Tutup modal"
           ></div>
           <div className="relative bg-white rounded-3xl shadow-2xl border border-rose-100 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-6 text-center">
             <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">

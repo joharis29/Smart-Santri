@@ -891,6 +891,9 @@ export default function RKAReferencePage() {
                                             <div 
                                                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
                                                 onClick={() => setIsProgramDropdownOpen(!isProgramDropdownOpen)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsProgramDropdownOpen(!isProgramDropdownOpen); }}
+                                                role="button"
+                                                tabIndex={0}
                                             >
                                                 <input
                                                     type="text"
@@ -921,6 +924,9 @@ export default function RKAReferencePage() {
                                                                     setProgramSearch('');
                                                                     setIsProgramDropdownOpen(false);
                                                                 }}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setFormData({ ...formData, program: prog, namaKegiatan: '' }); setProgramSearch(''); setIsProgramDropdownOpen(false); } }}
+                                                                role="button"
+                                                                tabIndex={0}
                                                             >
                                                                 {prog}
                                                             </div>
@@ -932,6 +938,9 @@ export default function RKAReferencePage() {
                                                             setIsAddingNewProgram(true);
                                                             setIsProgramDropdownOpen(false);
                                                         }}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsAddingNewProgram(true); setIsProgramDropdownOpen(false); } }}
+                                                        role="button"
+                                                        tabIndex={0}
                                                     >
                                                         + TAMBAH PROGRAM BARU
                                                     </div>
@@ -965,6 +974,9 @@ export default function RKAReferencePage() {
                                             <div 
                                                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition-all flex items-center justify-between cursor-pointer"
                                                 onClick={() => setIsKegiatanDropdownOpen(!isKegiatanDropdownOpen)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsKegiatanDropdownOpen(!isKegiatanDropdownOpen); }}
+                                                role="button"
+                                                tabIndex={0}
                                             >
                                                 <input
                                                     type="text"
@@ -995,6 +1007,9 @@ export default function RKAReferencePage() {
                                                                     setKegiatanSearch('');
                                                                     setIsKegiatanDropdownOpen(false);
                                                                 }}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setFormData({ ...formData, namaKegiatan: keg }); setKegiatanSearch(''); setIsKegiatanDropdownOpen(false); } }}
+                                                                role="button"
+                                                                tabIndex={0}
                                                             >
                                                                 {keg}
                                                             </div>
@@ -1006,6 +1021,9 @@ export default function RKAReferencePage() {
                                                             setIsAddingNewKegiatan(true);
                                                             setIsKegiatanDropdownOpen(false);
                                                         }}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsAddingNewKegiatan(true); setIsKegiatanDropdownOpen(false); } }}
+                                                        role="button"
+                                                        tabIndex={0}
                                                     >
                                                         + TAMBAH KEGIATAN BARU
                                                     </div>
