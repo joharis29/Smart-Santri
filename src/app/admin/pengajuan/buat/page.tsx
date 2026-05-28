@@ -37,7 +37,9 @@ import {
   History,
   ClipboardCheck,
   FileEdit,
-  Lock
+  Lock,
+  Bot,
+  Loader2
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
@@ -78,6 +80,8 @@ interface RkaRow {
   details: RkaDetails
   isFilled: boolean
   catatan_revisi?: string
+  auditResult?: { status: string; alasan: string; referensi: string[] }
+  isAuditing?: boolean
 }
 
 interface DapurRow {
@@ -779,6 +783,41 @@ function BuatPengajuanContent() {
   const deleteRow = (id: string) => {
     if (rows.length === 1) return
     setRows(rows.filter(r => r.id !== id))
+  }
+
+  const handleSmartAudit = async (id: string) => {
+    const row = rows.find(r => r.id === id)
+    if (!row) return
+
+    if (!row.program || !row.operasional || row.nominal === 0) {
+      alert('Mohon isi Program, Deskripsi, dan Nominal (melalui ikon kuning) terlebih dahulu sebelum melakukan Audit AI.')
+      return
+    }
+
+    setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: true, auditResult: undefined } : r))
+
+    try {
+      const response = await fetch('/api/audit-pra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jenis: 'Rencana Kerja / RKA',
+          narasi: `${row.program} - ${row.operasional}`,
+          kategoriCoa: 'RKA',
+          sumberDana: row.details.fundingSplits.filter(s => s.nominal > 0).map(s => s.source).join(', ') || 'Belum Ditentukan',
+          nominal: row.nominal,
+          rincian: row.details.items
+        })
+      })
+
+      if (!response.ok) throw new Error('Gagal melakukan audit')
+      
+      const result = await response.json()
+      
+      setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: false, auditResult: result } : r))
+    } catch (error) {
+      setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: false, auditResult: { status: 'ERROR', alasan: 'Gagal terhubung ke AI. Silakan coba lagi.', referensi: [] } } : r))
+    }
   }
 
   // --- Logic: Rincian Modal ---
@@ -1950,6 +1989,14 @@ function BuatPengajuanContent() {
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
+                          <button
+                            onClick={() => handleSmartAudit(row.id)}
+                            disabled={row.isAuditing}
+                            className={`p-1.5 rounded-lg transition-all flex items-center justify-center ${row.isAuditing ? 'bg-emerald-100 text-emerald-500 cursor-not-allowed' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                            title="Smart Audit"
+                          >
+                            {row.isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
+                          </button>
                           {violation && (
                             <div title="Pelanggaran Kepatuhan Syariah!" className="animate-bounce">
                               <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -1966,6 +2013,38 @@ function BuatPengajuanContent() {
                               Catatan Peninjauan
                             </span>
                             <p className="text-[10px] font-bold text-amber-900 leading-relaxed italic">{row.catatan_revisi}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {row.auditResult && (
+                      <tr className={`${row.auditResult.status === 'AMAN' ? 'bg-emerald-50/50' : 'bg-rose-50/50'} border-b border-slate-100`}>
+                        <td colSpan={10} className="px-4 py-3">
+                          <div className="flex gap-3">
+                            <div className="mt-0.5">
+                              {row.auditResult.status === 'AMAN' ? (
+                                <Bot className="w-4 h-4 text-emerald-500" />
+                              ) : (
+                                <AlertTriangle className="w-4 h-4 text-rose-500" />
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              <p className={`text-[11px] font-black ${row.auditResult.status === 'AMAN' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                Hasil Audit AI: {row.auditResult.status}
+                              </p>
+                              <p className="text-[10px] font-medium text-slate-600 leading-relaxed">
+                                {row.auditResult.alasan}
+                              </p>
+                              {row.auditResult.referensi && row.auditResult.referensi.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {row.auditResult.referensi.map((ref: string, i: number) => (
+                                    <span key={i} className="inline-block px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold">
+                                      {ref}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
