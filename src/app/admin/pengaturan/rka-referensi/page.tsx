@@ -648,14 +648,14 @@ export default function RKAReferencePage() {
                         <thead className="bg-slate-50/50 border-b border-slate-100">
                             <tr>
                                 <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-10 text-center">No</th>
-                                {renderSortableHeader('Unit / Bidang', 'unit', 'min-w-[110px]')}
+                                {renderSortableHeader('Unit / Jenjang', 'unit', 'min-w-[100px]')}
+                                {renderSortableHeader('Bidang / Departemen', 'bidang', 'min-w-[120px]')}
                                 {renderSortableHeader('Standar', 'standar', 'min-w-[120px]')}
-                                {renderSortableHeader('Program', 'program', 'min-w-[160px]')}
+                                {renderSortableHeader('Program', 'program', 'min-w-[140px]')}
+                                {renderSortableHeader('Prioritas', 'prioritas', 'min-w-[90px]')}
                                 {renderSortableHeader('Kegiatan', 'namaKegiatan', 'min-w-[140px]')}
-                                {renderSortableHeader('Detail', 'kegiatan', 'min-w-[220px]')}
-                                {renderSortableHeader('Pelaksana', 'pelaksana', 'min-w-[120px]')}
-                                {renderSortableHeader('Sasaran', 'sasaran', 'min-w-[100px]')}
-                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-20">Aksi</th>
+                                {renderSortableHeader('Detail', 'kegiatan', 'min-w-[160px]')}
+                                <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-16 sticky right-0 bg-slate-50/95 backdrop-blur-sm z-10 border-l border-slate-200/50 shadow-[-8px_0_15px_-3px_rgba(0,0,0,0.05)]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -673,8 +673,10 @@ export default function RKAReferencePage() {
                                     <tr key={item.id} className="hover:bg-slate-50/25 transition-colors group">
                                         <td className="px-3 py-2 text-center text-[10px] font-bold text-slate-450">{index + 1}</td>
                                         <td className="px-3 py-2">
-                                            <p className="text-[9px] font-black text-slate-800 uppercase tracking-tight leading-none mb-0.5">{item.unit}</p>
-                                            <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-black rounded-md border border-emerald-100/60 uppercase tracking-tighter inline-block mt-0.5">
+                                            <p className="text-[9px] font-black text-slate-800 uppercase tracking-tight leading-none">{item.unit}</p>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-black rounded-md border border-emerald-100/60 uppercase tracking-tighter inline-block">
                                                 {item.bidang}
                                             </span>
                                         </td>
@@ -683,7 +685,11 @@ export default function RKAReferencePage() {
                                         </td>
                                         <td className="px-3 py-2">
                                             <p className="text-[10px] font-black text-slate-800 leading-snug">{item.program}</p>
-                                            <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5 leading-none">{item.prioritas}</p>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[8px] font-bold rounded-md border border-slate-200 uppercase tracking-tighter inline-block">
+                                                {item.prioritas}
+                                            </span>
                                         </td>
                                         <td className="px-3 py-2">
                                             <p className="text-[10px] font-black text-emerald-700 leading-snug">{item.namaKegiatan}</p>
@@ -691,13 +697,7 @@ export default function RKAReferencePage() {
                                         <td className="px-3 py-2">
                                             <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan || '-'}</p>
                                         </td>
-                                        <td className="px-3 py-2">
-                                            <p className="text-[10px] font-bold text-slate-650 leading-none">{item.pelaksana || '-'}</p>
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <p className="text-[10px] font-bold text-slate-450 leading-none">{item.sasaran || '-'}</p>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-2 sticky right-0 bg-white group-hover:bg-slate-50/80 transition-colors z-10 border-l border-slate-50 shadow-[-8px_0_15px_-3px_rgba(0,0,0,0.03)]">
                                             <div className="flex items-center justify-center gap-1">
                                                 <button
                                                     onClick={() => handleOpenEdit(item)}

@@ -79,10 +79,10 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
 Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk validasi kepatuhan.
 
 - [x] Persiapan *Vector Database* (Supabase `pgvector`) — Tabel `document_chunks` + fungsi `match_documents` RPC.
-- [x] Ekstraksi dan *Chunking* 4 Pilar Regulasi (ISAK 335, PAP, Juknis BOS, SOP Pesantren) — 893 chunks dari 14 PDF (`scripts/prepare_documents.ts`).
-- [/] *Embedding* chunks ke database vektor — Menunggu kredit OpenAI untuk proses `text-embedding-3-small`.
-- [x] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering) — `src/lib/rag.ts` dengan mock fallback.
-- [x] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan OpenAI LLM — `POST /api/audit`.
+- [x] Ekstraksi dan *Chunking* 4 Pilar Regulasi (ISAK 335, PAP, Juknis BOS, SOP Pesantren) — 893 chunks dari 17 PDF (`scripts/prepare_documents.ts`).
+- [/] *Embedding* chunks ke database vektor — Menggunakan model *embedding* dari *provider* alternatif (Google Gemini / HuggingFace).
+- [x] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering) — `src/lib/rag.ts` terintegrasi dengan LLM alternatif (Gemini).
+- [x] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan LLM alternatif — `POST /api/audit`.
 - [x] Integrasi UI: Menampilkan bendera peringatan (*Flag*) anomali audit (Kepatuhan Syariah) di tabel pengajuan.
 
 ---
@@ -98,6 +98,9 @@ Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 - [x] **Ultra Compact Dashboard**: Optimalisasi kepadatan informasi untuk monitoring keuangan efisien.
 - [x] **Filter Dasbor Interaktif**: Filter berdasarkan unit & jenis dana dengan penutupan otomatis saat klik di luar komponen.
 - [x] **RKA Referensi**: Halaman `/pengaturan/rka-referensi` untuk template standar kegiatan anggaran.
+  - [x] Implementasi fitur pengurutan data tabel (*Table Sorting*).
+  - [x] Fitur Ekspor Excel dengan pemformatan khusus (*custom styling*) menggunakan `xlsx-js-style`.
+  - [x] Optimasi antarmuka (UI/UX) dengan pemisahan kolom spesifik dan *Sticky Action Column* untuk layar kecil.
 - [x] **Akses Konsolidasi Pimpinan (Super Viewer)**: Hak akses penuh ke Buku Besar terpusat dengan perbaikan Row-Level Security (`transaksi_pendapatan`).
 - [x] **Nomenklatur Otomatis Jurnal**: Label pencatatan (Penerimaan RKA & Realisasi LPJ) otomatis untuk mencegah kebingungan double-entry di Buku Besar.
 ---
@@ -113,4 +116,4 @@ Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 
 ---
 *Catatan: Centang kotak `[ ]` menjadi `[x]` seiring berjalannya progres pengembangan aplikasi.*
-*Terakhir diperbarui: 20 Mei 2026*
+*Terakhir diperbarui: 28 Mei 2026*
