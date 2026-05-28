@@ -355,7 +355,7 @@ function BuatPengajuanContent() {
               programSet.add(item.program);
             }
           });
-          setAvailablePrograms(Array.from(programSet).sort());
+          setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
         }
       } catch (err) {
         console.error("Gagal memuat program referensi:", err);
@@ -2188,7 +2188,18 @@ function BuatPengajuanContent() {
       {/* --- Camera Modal --- */}
       {isCameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" onClick={() => setIsCameraOpen(false)}></div>
+            <div 
+              className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" 
+              onClick={() => setIsCameraOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setIsCameraOpen(false);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Tutup Kamera"
+            ></div>
             <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-in zoom-in-95 duration-300">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <div className="flex items-center gap-3">
