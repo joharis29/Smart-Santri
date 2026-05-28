@@ -42,69 +42,9 @@ import { saveLPJ } from '@/app/admin/pengajuan/buat/actions';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 
-const OPERASIONAL_CATEGORIES = [
-  'Konsumsi',
-  'ATK & Fotocopy',
-  'Honor / Insentif',
-  'Transportasi',
-  'Sewa Sarana',
-  'Perlengkapan',
-  'Pemeliharaan',
-  'Lain-lain'
-];
 
-const RKA_PROGRAMS = [
-  'Optimalisasi Manajemen Pengarsipan/Mengelola surat statis & dinamis',
-  'Optimalisasi Manajemen Pengarsipan/Mutasi santri',
-  'Optimalisasi Manajemen Pengarsipan/Arsip proposal/laporan',
-  'Optimalisasi Manajemen Pengarsipan/Backup dokumen Naqieb',
-  'Optimalisasi ATK & Sarpras/Pengadaan ATK',
-  'Optimalisasi ATK & Sarpras/Sarpras kantor',
-  'Optimalisasi ATK & Sarpras/Pemeliharaan sarpras',
-  'Optimalisasi ATK & Sarpras/Inventarisasi aset',
-  'Optimalisasi ATK & Sarpras/Seragam pengurus',
-  'Manajemen Buku Admin/Pengadaan, pengisian rutin, dan evaluasi kelengkapan buku administrasi',
-  'Database Santri/Update data semesteran & digitalisasi database santri',
-  'Layanan & Komunikasi/WAG Ortu',
-  'Layanan & Komunikasi/Booklet profil',
-  'Layanan & Komunikasi/Buku santri',
-  'Layanan & Komunikasi/Penyambutan santri baru',
-  'Layanan & Komunikasi/Optimasi IG asrama',
-  'Koordinasi Rapat/Rapat pekanan',
-  'Koordinasi Rapat/Rapat terbatas',
-  'Koordinasi Rapat/Rapat Naqieb',
-  'Koordinasi Rapat/Rapat Kerja (Raker)',
-  'Sistem Keuangan/Penyusunan RAB',
-  'Sistem Keuangan/Pencairan dana',
-  'Sistem Keuangan/Pencatatan BKU',
-  'Sistem Keuangan/Pelaporan realisasi',
-  'Manajemen Aset/Penitipan uang santri',
-  'Manajemen Aset/Pengadaan sarpras kebutuhan santri',
-  'Kegiatan Pendidikan/KISS (Kajian Senin Subuh)',
-  'Kegiatan Pendidikan/Halaqah Masa',
-  'Kegiatan Pendidikan/Bimbel sore',
-  'Kegiatan Pendidikan/Rapot Asrama Bulanan',
-  'Penegakan Disiplin/Operasi rambut/kerapihan',
-  'Penegakan Disiplin/Sidak kamar',
-  'Penegakan Disiplin/Pembinaan santri',
-  'Penegakan Disiplin/Reward & punishment',
-  'Minat Bakat/Muhadharah (Pidato)',
-  'Minat Bakat/Olahraga pekanan',
-  'Minat Bakat/Seni Bela Diri',
-  'Program Tahfidz/Setoran hafalan harian',
-  'Program Tahfidz/Tasmi\'',
-  'Program Tahfidz/Munaqasyah',
-  'Program Tahfidz/Wisuda Tahfidz',
-  'Pembiasaan Ibadah/Shalat berjamaah 5 waktu',
-  'Pembiasaan Ibadah/Tahajjud bersama',
-  'Pembiasaan Ibadah/Puasa Sunnah',
-  'Lingkungan & Kesehatan/Roan (Kerja bakti)',
-  'Lingkungan & Kesehatan/Pengelolaan sampah',
-  'Lingkungan & Kesehatan/Layanan Poskestren',
-  'Lingkungan & Kesehatan/Sosialisasi PHBS',
-  'Pemeliharaan/Perbaikan sarana rusak',
-  'Pemeliharaan/Pembersihan fasilitas (Masjid, Kamar Mandi, Halaman)'
-];
+
+
 
 const FUND_SOURCES = ['Kas Operasional', 'Yayasan', 'Zakat', 'Infaq', 'Dana BOS'];
 
@@ -205,7 +145,12 @@ export default function BuatRealisasiPage() {
     const [attachments, setAttachments] = useState<Array<{ file?: File; url?: string; base64?: string; customName: string }>>([]);
     const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([]);
     const importRef = useRef<HTMLInputElement>(null);
-    const [unit, setUnit] = useState('');
+    const [unit, setUnit] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('activeUnit') || '';
+        }
+        return '';
+    });
     const [bidang, setBidang] = useState('');
     const [bulan, setBulan] = useState('');
     const [tahunAjaran, setTahunAjaran] = useState('');
@@ -220,6 +165,39 @@ export default function BuatRealisasiPage() {
 
     const [isLpjActive, setIsLpjActive] = useState<boolean>(true);
     const [checkingActive, setCheckingActive] = useState<boolean>(true);
+    const [availablePrograms, setAvailablePrograms] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchPrograms = async () => {
+            if (!unit) return;
+            
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('program_kegiatan')
+                    .select('program, nama_kegiatan')
+                    .eq('unit', unit);
+                    
+                if (error) throw error;
+                
+                if (data) {
+                    const programSet = new Set<string>();
+                    data.forEach(item => {
+                        if (item.program && item.nama_kegiatan) {
+                            programSet.add(`${item.program} / ${item.nama_kegiatan}`);
+                        } else if (item.program) {
+                            programSet.add(item.program);
+                        }
+                    });
+                    setAvailablePrograms(Array.from(programSet).sort());
+                }
+            } catch (err) {
+                console.error("Gagal memuat program referensi:", err);
+            }
+        };
+        
+        fetchPrograms();
+    }, [unit]);
 
     // Check if LPJ (Buat LPJ) is active for this unit / globally
     useEffect(() => {
@@ -267,14 +245,18 @@ export default function BuatRealisasiPage() {
                 }
 
                 // 2. Check Unit Specific Gate
-                const { data: unitGate } = await supabase
-                    .from('kontrol_pengajuan')
-                    .select('lpj_aktif')
-                    .eq('unit_name', unit)
-                    .maybeSingle();
+                if (unit) {
+                    const { data: unitGate } = await supabase
+                        .from('kontrol_pengajuan')
+                        .select('lpj_aktif')
+                        .eq('unit_name', unit)
+                        .maybeSingle();
 
-                if (unitGate && unitGate.lpj_aktif === false) {
-                    setIsLpjActive(false);
+                    if (unitGate && unitGate.lpj_aktif === false) {
+                        setIsLpjActive(false);
+                    } else {
+                        setIsLpjActive(true);
+                    }
                 } else {
                     setIsLpjActive(true);
                 }
@@ -285,9 +267,7 @@ export default function BuatRealisasiPage() {
             }
         };
 
-        if (unit) {
-            checkLpjGate();
-        }
+        checkLpjGate();
     }, [unit]);
 
     const fileToBase64 = (file: File): Promise<string> => {
@@ -2239,26 +2219,26 @@ export default function BuatRealisasiPage() {
                                             <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                                 <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
                                                 <td className="p-0 relative group border-r border-slate-100">
-                                                    <select 
+                                                    <input 
+                                                        list={`lpj-programs-${row.id}`}
                                                         value={row.program}
                                                         onChange={(e) => updateLpjRow(row.id, 'program', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none text-emerald-900"
-                                                    >
-                                                        <option value="">Pilih Program...</option>
-                                                        {RKA_PROGRAMS.map(prog => <option key={prog} value={prog}>{prog}</option>)}
-                                                    </select>
+                                                        className="w-full h-10 px-3 pr-8 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all text-emerald-900"
+                                                        placeholder="Pilih atau ketik program..."
+                                                    />
+                                                    <datalist id={`lpj-programs-${row.id}`}>
+                                                        {availablePrograms.map(prog => <option key={prog} value={prog} />)}
+                                                    </datalist>
                                                     <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                                                 </td>
-                                                <td className="p-0 relative group border-r border-slate-100">
-                                                    <select 
+                                                <td className="p-0 border-r border-slate-100">
+                                                    <input 
+                                                        type="text" 
                                                         value={row.operasional}
                                                         onChange={(e) => updateLpjRow(row.id, 'operasional', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none text-emerald-900"
-                                                    >
-                                                        <option value="">Deskripsi Kegiatan...</option>
-                                                        {OPERASIONAL_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                                    </select>
-                                                    <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
+                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                                                        placeholder="Ketikan deskripsi..."
+                                                    />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
                                                     <input 

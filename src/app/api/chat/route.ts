@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { createClient } from '@supabase/supabase-js';
+
+// Setup Supabase Client (Service Role for admin/rpc access)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const embeddings = new GoogleGenerativeAIEmbeddings({
+  apiKey: process.env.GEMINI_API_KEY,
+  modelName: 'gemini-embedding-001',
+});
+
+const llm = new ChatGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  model: 'gemini-2.5-flash', // Atau gemini-1.5-flash
+  temperature: 0.3, // Sedikit kreativitas untuk gaya bahasa asisten, tapi tetap faktual
+  maxOutputTokens: 1024,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { message, history } = body;
+
+    if (!message) {
+      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    }
+
+    // 1. Embed query untuk mencari dokumen relevan (RAG)
+    let queryVector = null;
+    try {
+      queryVector = await embeddings.embedQuery(message);
+    } catch (embError: any) {
+      console.warn('[Chatbot] Embedding failed (possibly Rate Limit):', embError.message);
+      // Fallback: Jika terkena Limit (429), kita hentikan dengan status 429
+      if (embError?.message?.includes('429') || embError?.message?.toLowerCase().includes('quota')) {
+         return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
+      }
+    }
+
+    let konteks = '';
+    
+    // 2. Jika embedding berhasil, ambil dokumen dari Supabase
+    if (queryVector) {
+      const { data: chunks, error } = await supabase.rpc('match_documents', {
+        query_embedding: queryVector,
+        match_count: 5,
+        filter_source: null
+      });
+
+      if (!error && chunks && chunks.length > 0) {
+        konteks = chunks
+          .map((c: any) => `[SUMBER: ${c.source} | FILE: ${c.metadata?.file_name || 'unknown'}]\n${c.content}`)
+          .join('\n\n');
+      }
+    }
+
+    // 3. Susun History menjadi string atau objek untuk prompt
+    // LangChain bisa menerima history, tapi cara paling aman untuk prompt sederhana adalah menyisipkannya.
+    const historyText = (history || [])
+        .map((h: any) => `${h.role === 'user' ? 'Pengguna' : 'AI'}: ${h.content}`)
+        .join('\n');
+
+    const systemPrompt = `Anda adalah "Asisten Cerdas Smart Santri", sebuah AI ramah, profesional, dan membantu yang melayani pengguna aplikasi manajemen keuangan pesantren.
+Tugas Anda adalah:
+1. Menjawab pertanyaan pengguna terkait operasional sistem atau aturan regulasi keuangan pesantren.
+2. JIKA pengguna bertanya hal terkait aturan keuangan, GUNAKAN referensi dokumen di bawah ini untuk menjawab secara akurat.
+3. JIKA dokumen referensi tidak menyebutkan jawabannya, sampaikan dengan jujur bahwa Anda belum menemukan aturannya, tetapi jangan berhalusinasi (mengarang bebas).
+4. Gunakan bahasa Indonesia yang baik, ramah, dan ringkas. Gunakan Markdown (bold, italic, list) untuk membuat jawaban mudah dibaca.
+5. Anda bisa mengingat percakapan sebelumnya jika relevan.
+
+--- KONTEKS REGULASI DITEMUKAN ---
+${konteks || 'Tidak ada dokumen spesifik yang terambil. Jawab berdasarkan pengetahuan umum sistem Anda.'}
+----------------------------------`;
+
+    const finalPrompt = `${systemPrompt}\n\n[Riwayat Percakapan Sebelumnya]\n${historyText}\n\nPengguna: ${message}\nAI:`;
+
+    // 4. Tanya LLM
+    const response = await llm.invoke(finalPrompt);
+
+    return NextResponse.json({ 
+        reply: response.content 
+    });
+
+  } catch (error: any) {
+    console.error('[Chat API Error]', error);
+    
+    if (error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota')) {
+        return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
+    }
+
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -22,7 +23,10 @@ export default function RootLayout({
       lang="id"
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body suppressHydrationWarning className="min-h-full flex flex-col">{children}</body>
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
+        {children}
+        <ChatbotWidget />
+      </body>
     </html>
   );
 }

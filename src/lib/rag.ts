@@ -140,9 +140,15 @@ HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kura
 
   } catch (error: any) {
     console.error('[RAG Audit Error]', error)
+    
+    // Tangani error 429 Too Many Requests (Rate Limit) dengan pesan yang ramah UI
+    const isRateLimit = error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota');
+    
     return {
       status: 'AMAN', // Fail-safe: jika AI error, jangan blokir proses
-      alasan: 'Gagal melakukan audit AI secara otomatis karena gangguan sistem. Detail Error: ' + (error?.message || 'Unknown Error'),
+      alasan: isRateLimit 
+        ? 'Sistem Smart AI saat ini beroperasi pada kapasitas maksimal. Evaluasi otomatis dilewati agar pencatatan Anda tidak terhambat. Transaksi ditandai AMAN secara default.'
+        : 'Tidak dapat terhubung ke server Smart AI saat ini. Transaksi ditandai AMAN secara default agar proses Anda tidak terhambat.',
       referensi: [],
       skor_kepatuhan: 50
     }
