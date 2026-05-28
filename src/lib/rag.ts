@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 // Inisialisasi model dipindahkan ke dalam fungsi untuk mencegah error build Vercel
 
 export interface AuditResult {
-  status: 'AMAN' | 'ANOMALI'
+  status: 'AMAN' | 'ANOMALI' | 'GAGAL'
   alasan: string
   referensi: string[]
   skor_kepatuhan: number
@@ -52,10 +52,10 @@ export async function auditNarasi(
 
     if (!chunks || chunks.length === 0) {
       return {
-        status: 'AMAN',
-        alasan: 'Tidak ada aturan spesifik yang melarang pengeluaran ini pada dokumen regulasi yang tersedia.',
+        status: 'GAGAL',
+        alasan: 'Referensi aturan tidak ditemukan dalam sistem Smart Santri untuk jenis pengeluaran ini.',
         referensi: [],
-        skor_kepatuhan: 80
+        skor_kepatuhan: 0
       }
     }
 
@@ -145,12 +145,12 @@ HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kura
     const isRateLimit = error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota');
     
     return {
-      status: 'AMAN', // Fail-safe: jika AI error, jangan blokir proses
+      status: 'GAGAL',
       alasan: isRateLimit 
-        ? 'Sistem Smart AI saat ini beroperasi pada kapasitas maksimal. Evaluasi otomatis dilewati agar pencatatan Anda tidak terhambat. Transaksi ditandai AMAN secara default.'
-        : 'Tidak dapat terhubung ke server Smart AI saat ini. Transaksi ditandai AMAN secara default agar proses Anda tidak terhambat.',
+        ? 'Gagal terhubung ke AI karena sistem beroperasi pada kapasitas maksimal (Limit Kuota API). Proses Smart Audit tidak berhasil dilakukan.'
+        : 'Tidak dapat terhubung ke server Smart AI saat ini. Proses Smart Audit gagal dilakukan.',
       referensi: [],
-      skor_kepatuhan: 50
+      skor_kepatuhan: 0
     }
   }
 }

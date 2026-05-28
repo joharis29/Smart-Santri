@@ -1405,9 +1405,11 @@ export default function RiwayatDokumenPage() {
                                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
                                                                 aiStatus === 'AMAN' 
                                                                     ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                                                    : 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse'
+                                                                    : aiStatus === 'GAGAL'
+                                                                        ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                                                        : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
                                                             }`}>
-                                                                {aiStatus === 'AMAN' ? '✅ Lolos Audit AI' : '⚠️ Anomali Ditemukan'}
+                                                                {aiStatus === 'AMAN' ? '✅ Lolos Audit AI' : (aiStatus === 'GAGAL' ? '⛔ Audit Gagal' : '⚠️ Anomali Ditemukan')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1697,17 +1699,18 @@ export default function RiwayatDokumenPage() {
                                                         if (!aiNotes) return null;
 
                                                         const isAman = aiNotes.status === 'AMAN';
+                                                        const isGagal = aiNotes.status === 'GAGAL';
                                                         return (
-                                                            <div className={`bg-white p-4 rounded-2xl border space-y-3 shadow-sm ${isAman ? 'border-emerald-200' : 'border-rose-200'}`}>
+                                                            <div className={`bg-white p-4 rounded-2xl border space-y-3 shadow-sm ${isAman ? 'border-emerald-200' : (isGagal ? 'border-rose-200' : 'border-amber-200')}`}>
                                                                 <div className="flex items-center gap-2">
-                                                                    <Bot className={`w-4 h-4 ${isAman ? 'text-emerald-600' : 'text-rose-600'}`} />
-                                                                    <p className={`text-[9px] font-black uppercase tracking-widest ${isAman ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                                        Hasil Analisis Smart AI: {isAman ? 'AMAN' : 'ANOMALI'}
+                                                                    <Bot className={`w-4 h-4 ${isAman ? 'text-emerald-600' : (isGagal ? 'text-rose-600' : 'text-amber-600')}`} />
+                                                                    <p className={`text-[9px] font-black uppercase tracking-widest ${isAman ? 'text-emerald-600' : (isGagal ? 'text-rose-600' : 'text-amber-600')}`}>
+                                                                        Hasil Analisis Smart AI: {isAman ? 'AMAN' : (isGagal ? 'GAGAL' : 'ANOMALI')}
                                                                     </p>
                                                                 </div>
                                                                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                                                                     {aiNotes.alasan && (
-                                                                        <div className={`text-[10px] font-bold p-2.5 rounded-lg border leading-relaxed ${isAman ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-rose-50 text-rose-800 border-rose-100'}`}>
+                                                                        <div className={`text-[10px] font-bold p-2.5 rounded-lg border leading-relaxed ${isAman ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : (isGagal ? 'bg-rose-50 text-rose-800 border-rose-100' : 'bg-amber-50 text-amber-800 border-amber-100')}`}>
                                                                             • {aiNotes.alasan}
                                                                         </div>
                                                                     )}

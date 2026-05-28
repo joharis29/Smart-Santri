@@ -20,10 +20,10 @@ export async function POST(req: NextRequest) {
     // Fallback jika API limit
     if (error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota')) {
       return NextResponse.json({
-        status: 'AMAN',
-        alasan: 'Sistem Smart AI saat ini beroperasi pada kapasitas maksimal. Evaluasi otomatis dilewati agar pencatatan Anda tidak terhambat. Transaksi ditandai AMAN secara default.',
+        status: 'GAGAL',
+        alasan: 'Gagal terhubung ke AI karena sistem beroperasi pada kapasitas maksimal (Limit Kuota API). Proses Smart Audit tidak berhasil dilakukan.',
         referensi: [],
-        skor_kepatuhan: 50
+        skor_kepatuhan: 0
       })
     }
 
