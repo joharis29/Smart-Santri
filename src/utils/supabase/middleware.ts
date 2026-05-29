@@ -38,8 +38,24 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/admin')
 
-  // Redirect users who aren't authenticated to the login page
-  if (!user && isProtectedRoute) {
+  // Check if user is banned or deactivated in database
+  let isUserActive = true;
+  if (user && isProtectedRoute) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('id', user.id)
+      .single()
+    
+    if (profile && profile.is_active === false) {
+      isUserActive = false;
+      // Optionally sign out the user
+      await supabase.auth.signOut()
+    }
+  }
+
+  // Redirect users who aren't authenticated or deactivated to the login page
+  if ((!user || !isUserActive) && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
