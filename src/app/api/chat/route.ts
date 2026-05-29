@@ -16,9 +16,8 @@ const embeddings = new GoogleGenerativeAIEmbeddings({
 
 const llm = new ChatGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
-  model: 'gemini-2.5-flash', // Atau gemini-1.5-flash
+  model: 'gemini-1.5-flash', // Atau gemini-1.5-flash
   temperature: 0.3, // Sedikit kreativitas untuk gaya bahasa asisten, tapi tetap faktual
-  maxOutputTokens: 1024,
 });
 
 export async function POST(req: NextRequest) {
