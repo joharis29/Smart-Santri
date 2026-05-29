@@ -29,10 +29,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    // Expand known abbreviations for better embedding matching
+    let searchQuery = message
+      .replace(/\bPAP\b/gi, 'Pedoman Akuntansi Pesantren (PAP)')
+      .replace(/\bISAK 35\b/gi, 'Interpretasi Standar Akuntansi Keuangan (ISAK) 35')
+      .replace(/\bISAK 335\b/gi, 'Interpretasi Standar Akuntansi Keuangan (ISAK) 335')
+      .replace(/\bBOS\b/gi, 'Bantuan Operasional Sekolah (BOS)');
+
     // 1. Embed query untuk mencari dokumen relevan (RAG)
     let queryVector = null;
     try {
-      queryVector = await embeddings.embedQuery(message);
+      queryVector = await embeddings.embedQuery(searchQuery);
     } catch (embError: any) {
       console.warn('[Chatbot] Embedding failed (possibly Rate Limit):', embError.message);
       // Fallback: Jika terkena Limit (429), kita hentikan dengan status 429
