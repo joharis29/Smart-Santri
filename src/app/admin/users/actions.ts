@@ -185,7 +185,7 @@ export async function toggleUserStatusByAdmin(userId: string, currentIsActive: b
 
     // 2. Ban/unban in Supabase Auth to actually prevent/allow login
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      ban_duration: newIsActive ? 'none' : 'infinite'
+      ban_duration: newIsActive ? 'none' : '876000h'
     });
 
     if (authError) {
