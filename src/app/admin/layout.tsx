@@ -98,15 +98,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             try {
                 const supabase = createClient();
                 const { data: { user }, error: authError } = await supabase.auth.getUser();
-                if (authError || !user) return;
+                if (authError || !user) {
+                    window.location.href = '/login';
+                    return;
+                }
 
                 setUserId(user.id);
 
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
-                    .select('full_name, role, unit_id')
+                    .select('full_name, role, unit_id, is_active')
                     .eq('id', user.id)
                     .single();
+                
+                if (profile && profile.is_active === false) {
+                    await supabase.auth.signOut();
+                    window.location.href = '/login';
+                    return;
+                }
 
                 if (profileError || !profile) {
                     setActualRole('GUEST');
