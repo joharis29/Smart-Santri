@@ -319,11 +319,16 @@ export default function BuatRealisasiPage() {
                 // Fetch all LPJ documents to find which RKAs have already been reported
                 const { data: lpjDocs } = await supabase
                     .from('dokumen_pengajuan')
-                    .select('item_pengajuan(rincian_json)')
+                    .select('id, item_pengajuan(rincian_json)')
                     .eq('jenis', 'LPJ');
+
+                const params = new URLSearchParams(window.location.search);
+                const currentEditId = params.get('id');
 
                 const realizedRkaIds = new Set<string>();
                 lpjDocs?.forEach(doc => {
+                    if (currentEditId && String(doc.id) === String(currentEditId)) return;
+
                     doc.item_pengajuan?.forEach((it: any) => {
                         try {
                             const details = typeof it.rincian_json === 'string' 
@@ -336,7 +341,7 @@ export default function BuatRealisasiPage() {
                     });
                 });
 
-                // Filter out RKAs that have already been reported in an LPJ
+                // Filter out RKAs that have already been reported in an LPJ (except our own draft)
                 const filtered = data.filter(doc => !realizedRkaIds.has(doc.id));
                 setApprovedRkas(filtered);
             }
