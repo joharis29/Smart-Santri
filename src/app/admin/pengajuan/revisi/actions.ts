@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 
 export async function getApprovedRkaList() {
@@ -14,7 +14,9 @@ export async function getApprovedRkaList() {
     .eq('id', user.user.id)
     .single()
 
-  let query = supabase
+  const adminClient = createAdminClient()
+
+  let query = adminClient
     .from('dokumen_pengajuan')
     .select(`
       id,
@@ -42,9 +44,17 @@ export async function getApprovedRkaList() {
     .is('parent_id', null) // Hanya RKA asli yang bisa direvisi
     .order('created_at', { ascending: false })
 
-  if (profile?.role === 'BENDAHARA_UNIT' || profile?.role === 'STAF_UNIT') {
-    if (profile.unit_id) query = query.eq('unit_id', profile.unit_id)
-    if (profile.jenjang_id) query = query.eq('jenjang_id', profile.jenjang_id)
+  const role = profile?.role || '';
+  if (['STAF', 'STAF_UNIT', 'BENDAHARA_UNIT', 'KEPALA_UNIT'].includes(role)) {
+    if (profile?.unit_id) {
+      query = query.eq('unit_id', profile.unit_id);
+    } else if (profile?.jenjang_id) {
+      query = query.eq('jenjang_id', profile.jenjang_id);
+    }
+  } else if (['BENDAHARA_JENJANG', 'KEPALA_JENJANG'].includes(role)) {
+    if (profile?.jenjang_id) {
+      query = query.eq('jenjang_id', profile.jenjang_id);
+    }
   }
 
   const { data, error } = await query
