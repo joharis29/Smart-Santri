@@ -309,10 +309,28 @@ export default function UserManagementPage() {
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
-        const res = await deleteUserByAdmin(userToDelete.id as string);
+        const res = await deleteUserByAdmin(userToDelete.id as string, userToDelete.role, userToDelete.unit);
         if (!res.success) throw new Error(res.error);
-        setUsers(users.filter(u => u.id !== userToDelete.id));
-        alert('Pengguna berhasil dihapus dari sistem!');
+        
+        if (res.isPartialDelete) {
+          // Update local state to reflect the new main role and remove the deleted role
+          setUsers(users.map(u => {
+            if (u.id === userToDelete.id) {
+              const updatedConcurrentRoles = u.concurrentRoles?.filter(cr => !(cr.role === userToDelete.role && cr.unit === userToDelete.unit)) || [];
+              return {
+                ...u,
+                role: res.newMainRole || u.role,
+                unit: res.newMainUnit || u.unit,
+                concurrentRoles: updatedConcurrentRoles
+              };
+            }
+            return u;
+          }));
+          alert(`Berhasil: Peran ${userToDelete.role} dihapus, namun akun tetap aktif sebagai ${res.newMainRole}.`);
+        } else {
+          setUsers(users.filter(u => u.id !== userToDelete.id));
+          alert('Pengguna berhasil dihapus sepenuhnya dari sistem!');
+        }
       } catch (err: any) {
         console.error('Error deleting profile:', err);
         alert(`Gagal menghapus pengguna: ${err.message || err}`);

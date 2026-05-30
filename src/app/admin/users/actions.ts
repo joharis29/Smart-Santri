@@ -115,34 +115,114 @@ export async function registerUserByAdmin(userData: {
   }
 }
 
-export async function deleteUserByAdmin(userId: string) {
+export async function deleteUserByAdmin(userId: string, roleName?: string, unitName?: string) {
   try {
     const supabaseAdmin = createAdminClient();
 
-    // 1. Coba hapus akun dari auth.users (profil akan otomatis terhapus secara cascade jika ada relasinya)
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    
-    if (authError) {
-      // Jika akun tidak ditemukan di auth.users (misal data simulasi lama), 
-      // kita harus tetap menghapus baris datanya dari tabel profiles secara langsung!
-      const isUserNotFound = authError.message?.toLowerCase().includes('not found') || 
-                            (authError as any).status === 404;
-      
-      if (isUserNotFound) {
-        const { error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .delete()
-          .eq('id', userId);
-        
-        if (profileError) {
-          throw new Error(`Gagal menghapus profil simulasi lama dari database: ${profileError.message}`);
-        }
-        return { success: true };
+    let isPartialDelete = false;
+    let newMainRole = null;
+    let newMainUnit = null;
+
+    if (roleName && unitName) {
+      // 1. Fetch Unit ID if needed
+      let selectedUnitId: string | null = null;
+      if (unitName && unitName !== 'Pusat (Yayasan)') {
+        const { data: unitData } = await supabaseAdmin
+          .from('unit')
+          .select('id')
+          .eq('name', unitName)
+          .single();
+        if (unitData) selectedUnitId = unitData.id;
       }
-      throw new Error(`Gagal menghapus akun di Supabase Auth: ${authError.message}`);
+
+      // Map roles
+      const mapDropdownToEnum = (roleStr: string) => {
+        switch (roleStr) {
+          case 'Administrator': return 'ADMINISTRATOR';
+          case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+          case 'Pimpinan Pesantren': return 'PIMPINAN';
+          case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
+          case 'Kepala Jenjang': return 'KEPALA_JENJANG';
+          case 'Kepala Unit': return 'KEPALA_UNIT';
+          case 'Bendahara Unit': return 'BENDAHARA_UNIT';
+          case 'Staf Bidang': return 'STAFF_BIDANG';
+          case 'Staf Unit': return 'STAFF';
+          default: return 'STAFF';
+        }
+      };
+      
+      const mapEnumToDropdown = (roleEnum: string) => {
+        switch (roleEnum) {
+          case 'ADMINISTRATOR': return 'Administrator';
+          case 'BENDAHARA_PUSAT': return 'Bendahara Yayasan/Pesantren (Pusat)';
+          case 'PIMPINAN': return 'Pimpinan Pesantren';
+          case 'BENDAHARA_JENJANG': return 'Bendahara Jenjang';
+          case 'KEPALA_JENJANG': return 'Kepala Jenjang';
+          case 'KEPALA_UNIT': return 'Kepala Unit';
+          case 'BENDAHARA_UNIT': return 'Bendahara Unit';
+          case 'STAFF_BIDANG': return 'Staf Bidang';
+          case 'STAFF': return 'Staf Unit';
+          default: return 'Staf Unit';
+        }
+      };
+
+      const dbRoleToRemove = mapDropdownToEnum(roleName);
+
+      // 2. Check how many roles the user has in profiles_multi_role
+      const { data: userRoles } = await supabaseAdmin
+        .from('profiles_multi_role')
+        .select('id, role, unit_id, unit:unit_id(name)')
+        .eq('user_id', userId);
+
+      if (userRoles && userRoles.length > 1) {
+        isPartialDelete = true;
+        
+        // Find the specific role to delete
+        let roleToDelete = userRoles.find(r => r.role === dbRoleToRemove && (r.unit_id === selectedUnitId || (!r.unit_id && !selectedUnitId)));
+        
+        if (roleToDelete) {
+          await supabaseAdmin.from('profiles_multi_role').delete().eq('id', roleToDelete.id);
+        }
+
+        // 3. Promote another remaining role to be the main role in profiles table
+        const remainingRoles = userRoles.filter(r => r.id !== roleToDelete?.id);
+        if (remainingRoles.length > 0) {
+          const fallback = remainingRoles[0];
+          newMainRole = mapEnumToDropdown(fallback.role);
+          newMainUnit = fallback.unit ? (fallback.unit as any).name : 'Pusat (Yayasan)';
+
+          await supabaseAdmin.from('profiles').update({
+            role: fallback.role,
+            unit_id: fallback.unit_id
+          }).eq('id', userId);
+        }
+      }
     }
 
-    return { success: true };
+    if (!isPartialDelete) {
+      // 4. Jika user hanya punya 1 role (atau info role tidak dikirim), HAPUS SEPENUHNYA
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        const isUserNotFound = authError.message?.toLowerCase().includes('not found') || 
+                              (authError as any).status === 404;
+        
+        if (isUserNotFound) {
+          const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .delete()
+            .eq('id', userId);
+          
+          if (profileError) {
+            throw new Error(`Gagal menghapus profil simulasi lama dari database: ${profileError.message}`);
+          }
+          return { success: true, isPartialDelete: false };
+        }
+        throw new Error(`Gagal menghapus akun di Supabase Auth: ${authError.message}`);
+      }
+    }
+
+    return { success: true, isPartialDelete, newMainRole, newMainUnit };
   } catch (err: any) {
     console.error('Error in deleteUserByAdmin server action:', err);
     return { success: false, error: err.message || 'Terjadi kesalahan sistem' };
