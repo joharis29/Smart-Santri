@@ -17,15 +17,15 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    // If login fails, check if the email actually exists in our profiles table using Admin Client
+    // If login fails, check if the email actually exists in Supabase Auth using Admin Client
     const supabaseAdmin = createAdminClient()
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle()
+    const { data: listData } = await supabaseAdmin.auth.admin.listUsers()
+    
+    const authUser = listData.users.find(
+      u => u.email?.toLowerCase() === email.toLowerCase()
+    )
 
-    if (!profile) {
+    if (!authUser) {
       redirect('/login?error=Mohon maaf, akun tidak terdaftar di sistem.')
     } else {
       redirect('/login?error=Kata sandi yang Anda masukkan salah.')

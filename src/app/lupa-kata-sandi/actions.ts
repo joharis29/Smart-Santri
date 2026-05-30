@@ -6,18 +6,14 @@ export async function sendPasswordResetLink(email: string, origin: string) {
   try {
     const supabaseAdmin = createAdminClient();
 
-    // 1. Cek secara eksplisit apakah email terdaftar di database
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
+    // 1. Cek secara eksplisit apakah email terdaftar di database Supabase Auth
+    const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+    
+    const authUser = listData.users.find(
+      u => u.email?.toLowerCase() === email.toLowerCase()
+    );
 
-    if (profileError) {
-      throw new Error('Terjadi kesalahan saat memverifikasi email.');
-    }
-
-    if (!profile) {
+    if (!authUser) {
       return { success: false, error: 'Mohon maaf, akun tidak terdaftar di sistem.' };
     }
 
