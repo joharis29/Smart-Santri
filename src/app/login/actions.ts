@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -16,7 +17,19 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    redirect('/login?error=Email atau kata sandi yang Anda masukkan salah.')
+    // If login fails, check if the email actually exists in our profiles table using Admin Client
+    const supabaseAdmin = createAdminClient()
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+
+    if (!profile) {
+      redirect('/login?error=Mohon maaf, akun tidak terdaftar di sistem.')
+    } else {
+      redirect('/login?error=Kata sandi yang Anda masukkan salah.')
+    }
   }
 
   revalidatePath('/', 'layout')

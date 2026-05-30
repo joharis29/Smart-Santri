@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ShieldCheck, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
+import { sendPasswordResetLink } from './actions'
 
 export default function LupaKataSandiPage() {
   const [email, setEmail] = useState('')
@@ -18,13 +18,11 @@ export default function LupaKataSandiPage() {
     setErrorMsg('')
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-kata-sandi`,
-      })
+      const origin = window.location.origin
+      const res = await sendPasswordResetLink(email, origin)
 
-      if (error) {
-        setErrorMsg('Gagal mengirim email. Pastikan email yang Anda masukkan terdaftar di sistem.')
+      if (!res.success) {
+        setErrorMsg(res.error || 'Gagal mengirim email. Pastikan email yang Anda masukkan terdaftar di sistem.')
         setStatus('error')
       } else {
         setStatus('success')
