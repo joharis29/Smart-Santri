@@ -896,11 +896,31 @@ export async function saveLPJ(payload: {
       }
     }
 
+    const adminClient = createAdminClient();
     let docId = payload.id;
     
     if (docId) {
-      // Update existing LPJ Document Header
-      const { error: upError } = await supabase
+      // Security Check: Verify ownership
+      const { data: existingDoc } = await supabase
+        .from('dokumen_pengajuan')
+        .select('pembuat_id')
+        .eq('id', docId)
+        .maybeSingle();
+
+      if (existingDoc && existingDoc.pembuat_id !== pembuat_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', pembuat_id)
+          .maybeSingle();
+
+        if (!['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(profile?.role || '')) {
+          return { error: 'Anda tidak berhak mengubah dokumen LPJ ini.' };
+        }
+      }
+
+      // Update existing LPJ Document Header using Admin Client to avoid RLS violation on status change
+      const { error: upError } = await adminClient
         .from('dokumen_pengajuan')
         .update({
           periode_bulan: bulanInt,
@@ -918,10 +938,10 @@ export async function saveLPJ(payload: {
       if (upError) return { error: 'Gagal update dokumen LPJ: ' + upError.message };
 
       // Delete old items to replace them
-      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId);
+      await adminClient.from('item_pengajuan').delete().eq('dokumen_id', docId);
     } else {
-      // Create new LPJ Document Header
-      const { data: dokumen, error: docError } = await supabase
+      // Create new LPJ Document Header using Admin Client
+      const { data: dokumen, error: docError } = await adminClient
         .from('dokumen_pengajuan')
         .insert({
           pembuat_id,
@@ -971,7 +991,7 @@ export async function saveLPJ(payload: {
       rincian_json: finalDetails
     };
 
-    const { error: itemError } = await supabase
+    const { error: itemError } = await adminClient
       .from('item_pengajuan')
       .insert(itemToInsert);
 
