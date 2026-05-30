@@ -32,7 +32,6 @@ export async function getApprovedRkaList() {
         kategori_coa,
         nominal,
         rincian_json,
-        jumlah_kegiatan,
         waktu,
         tempat,
         pic,
@@ -45,7 +44,7 @@ export async function getApprovedRkaList() {
     .order('created_at', { ascending: false })
 
   const role = profile?.role || '';
-  if (['STAF', 'STAF_UNIT', 'BENDAHARA_UNIT', 'KEPALA_UNIT'].includes(role)) {
+  if (['STAF', 'STAF_UNIT', 'STAFF_BIDANG', 'BENDAHARA_UNIT', 'KEPALA_UNIT'].includes(role)) {
     if (profile?.unit_id) {
       query = query.eq('unit_id', profile.unit_id);
     } else if (profile?.jenjang_id) {
