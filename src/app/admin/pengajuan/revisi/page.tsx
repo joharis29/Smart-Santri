@@ -171,51 +171,102 @@ export default function RkaRevisiPage() {
             {rows.map((row, index) => (
               <div key={row.id} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="w-8 text-center font-bold text-gray-400 pt-3">{index + 1}</div>
-                <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Program/Kegiatan</label>
-                    <input 
-                      type="text" 
-                      value={row.program} 
-                      onChange={e => updateRow(row.id, 'program', e.target.value)}
-                      className="w-full p-2 border rounded-md text-sm"
-                      placeholder="Nama kegiatan"
-                    />
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Baris 1 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Program/Kegiatan</label>
+                      <input 
+                        type="text" 
+                        value={row.program} 
+                        onChange={e => updateRow(row.id, 'program', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Nama kegiatan"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Kategori (COA)</label>
+                      <select 
+                        value={row.operasional} 
+                        onChange={e => updateRow(row.id, 'operasional', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                      >
+                        <option value="">Pilih Kategori</option>
+                        <option value="KONSUMSI">Konsumsi</option>
+                        <option value="HONOR">Honor/Insentif</option>
+                        <option value="BARANG_JASA">Barang & Jasa</option>
+                        <option value="TRANSPORT">Transport</option>
+                        <option value="LAINNYA">Lainnya</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Kategori (COA)</label>
-                    <select 
-                      value={row.operasional} 
-                      onChange={e => updateRow(row.id, 'operasional', e.target.value)}
-                      className="w-full p-2 border rounded-md text-sm"
-                    >
-                      <option value="">Pilih Kategori</option>
-                      <option value="KONSUMSI">Konsumsi</option>
-                      <option value="HONOR">Honor/Insentif</option>
-                      <option value="BARANG_JASA">Barang & Jasa</option>
-                      <option value="TRANSPORT">Transport</option>
-                      <option value="LAINNYA">Lainnya</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Jumlah Kegiatan</label>
+                      <input 
+                        type="text" 
+                        value={row.jumlah} 
+                        onChange={e => updateRow(row.id, 'jumlah', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Contoh: 1x, 2 Semester"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Waktu Pelaksanaan</label>
+                      <input 
+                        type="text" 
+                        value={row.waktu} 
+                        onChange={e => updateRow(row.id, 'waktu', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Contoh: Juni 2026"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">PIC</label>
-                    <input 
-                      type="text" 
-                      value={row.pic} 
-                      onChange={e => updateRow(row.id, 'pic', e.target.value)}
-                      className="w-full p-2 border rounded-md text-sm"
-                      placeholder="Penanggung Jawab"
-                    />
+
+                  {/* Baris 2 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Tempat</label>
+                      <input 
+                        type="text" 
+                        value={row.tempat} 
+                        onChange={e => updateRow(row.id, 'tempat', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Lokasi kegiatan"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Sasaran</label>
+                      <input 
+                        type="text" 
+                        value={row.sasaran} 
+                        onChange={e => updateRow(row.id, 'sasaran', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Target partisipan"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Nominal (Rp)</label>
-                    <input 
-                      type="number" 
-                      value={row.nominal || ''} 
-                      onChange={e => updateRow(row.id, 'nominal', e.target.value)}
-                      className={`w-full p-2 border rounded-md text-sm font-semibold ${isOverBudget ? 'bg-red-50 text-red-700 border-red-300' : ''}`}
-                      placeholder="0"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">PIC</label>
+                      <input 
+                        type="text" 
+                        value={row.pic} 
+                        onChange={e => updateRow(row.id, 'pic', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm"
+                        placeholder="Penanggung Jawab"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Nominal (Rp)</label>
+                      <input 
+                        type="number" 
+                        value={row.nominal || ''} 
+                        onChange={e => updateRow(row.id, 'nominal', e.target.value)}
+                        className={`w-full p-2 border rounded-md text-sm font-semibold ${isOverBudget ? 'bg-red-50 text-red-700 border-red-300' : ''}`}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
                 </div>
                 <button 
