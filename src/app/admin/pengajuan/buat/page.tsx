@@ -2019,31 +2019,33 @@ function BuatPengajuanContent() {
                     )}
                     {row.auditResult && (
                       <tr className={`${row.auditResult.status === 'AMAN' ? 'bg-emerald-50/50' : 'bg-rose-50/50'} border-b border-slate-100`}>
-                        <td colSpan={10} className="px-4 py-3">
-                          <div className="flex gap-3">
-                            <div className="mt-0.5">
-                              {row.auditResult.status === 'AMAN' ? (
-                                <Bot className="w-4 h-4 text-emerald-500" />
-                              ) : (
-                                <AlertTriangle className="w-4 h-4 text-rose-500" />
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              <p className={`text-[11px] font-black ${row.auditResult.status === 'AMAN' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                Hasil Audit AI: {row.auditResult.status}
-                              </p>
-                              <p className="text-[10px] font-medium text-slate-600 leading-relaxed">
-                                {row.auditResult.alasan}
-                              </p>
-                              {row.auditResult.referensi && row.auditResult.referensi.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {row.auditResult.referensi.map((ref: string, i: number) => (
-                                    <span key={i} className="inline-block px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold">
-                                      {ref}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                        <td colSpan={10} className="p-0">
+                          <div className="sticky left-0 px-4 py-3 max-w-[calc(100vw-300px)] xl:max-w-4xl">
+                            <div className="flex gap-3">
+                              <div className="mt-0.5 shrink-0">
+                                {row.auditResult.status === 'AMAN' ? (
+                                  <Bot className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                                )}
+                              </div>
+                              <div className="space-y-1">
+                                <p className={`text-[11px] font-black ${row.auditResult.status === 'AMAN' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                  Hasil Audit AI: {row.auditResult.status}
+                                </p>
+                                <p className="text-[10px] font-medium text-slate-600 leading-relaxed whitespace-pre-wrap break-words">
+                                  {row.auditResult.alasan}
+                                </p>
+                                {row.auditResult.referensi && row.auditResult.referensi.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {row.auditResult.referensi.map((ref: string, i: number) => (
+                                      <span key={i} className="inline-block px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold max-w-full truncate" title={ref}>
+                                        {ref}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
