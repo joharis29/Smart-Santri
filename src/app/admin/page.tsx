@@ -180,7 +180,7 @@ export default function AdminDashboardPage() {
             if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
                 calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'MENUNGGU_KEPALA' : 'REKAP_BENDAHARA';
             } else if (selectedTrxForReview.rawStatus === 'REKAP_BENDAHARA') {
-                calculatedNextStatus = 'MENUNGGU_PUSAT';
+                calculatedNextStatus = 'MENUNGGU_KEPALA';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
@@ -266,9 +266,9 @@ export default function AdminDashboardPage() {
     
     let statusFilters = ['MENUNGGU_VERIFIKASI'];
     if (userRole === 'BENDAHARA_UNIT') {
-      statusFilters = ['MENUNGGU_VERIFIKASI'];
+      statusFilters = ['MENUNGGU_VERIFIKASI', 'REKAP_BENDAHARA'];
     } else if (userRole === 'KEPALA_UNIT') {
-      statusFilters = ['REKAP_BENDAHARA', 'MENUNGGU_KEPALA'];
+      statusFilters = ['MENUNGGU_KEPALA'];
     } else if (userRole === 'BENDAHARA_PUSAT') {
       statusFilters = ['MENUNGGU_PUSAT', 'DISETUJUI', 'MENUNGGU_CAIR'];
     }
@@ -550,7 +550,7 @@ export default function AdminDashboardPage() {
       if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REKAP BENDAHARA', 'MENUNGGU KEPALA', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'KEPALA_UNIT') {
       // Kepala Unit melihat yang butuh persetujuannya (MENUNGGU KEPALA) atau yang sudah berjalan lebih lanjut
-      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
+      if (['DRAFT', 'MENUNGGU VERIFIKASI', 'REKAP BENDAHARA', 'REVISI', 'BUTUH REVISI'].includes(t.status)) return false;
     } else if (userRole === 'BENDAHARA_UNIT') {
       // Bendahara Unit melihat progres, tapi DRAFT hanya muncul di halaman Rekap Draft
       if (t.status === 'DRAFT' || t.status === 'REVISI') return false;
@@ -567,10 +567,10 @@ export default function AdminDashboardPage() {
   // Otorisasi Peninjauan RKA Berdasarkan Role Alur Approval
   const canReview = selectedTrxForReview ? (() => {
     const status = selectedTrxForReview.status; // e.g., 'MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA'
-    if (status === 'MENUNGGU VERIFIKASI') {
+    if (status === 'MENUNGGU VERIFIKASI' || status === 'REKAP BENDAHARA') {
       return userRole === 'BENDAHARA_UNIT' || userRole === 'BENDAHARA_PUSAT';
     }
-    if (status === 'REKAP BENDAHARA' || status === 'MENUNGGU KEPALA') {
+    if (status === 'MENUNGGU KEPALA') {
       return userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT';
     }
     if (status === 'MENUNGGU PUSAT') {
@@ -591,7 +591,7 @@ export default function AdminDashboardPage() {
   const requiredRoleName = selectedTrxForReview ? (() => {
     const status = selectedTrxForReview.status;
     if (status === 'MENUNGGU VERIFIKASI') return 'Bendahara Unit/Jenjang';
-    if (status === 'REKAP BENDAHARA') return 'Kepala Unit/Jenjang';
+    if (status === 'REKAP BENDAHARA') return 'Bendahara Unit/Jenjang';
     if (status === 'MENUNGGU KEPALA') return 'Kepala Unit/Jenjang';
     if (status === 'MENUNGGU PUSAT') return 'Bendahara Pusat';
     if (status === 'DISETUJUI') return 'Bendahara Pusat';
