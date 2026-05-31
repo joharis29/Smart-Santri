@@ -155,8 +155,7 @@ export default function RiwayatPengajuanPage() {
                         *,
                         item_pengajuan(*)
                     `)
-                    .eq('jenis', 'RKA')
-                    .in('status', ['CAIR', 'SUDAH_DITERIMA'])
+                    .or('and(jenis.eq.RKA,status.in.(CAIR,SUDAH_DITERIMA)),and(jenis.eq.REVISI_RKA,status.eq.SELESAI)')
                     .order('updated_at', { ascending: false });
 
                 // If not Pusat/Admin, filter by active unit

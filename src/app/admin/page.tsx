@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
-                calculatedNextStatus = (selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? 'DISETUJUI' : 'MENUNGGU_CAIR';
+                calculatedNextStatus = (selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? 'SELESAI' : 'MENUNGGU_CAIR';
             } else if (selectedTrxForReview.rawStatus === 'DISETUJUI') {
                 calculatedNextStatus = 'SELESAI';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_CAIR') {

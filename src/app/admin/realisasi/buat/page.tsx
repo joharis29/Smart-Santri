@@ -311,8 +311,7 @@ export default function BuatRealisasiPage() {
             const { data, error } = await supabase
                 .from('dokumen_pengajuan')
                 .select('*, item_pengajuan(*)')
-                .in('status', ['CAIR', 'SUDAH_DITERIMA', 'SELESAI'])
-                .eq('jenis', 'RKA')
+                .or('and(jenis.eq.RKA,status.in.(CAIR,SUDAH_DITERIMA)),and(jenis.eq.REVISI_RKA,status.eq.SELESAI)')
                 .order('created_at', { ascending: false });
             
             if (data) {
