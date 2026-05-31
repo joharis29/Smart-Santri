@@ -142,7 +142,7 @@ export default function RkaRevisiPage() {
   const totalRevision = rows.reduce((acc, row) => acc + (Number(row.nominal) || 0), 0)
   const isOverBudget = totalRevision > totalOriginal
 
-  const rkaFundingAggregated = useMemo(() => {
+  const indukFundingAggregated = useMemo(() => {
     if (!selectedRka) return [];
     const splits: Record<string, number> = {};
     selectedRka.item_pengajuan?.forEach((it: any) => {
@@ -600,7 +600,7 @@ export default function RkaRevisiPage() {
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alokasi Sumber Dana:</p>
                             </div>
                             <div className="bg-white/60 border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 text-[10px] font-bold">
-                                {rkaFundingAggregated.length > 0 ? rkaFundingAggregated.map((s, i) => (
+                                {indukFundingAggregated.length > 0 ? indukFundingAggregated.map((s, i) => (
                                     <div key={i} className="flex justify-between items-center py-1 border-b border-slate-50">
                                         <span className="text-slate-400">{s.source}</span>
                                         <span className="text-slate-600">Rp {s.nominal.toLocaleString('id-ID')}</span>
