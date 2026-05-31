@@ -159,9 +159,13 @@ export async function submitRevisiRka(payload: {
            wasRejected = true;
         }
 
-        let finalNote = payload.catatan_revisi || null;
-        if (wasRejected && finalNote && !finalNote.includes('[RESUBMITTED]')) {
-           finalNote = finalNote + ' [RESUBMITTED]';
+        let finalNote: string | null = payload.catatan_revisi || null;
+        if (wasRejected) {
+           if (finalNote && !finalNote.includes('[RESUBMITTED]')) {
+               finalNote = finalNote + ' [RESUBMITTED]';
+           } else if (!finalNote) {
+               finalNote = '[RESUBMITTED]';
+           }
         }
 
         const { error } = await adminClient
