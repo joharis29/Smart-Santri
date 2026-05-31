@@ -529,19 +529,19 @@ export default function RkaRevisiPage() {
                                 <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                     <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
                                     <td className="p-0 relative group border-r border-slate-100">
-                                        <input 
-                                            type="text" 
-                                            list={`programs-${row.id}`}
+                                        <select
                                             value={row.program}
                                             onChange={(e) => updateRow(row.id, 'program', e.target.value)}
-                                            className={`w-full h-10 px-3 pr-8 bg-white border-none outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all ${row.program === '' ? 'text-slate-400 italic' : 'text-emerald-900'}`}
-                                            placeholder="Pilih/Ketik program..."
-                                        />
-                                        <datalist id={`programs-${row.id}`}>
+                                            className={`w-full h-10 px-3 pr-8 bg-white border-none outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer ${row.program === '' ? 'text-slate-400 italic' : 'text-emerald-900'}`}
+                                        >
+                                            <option value="" disabled>-- Pilih Program --</option>
+                                            {!availablePrograms.includes(row.program) && row.program !== '' && (
+                                                <option value={row.program}>{row.program}</option>
+                                            )}
                                             {availablePrograms.map(prog => (
-                                                <option key={prog} value={prog} />
+                                                <option key={prog} value={prog}>{prog}</option>
                                             ))}
-                                        </datalist>
+                                        </select>
                                         <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
