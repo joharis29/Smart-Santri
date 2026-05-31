@@ -259,8 +259,6 @@ export default function RkaRevisiPage() {
     }
   }
 
-  if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
-
   // Calculate Aggregated Funding Splits for Summary
   const rkaFundingAggregated = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -273,6 +271,8 @@ export default function RkaRevisiPage() {
     });
     return Object.entries(agg).map(([source, nominal]) => ({ source, nominal }));
   }, [rows]);
+
+  if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
