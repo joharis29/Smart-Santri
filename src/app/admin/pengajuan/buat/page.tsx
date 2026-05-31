@@ -861,18 +861,18 @@ function BuatPengajuanContent() {
       
       if (field === 'percent') {
         let val = Number(value);
-        if (val > 100) val = 100;
         if (val < 0) val = 0;
+        const otherTotal = newSplits.reduce((acc, s, i) => i !== index ? acc + (Number(s.percent) || 0) : acc, 0);
+        if (otherTotal + val > 100) val = 100 - otherTotal;
         split.percent = val;
         split.nominal = Math.round((val / 100) * modalTotal)
       } else if (field === 'nominal') {
         let val = Number(value);
+        if (val < 0) val = 0;
+        const otherTotalNominal = newSplits.reduce((acc, s, i) => i !== index ? acc + (Number(s.nominal) || 0) : acc, 0);
+        if (otherTotalNominal + val > modalTotal) val = modalTotal - otherTotalNominal;
         split.nominal = val;
         split.percent = modalTotal > 0 ? Number(((val / modalTotal) * 100).toFixed(1)) : 0;
-        if (split.percent > 100) {
-          split.percent = 100;
-          split.nominal = modalTotal;
-        }
       }
       
       newSplits[index] = split

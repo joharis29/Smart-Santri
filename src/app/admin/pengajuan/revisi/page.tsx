@@ -422,11 +422,19 @@ export default function RkaRevisiPage() {
         const split = { ...newSplits[splitIdx], [field]: value }
         
         if (field === 'percent') {
-            split.percent = Number(value)
-            split.nominal = (Number(value) / 100) * row.nominal
+            let val = Number(value);
+            if (val < 0) val = 0;
+            const otherTotal = newSplits.reduce((acc, s, i) => i !== splitIdx ? acc + (Number(s.percent) || 0) : acc, 0);
+            if (otherTotal + val > 100) val = 100 - otherTotal;
+            split.percent = val;
+            split.nominal = (val / 100) * row.nominal;
         } else if (field === 'nominal') {
-            split.nominal = Number(value)
-            split.percent = row.nominal > 0 ? (Number(value) / row.nominal) * 100 : 0
+            let val = Number(value);
+            if (val < 0) val = 0;
+            const otherTotalNominal = newSplits.reduce((acc, s, i) => i !== splitIdx ? acc + (Number(s.nominal) || 0) : acc, 0);
+            if (otherTotalNominal + val > row.nominal) val = row.nominal - otherTotalNominal;
+            split.nominal = val;
+            split.percent = row.nominal > 0 ? (val / row.nominal) * 100 : 0;
         } else {
             split[field] = value
         }
