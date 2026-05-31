@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign } from 'lucide-react'
+import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2 } from 'lucide-react'
 import { getApprovedRkaList, submitRevisiRka } from './actions'
+import { createClient } from '@/utils/supabase/client'
 
 const FUND_SOURCES = [
   'Dana Pesantren/Yayasan',
@@ -24,6 +25,13 @@ export default function RkaRevisiPage() {
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Metadata States
+  const [unit, setUnit] = useState('')
+  const [bidang, setBidang] = useState('')
+  const [bulan, setBulan] = useState('')
+  const [tahunAjaran, setTahunAjaran] = useState('')
+  const [availablePrograms, setAvailablePrograms] = useState<string[]>([])
+
   // State for the editable revision rows
   const [rows, setRows] = useState<any[]>([])
 
@@ -38,6 +46,12 @@ export default function RkaRevisiPage() {
 
   useEffect(() => {
     if (selectedRka && selectedRka.item_pengajuan) {
+      setUnit(selectedRka.unit || '')
+      setBidang(selectedRka.bidang || '')
+      const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+      setBulan(monthNames[selectedRka.periode_bulan] || 'Januari')
+      setTahunAjaran(selectedRka.periode_tahun ? `${selectedRka.periode_tahun}/${Number(selectedRka.periode_tahun)+1}` : '2025/2026')
+
       // Map original items to editable rows
       const mappedRows = selectedRka.item_pengajuan.map((item: any, idx: number) => {
         let details = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
@@ -74,8 +88,40 @@ export default function RkaRevisiPage() {
       setErrorMsg('')
     } else {
       setRows([])
+      setUnit('')
+      setBidang('')
+      setBulan('')
+      setTahunAjaran('')
     }
   }, [selectedRka])
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      if (!unit) return;
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('program_kegiatan')
+          .select('program, nama_kegiatan')
+          .eq('unit', unit);
+          
+        if (data) {
+          const programSet = new Set<string>();
+          data.forEach(item => {
+            if (item.program && item.nama_kegiatan) {
+              programSet.add(`${item.program} / ${item.nama_kegiatan}`);
+            } else if (item.program) {
+              programSet.add(item.program);
+            }
+          });
+          setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
+        }
+      } catch (err) {
+        console.error("Gagal memuat program referensi:", err);
+      }
+    };
+    fetchPrograms();
+  }, [unit]);
 
   const totalOriginal = selectedRka ? Number(selectedRka.total_nominal) : 0
   const totalRevision = rows.reduce((acc, row) => acc + (Number(row.nominal) || 0), 0)
@@ -217,7 +263,7 @@ export default function RkaRevisiPage() {
     // Validation
     for (const r of rows) {
       if (!r.program || !r.operasional) {
-        setErrorMsg('Harap lengkapi Program dan Kategori untuk semua baris.')
+        setErrorMsg('Harap lengkapi Program dan Deskripsi untuk semua baris.')
         return
       }
       if (r.details?.items?.length > 0) {
@@ -241,10 +287,10 @@ export default function RkaRevisiPage() {
 
     const payload = {
       parent_id: selectedRka.id,
-      unit: selectedRka.unit,
-      bidang: selectedRka.bidang,
-      bulan: selectedRka.periode_bulan?.toString() || '1',
-      tahun_ajaran: selectedRka.periode_tahun?.toString() || '2025/2026',
+      unit: unit,
+      bidang: bidang,
+      bulan: bulan,
+      tahun_ajaran: tahunAjaran,
       total_nominal: totalRevision,
       data: rows
     }
@@ -311,13 +357,90 @@ export default function RkaRevisiPage() {
         </select>
       </div>
 
-      {/* STEP 2: FORM REVISI (UI PARITY DENGAN LPJ) */}
+      {/* STEP 2: METADATA FORM (UNIT, BIDANG, BULAN, TAHUN AJARAN) */}
+      {selectedRka && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+                2. Informasi Pengajuan (Metadata)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Unit */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Building2 size={16} className="text-emerald-600" />
+                    </div>
+                    <select
+                        value={unit}
+                        onChange={(e) => setUnit(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
+                        disabled
+                    >
+                        <option value="">-- Unit --</option>
+                        <option value={unit}>{unit}</option>
+                    </select>
+                </div>
+                {/* Bidang */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Layers size={16} className="text-emerald-600" />
+                    </div>
+                    <select
+                        value={bidang}
+                        onChange={(e) => setBidang(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="">-- Bidang --</option>
+                        <option value={bidang}>{bidang}</option>
+                    </select>
+                </div>
+                {/* Bulan */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Calendar size={16} className="text-emerald-600" />
+                    </div>
+                    <select
+                        value={bulan}
+                        onChange={(e) => setBulan(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
+                    >
+                        <option value="">-- Pilih Bulan --</option>
+                        {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                        ))}
+                    </select>
+                </div>
+                {/* Tahun Ajaran */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <GraduationCap size={16} className="text-emerald-600" />
+                    </div>
+                    <select
+                        value={tahunAjaran}
+                        onChange={(e) => setTahunAjaran(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
+                    >
+                        <option value="">-- Pilih Tahun Ajaran --</option>
+                        <option value="2024/2025">2024/2025</option>
+                        <option value="2025/2026">2025/2026</option>
+                        <option value="2026/2027">2026/2027</option>
+                    </select>
+                </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5"><Info className="w-3.5 h-3.5"/> Ubah Bulan atau Tahun Ajaran jika kegiatan dilakukan reschedule (Pergeseran Waktu).</p>
+        </div>
+      )}
+
+      {/* STEP 3: FORM REVISI (UI PARITY DENGAN LPJ) */}
       {selectedRka && (
         <div className="flex flex-col gap-6 w-full">
+            <datalist id="program-list">
+              {availablePrograms.map(p => <option key={p} value={p} />)}
+            </datalist>
+
             {/* TABEL REVISI RKA (TOP) */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Tabel Rencana Kegiatan & Anggaran (Revisi)</h2>
+                    <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">3. Tabel Rencana Kegiatan & Anggaran (Revisi)</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-[11px] min-w-[900px]">
@@ -355,13 +478,14 @@ export default function RkaRevisiPage() {
                             {rows.map((row, idx) => (
                                 <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                     <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
-                                    <td className="p-0 border-r border-slate-100 bg-slate-50">
+                                    <td className="p-0 border-r border-slate-100">
                                         <input 
                                             type="text" 
+                                            list="program-list"
                                             value={row.program}
-                                            readOnly
-                                            className="w-full h-10 px-3 bg-transparent border-none outline-none text-[11px] font-black text-slate-500 cursor-not-allowed"
-                                            title="Program tidak dapat diubah"
+                                            onChange={(e) => updateRow(row.id, 'program', e.target.value)}
+                                            className="w-full h-10 px-3 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                                            placeholder="Pilih/Ketik program..."
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
