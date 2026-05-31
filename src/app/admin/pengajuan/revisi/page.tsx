@@ -469,7 +469,7 @@ export default function RkaRevisiPage() {
     worksheet.getRow(6).font = { bold: true, size: 12 }
     
     const indukHeader = worksheet.getRow(7)
-    indukHeader.values = ['No', 'Program / Kegiatan', 'Operasional', 'Jumlah', 'Waktu', 'Tempat', 'PIC', 'Sasaran', 'Anggaran']
+    indukHeader.values = ['No', 'Program / Kegiatan', 'Deskripsi Kegiatan', 'Jumlah', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Anggaran']
     indukHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     indukHeader.eachCell(cell => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF64748B' } }
@@ -503,7 +503,7 @@ export default function RkaRevisiPage() {
     currentRow++
 
     const revisiHeader = worksheet.getRow(currentRow)
-    revisiHeader.values = ['No', 'Program / Kegiatan', 'Operasional', 'Jumlah', 'Waktu', 'Tempat', 'PIC', 'Sasaran', 'Sumber Dana', 'Nominal Revisi']
+    revisiHeader.values = ['No', 'Program / Kegiatan', 'Deskripsi Kegiatan', 'Jumlah', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran', 'Sumber Dana', 'Nominal Revisi']
     revisiHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     revisiHeader.eachCell(cell => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } }
@@ -749,7 +749,7 @@ export default function RkaRevisiPage() {
                                 <th className="px-2 py-1.5 text-center w-16 font-black text-slate-500 uppercase tracking-widest leading-tight">Jumlah</th>
                                 <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Waktu</th>
                                 <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Tempat</th>
-                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest leading-tight">PIC</th>
+                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest leading-tight">Penanggung Jawab</th>
                                 <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Sasaran</th>
                                 <th className="px-3 py-1.5 text-right w-24 font-black text-slate-500 uppercase tracking-widest">Anggaran</th>
                             </tr>
