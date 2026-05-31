@@ -555,6 +555,8 @@ export default function RkaRevisiPage() {
 
     if (res.error) {
       setErrorMsg(res.error)
+      alert('Gagal menyimpan: ' + res.error)
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     } else {
       if (statusToSave === 'DRAFT') {
         router.push('/admin/pengajuan/draft-saya?tab=REVISI_RKA')
@@ -1290,6 +1292,12 @@ export default function RkaRevisiPage() {
             </div>
 
             {/* Bottom Action & Summary Section */}
+            {errorMsg && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 mb-6 font-bold shadow-sm flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <span>{errorMsg}</span>
+                </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
                 {/* Summary Box */}
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between h-full">
