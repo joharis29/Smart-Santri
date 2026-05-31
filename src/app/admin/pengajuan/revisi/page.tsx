@@ -1175,7 +1175,10 @@ export default function RkaRevisiPage() {
                                                                     className="w-full h-8 px-2 bg-transparent outline-none font-bold text-slate-700"
                                                                 >
                                                                     <option value="">Pilih Sumber Dana</option>
-                                                                    {(FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan']).map(fs => <option key={fs} value={fs}>{fs}</option>)}
+                                                                    {(FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan']).map(fs => {
+                                                                        const isBlocked = ['Tabungan Siswa', 'Iuran Non-Wajib', 'Uang Saku'].includes(fs);
+                                                                        return <option key={fs} value={fs} disabled={isBlocked}>{fs} {isBlocked ? '(Diblokir)' : ''}</option>
+                                                                    })}
                                                                 </select>
                                                             </td>
                                                             <td className="p-0">
