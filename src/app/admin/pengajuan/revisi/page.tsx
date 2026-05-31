@@ -767,6 +767,18 @@ export default function RkaRevisiPage() {
         </div>
       )}
 
+      {catatanRevisi && catatanRevisi.includes('- [') && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-2.5 mb-2">
+            <AlertCircle className="w-5 h-5 text-rose-600" />
+            <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest">Catatan Revisi dari Pemberi Otoritas</h3>
+          </div>
+          <div className="pl-7">
+            <p className="text-xs font-bold text-rose-700 italic leading-relaxed whitespace-pre-wrap">{catatanRevisi}</p>
+          </div>
+        </div>
+      )}
+
       {/* STEP 1: PILIH RKA */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
         <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
