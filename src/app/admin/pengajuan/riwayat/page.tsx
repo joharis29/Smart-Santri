@@ -259,6 +259,17 @@ export default function RiwayatPengajuanPage() {
             return;
         }
 
+        // Fetch parent doc if REVISI_RKA
+        let parentDoc = null;
+        if (doc.jenis === 'REVISI_RKA' && doc.parent_id) {
+            const { data: pDoc } = await supabase
+                .from('dokumen_pengajuan')
+                .select('*, item_pengajuan(*)')
+                .eq('id', doc.parent_id)
+                .maybeSingle();
+            parentDoc = pDoc;
+        }
+
         const isDapurMode = doc.unit === 'Dapur Pusat' || doc.unit === 'Dapur Asrama Putra' || doc.unit === 'Dapur Asrama Putri';
         let reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN (RKA)";
         if (isDapurMode) {
@@ -266,6 +277,7 @@ export default function RiwayatPengajuanPage() {
         } else if (doc.periode_bulan === 0 || doc.periode_bulan === '0') {
             reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN TAHUNAN (RKAT)";
         }
+        if (doc.jenis === 'REVISI_RKA') reportTitle = "LAPORAN REVISI ANGGARAN (REVISI RKA)";
 
         const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         const bulan = monthNames[Number(doc.periode_bulan)] || String(doc.periode_bulan);
@@ -300,18 +312,13 @@ export default function RiwayatPengajuanPage() {
             cell.alignment = { horizontal: 'right' };
         });
 
-        // Row 3: Additional Metadata (Metode Pencairan & Status)
+        // Row 3: Additional Metadata
         const metaRow2 = worksheet.getRow(3);
         metaRow2.values = [
             'Metode Pencairan:', doc.metode_pencairan || 'CASH',
             '',
             'Status:', 'SUDAH DICAIRKAN',
-            '',
-            '',
-            '',
-            '',
-            '',
-            ''
+            '', '', '', '', '', ''
         ];
         metaRow2.font = { name: 'Times New Roman', size: 10 };
         
@@ -321,202 +328,139 @@ export default function RiwayatPengajuanPage() {
             cell.alignment = { horizontal: 'right' };
         });
         
-        // Highlight Status and Metode
-        worksheet.getCell('B3').font = { bold: true, color: { argb: 'FF0284C7' }, name: 'Times New Roman' }; // Sky-600
-        worksheet.getCell('E3').font = { bold: true, color: { argb: 'FF059669' }, name: 'Times New Roman' }; // Emerald-600
+        worksheet.getCell('B3').font = { bold: true, color: { argb: 'FF0284C7' }, name: 'Times New Roman' };
+        worksheet.getCell('E3').font = { bold: true, color: { argb: 'FF059669' }, name: 'Times New Roman' };
 
         worksheet.addRow([]); 
 
-        // 3. Table Headers
-        let tableHeader = [];
-        if (isDapurMode) {
-            tableHeader = ['No', 'Tanggal', 'Item / Bahan Makanan', 'Spesifikasi / Detail', 'Metode Pembayaran', 'Nominal (Rp)'];
-        } else {
-            tableHeader = [
-                'No', 
-                'Nama Program/ Kegiatan', 
-                'Operasional', 
-                'Jumlah Kegiatan', 
-                'Satuan', 
-                'Harga Satuan', 
-                'Qty', 
-                'Rencana Anggaran', 
-                'Waktu', 
-                'Tempat', 
-                'Penanggung Jawab', 
-                'Sasaran'
-            ];
-        }
+        let globalTotal = 0;
+        const globalSummary = {};
 
-        const headerRow = worksheet.addRow(tableHeader);
-        headerRow.eachCell((cell) => {
-            cell.font = { bold: true, name: 'Times New Roman' };
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFF1F5F9' }
-            };
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        });
+        // Helper Function for Rendering a Table Block
+        const renderTableBlock = (title, itemsData, isOriginal) => {
+            if (title) {
+                const titleRow = worksheet.addRow([title]);
+                worksheet.mergeCells(`A${titleRow.number}:K${titleRow.number}`);
+                titleRow.getCell(1).font = { bold: true, name: 'Times New Roman', size: 12, color: { argb: isOriginal ? 'FFD97706' : 'FF0284C7' } };
+                titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isOriginal ? 'FFFFFBEB' : 'FFF0F9FF' } };
+                titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+                worksheet.addRow([]);
+            }
+
+            let tableHeader = [];
+            if (isDapurMode) {
+                tableHeader = ['No', 'Tanggal', 'Item / Bahan Makanan', 'Spesifikasi / Detail', 'Metode Pembayaran', 'Nominal (Rp)'];
+            } else {
+                tableHeader = [
+                    'No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 
+                    isOriginal ? 'Rencana Anggaran' : 'Nominal Revisi', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran'
+                ];
+            }
+
+            const headerRow = worksheet.addRow(tableHeader);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, name: 'Times New Roman' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            });
+
+            let blockTotal = 0;
+            const blockSummary = {};
+
+            itemsData.forEach((row, idx) => {
+                const nominal = Number(row.nominal) || 0;
+                blockTotal += nominal;
+                if (!isOriginal) globalTotal += nominal;
+                
+                let details = {};
+                try { details = typeof row.rincian_json === 'string' ? JSON.parse(row.rincian_json) : (row.rincian_json || {}); } catch(e) {}
+
+                const fundingSplits = details.fundingSplits || details.subsidiSources || [];
+                if (Array.isArray(fundingSplits) && fundingSplits.length > 0) {
+                    fundingSplits.forEach((s) => {
+                        if (s.source && s.nominal > 0) {
+                            blockSummary[s.source] = (blockSummary[s.source] || 0) + s.nominal;
+                            if (!isOriginal) globalSummary[s.source] = (globalSummary[s.source] || 0) + s.nominal;
+                        }
+                    });
+                } else {
+                    blockSummary[row.sumber_dana || 'Dana Yayasan'] = (blockSummary[row.sumber_dana || 'Dana Yayasan'] || 0) + nominal;
+                    if (!isOriginal) globalSummary[row.sumber_dana || 'Dana Yayasan'] = (globalSummary[row.sumber_dana || 'Dana Yayasan'] || 0) + nominal;
+                }
+
+                if (isDapurMode) {
+                    const r = worksheet.addRow([
+                        idx + 1,
+                        row.tanggal_kebutuhan ? new Date(row.tanggal_kebutuhan).toLocaleDateString('id-ID') : '-',
+                        row.judul_kegiatan || 'Bahan Makanan', row.sasaran || '-', doc.metode_pencairan || 'CASH', nominal
+                    ]);
+                    r.getCell(6).numFmt = '"Rp "#,##0';
+                    r.eachCell(cell => {
+                        cell.font = { name: 'Times New Roman' };
+                        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                    });
+                } else {
+                    const savedJumlah = details.jumlah_kegiatan || '1';
+                    const mainRow = worksheet.addRow([
+                        idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'
+                    ]);
+                    mainRow.getCell(8).numFmt = '"Rp "#,##0';
+                    mainRow.eachCell(cell => {
+                        cell.font = { bold: true, name: 'Times New Roman' };
+                        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                    });
+
+                    const rincianItems = details.items || [];
+                    if (Array.isArray(rincianItems) && rincianItems.some(item => item.name || item.total > 0)) {
+                        const rincianLabelRow = worksheet.addRow(['', '   --- RINCIAN BUDGET ---']);
+                        rincianLabelRow.getCell(2).font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
+                        rincianItems.forEach((item) => {
+                            if (item.name || item.total > 0) {
+                                const subRow = worksheet.addRow(['', `   • ${item.name || '(Tanpa Nama)'}`, '', '', item.unit || item.satuan || '-', Number(item.price || item.harga_satuan || 0), Number(item.qty || item.kuantitas || 1), Number(item.total || 0), '', '', '', '']);
+                                subRow.getCell(6).numFmt = '"Rp "#,##0';
+                                subRow.getCell(8).numFmt = '"Rp "#,##0';
+                                subRow.eachCell(cell => {
+                                    cell.font = { name: 'Times New Roman' };
+                                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                                });
+                            }
+                        });
+                        worksheet.addRow([]);
+                    }
+                }
+            });
+
+            // Block Summary
+            worksheet.addRow([]);
+            const summaryHeader = worksheet.addRow([`RINGKASAN ANGGARAN ${isOriginal ? '(RKA ASLI)' : '(REVISI)'}`]);
+            summaryHeader.getCell(1).font = { bold: true, name: 'Times New Roman' };
+            Object.entries(blockSummary).forEach(([source, amount]) => {
+                const r = worksheet.addRow([source, '', '', '', '', '', '', Number(amount)]);
+                r.getCell(1).font = { bold: true, name: 'Times New Roman' };
+                r.getCell(8).numFmt = '"Rp "#,##0';
+                r.getCell(8).font = { bold: true, name: 'Times New Roman' };
+            });
+            worksheet.addRow([]);
+            const totalRow = worksheet.addRow([`TOTAL ${isOriginal ? '(RKA ASLI)' : '(REVISI)'}`, '', '', '', '', '', '', Number(blockTotal)]);
+            totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
+            totalRow.getCell(8).font = { bold: true, size: 12, color: { argb: isOriginal ? 'FFD97706' : 'FF0284C7' }, name: 'Times New Roman' };
+            totalRow.getCell(8).numFmt = '"Rp "#,##0';
+            worksheet.addRow([]);
+            worksheet.addRow([]);
+        };
+
+        if (parentDoc) {
+            const rkaItems = (parentDoc.item_pengajuan || []).filter((it: any) => {
+                const targetTitle = doc.item_pengajuan?.[0]?.judul_kegiatan?.trim().toLowerCase() || '';
+                return (it.judul_kegiatan || '').trim().toLowerCase() === targetTitle;
+            });
+            const itemsToUse = rkaItems.length > 0 ? rkaItems : (parentDoc.item_pengajuan || []);
+            renderTableBlock('RINCIAN RENCANA KEGIATAN & ANGGARAN (RKA ASLI)', itemsToUse, true);
+        }
 
         const items = (doc.item_pengajuan || []).filter((it: any) => it.id === itemId);
-        let totalPengajuan = 0;
-        const summary: Record<string, number> = {};
-
-        // 4. Data Population
-        if (isDapurMode) {
-            items.forEach((row: any, idx: number) => {
-                const nominal = Number(row.nominal) || 0;
-                totalPengajuan += nominal;
-                
-                // Track funding split for summary
-                let fundingSplits: any[] = [];
-                try {
-                    const details = typeof row.rincian_json === 'string' ? JSON.parse(row.rincian_json) : (row.rincian_json || {});
-                    fundingSplits = details.fundingSplits || [];
-                } catch(e) {}
-                
-                if (Array.isArray(fundingSplits) && fundingSplits.length > 0) {
-                    fundingSplits.forEach((s: any) => {
-                        if (s.source && s.nominal > 0) {
-                            summary[s.source] = (summary[s.source] || 0) + s.nominal;
-                        }
-                    });
-                } else {
-                    summary[row.sumber_dana || 'Dana Yayasan'] = (summary[row.sumber_dana || 'Dana Yayasan'] || 0) + nominal;
-                }
-
-                const r = worksheet.addRow([
-                    idx + 1,
-                    row.tanggal_kebutuhan ? new Date(row.tanggal_kebutuhan).toLocaleDateString('id-ID') : '-',
-                    row.judul_kegiatan || 'Bahan Makanan',
-                    row.sasaran || '-',
-                    doc.metode_pencairan || 'CASH',
-                    nominal
-                ]);
-                r.getCell(6).numFmt = '"Rp "#,##0';
-                r.eachCell(cell => {
-                    cell.font = { name: 'Times New Roman' };
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-            });
-        } else {
-            items.forEach((row: any, idx: number) => {
-                const nominal = Number(row.nominal) || 0;
-                totalPengajuan += nominal;
-                
-                let details: any = {};
-                try {
-                    details = typeof row.rincian_json === 'string' ? JSON.parse(row.rincian_json) : (row.rincian_json || {});
-                } catch(e) {
-                    details = { items: [], fundingSplits: [] };
-                }
-
-                const savedJumlah = details.jumlah_kegiatan || '1';
-                const fundingSplits = details.fundingSplits || [];
-
-                // Track funding split for summary
-                if (Array.isArray(fundingSplits) && fundingSplits.length > 0) {
-                    fundingSplits.forEach((s: any) => {
-                        if (s.source && s.nominal > 0) {
-                            summary[s.source] = (summary[s.source] || 0) + s.nominal;
-                        }
-                    });
-                } else {
-                    summary[row.sumber_dana || 'Dana Yayasan'] = (summary[row.sumber_dana || 'Dana Yayasan'] || 0) + nominal;
-                }
-
-                const mainRow = worksheet.addRow([
-                    idx + 1,
-                    row.judul_kegiatan,
-                    row.kategori_coa,
-                    savedJumlah,
-                    '',
-                    '',
-                    '',
-                    nominal,
-                    row.waktu || '-',
-                    row.tempat || '-',
-                    row.pic || '-',
-                    row.sasaran || '-'
-                ]);
-                mainRow.getCell(8).numFmt = '"Rp "#,##0';
-                mainRow.eachCell(cell => {
-                    cell.font = { bold: true, name: 'Times New Roman' };
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-
-                // Sub-items Rincian
-                const rincianItems = details.items || [];
-                const hasValidRincian = Array.isArray(rincianItems) && rincianItems.some((item: any) => item.name || item.total > 0);
-                if (hasValidRincian) {
-                    const rincianLabelRow = worksheet.addRow(['', '   --- RINCIAN BUDGET ---']);
-                    rincianLabelRow.getCell(2).font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
-
-                    rincianItems.forEach((item: any) => {
-                        if (item.name || item.total > 0) {
-                            const subRow = worksheet.addRow([
-                                '',
-                                `   • ${item.name || '(Tanpa Nama)'}`,
-                                '', 
-                                '', 
-                                item.unit || '-',
-                                Number(item.price || 0),
-                                Number(item.qty || 1),
-                                Number(item.total || 0),
-                                '', '', '', ''
-                            ]);
-                            subRow.getCell(6).numFmt = '"Rp "#,##0';
-                            subRow.getCell(8).numFmt = '"Rp "#,##0';
-                            subRow.eachCell(cell => {
-                                cell.font = { name: 'Times New Roman' };
-                                cell.border = {
-                                    top: { style: 'thin' },
-                                    left: { style: 'thin' },
-                                    bottom: { style: 'thin' },
-                                    right: { style: 'thin' }
-                                };
-                            });
-                        }
-                    });
-                    worksheet.addRow([]);
-                }
-            });
-        }
-
-        // 5. Summary Section
-        worksheet.addRow([]);
-        const summaryHeader = worksheet.addRow(['RINGKASAN ANGGARAN PER SUMBER DANA']);
-        summaryHeader.getCell(1).font = { bold: true, name: 'Times New Roman' };
-
-        Object.entries(summary).forEach(([source, amount]) => {
-            const r = worksheet.addRow([source, '', '', '', '', '', '', Number(amount)]);
-            r.getCell(1).font = { bold: true, name: 'Times New Roman' };
-            r.getCell(8).numFmt = '"Rp "#,##0';
-            r.getCell(8).font = { bold: true, name: 'Times New Roman' };
-        });
-
-        worksheet.addRow([]);
-        const totalRow = worksheet.addRow(['TOTAL KESELURUHAN', '', '', '', '', '', '', Number(totalPengajuan)]);
-        totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
-        totalRow.getCell(8).font = { bold: true, size: 12, color: { argb: 'FF065F46' }, name: 'Times New Roman' };
-        totalRow.getCell(8).numFmt = '"Rp "#,##0';
+        renderTableBlock(parentDoc ? 'RINCIAN REVISI ANGGARAN (REVISI RKA)' : '', items, false);
 
         // Column Widths
         worksheet.columns.forEach((col, i) => {
@@ -526,42 +470,30 @@ export default function RiwayatPengajuanPage() {
         });
 
         // 6. Otorisasi & Tanda Tangan
-        worksheet.addRow([]);
-        worksheet.addRow([]);
         let signRow = worksheet.lastRow!.number + 1;
         
-        // Bendahara Unit
         worksheet.mergeCells(`B${signRow}:D${signRow}`);
         worksheet.getCell(`B${signRow}`).value = 'Bendahara Unit/Jenjang,';
         worksheet.getCell(`B${signRow}`).font = { name: 'Times New Roman', bold: true };
         worksheet.getCell(`B${signRow}`).alignment = { horizontal: 'center' };
 
-        // Kepala Unit
         worksheet.mergeCells(`E${signRow}:G${signRow}`);
         worksheet.getCell(`E${signRow}`).value = 'Kepala Unit/Jenjang,';
         worksheet.getCell(`E${signRow}`).font = { name: 'Times New Roman', bold: true };
         worksheet.getCell(`E${signRow}`).alignment = { horizontal: 'center' };
 
-        // Bendahara Pusat
         worksheet.mergeCells(`H${signRow}:K${signRow}`);
         worksheet.getCell(`H${signRow}`).value = 'Bendahara Pusat,';
         worksheet.getCell(`H${signRow}`).font = { name: 'Times New Roman', bold: true };
         worksheet.getCell(`H${signRow}`).alignment = { horizontal: 'center' };
 
-        // Signature Spaces
         let nameRow = signRow + 5;
-        
         worksheet.mergeCells(`B${nameRow}:D${nameRow}`);
         worksheet.getCell(`B${nameRow}`).border = { bottom: { style: 'thin' } };
-        worksheet.getCell(`B${nameRow}`).value = '';
-        
         worksheet.mergeCells(`E${nameRow}:G${nameRow}`);
         worksheet.getCell(`E${nameRow}`).border = { bottom: { style: 'thin' } };
-        worksheet.getCell(`E${nameRow}`).value = '';
-        
         worksheet.mergeCells(`H${nameRow}:K${nameRow}`);
         worksheet.getCell(`H${nameRow}`).border = { bottom: { style: 'thin' } };
-        worksheet.getCell(`H${nameRow}`).value = '';
 
         // Generate and Download
         const buffer = await workbook.xlsx.writeBuffer();
@@ -574,7 +506,6 @@ export default function RiwayatPengajuanPage() {
         window.URL.revokeObjectURL(url);
     };
 
-    // Export all filtered table rows to a premium Excel sheet
     const handleExportFilteredToExcel = async () => {
         if (filteredRiwayat.length === 0) {
             alert("Tidak ada data untuk diekspor");
