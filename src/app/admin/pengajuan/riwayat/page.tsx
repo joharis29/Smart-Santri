@@ -337,7 +337,7 @@ export default function RiwayatPengajuanPage() {
         const globalSummary = {};
 
         // Helper Function for Rendering a Table Block
-        const renderTableBlock = (title, itemsData, isOriginal) => {
+        const renderTableBlock = (title: string, itemsData: any[], isOriginal: boolean) => {
             if (title) {
                 const titleRow = worksheet.addRow([title]);
                 worksheet.mergeCells(`A${titleRow.number}:K${titleRow.number}`);
