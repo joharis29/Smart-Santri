@@ -1182,6 +1182,16 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
 
+                {selectedTrxForReview.type === 'REVISI_RKA' && selectedTrxForReview.note && (
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <FileText className="w-4 h-4 text-amber-600" />
+                            <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Alasan Pengajuan Revisi (Catatan Pengaju)</h4>
+                        </div>
+                        <p className="text-xs font-bold text-slate-700 italic leading-relaxed">"{selectedTrxForReview.note}"</p>
+                    </div>
+                )}
+
                 {(selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? (
                     // DUAL PANE COMPARISON FOR LPJ AND REVISI_RKA
                     <div className="space-y-6">
@@ -1345,7 +1355,9 @@ export default function AdminDashboardPage() {
                                                             <div className="flex items-center justify-between mb-1 px-1">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-1 h-3 bg-blue-600 rounded-full"></div>
-                                                                    <p className="text-[9px] font-black text-blue-800 uppercase tracking-widest">Detail Realisasi LPJ & Bukti Fisik</p>
+                                                                    <p className="text-[9px] font-black text-blue-800 uppercase tracking-widest">
+                                                                        {selectedTrxForReview.type === 'REVISI_RKA' ? 'Detail Item Revisi' : 'Detail Realisasi LPJ & Bukti Fisik'}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                             <table className="w-full text-[9px]">
