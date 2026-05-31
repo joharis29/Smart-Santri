@@ -209,7 +209,6 @@ export async function submitRevisiRka(payload: {
           waktu: row.waktu || '',
           tempat: row.tempat || '',
           sasaran: row.sasaran || '',
-          catatan_revisi: payload.catatan_revisi || null,
           rincian_json: finalDetails
         }
       })
