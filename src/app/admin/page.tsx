@@ -307,6 +307,7 @@ export default function AdminDashboardPage() {
             *,
             item_pengajuan(*)
         `)
+        .not('status', 'in', '("DRAFT","REVISI")')
         .order('created_at', { ascending: false })
         .limit(20);
 
