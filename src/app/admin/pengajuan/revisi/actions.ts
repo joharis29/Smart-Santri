@@ -148,20 +148,32 @@ export async function submitRevisiRka(payload: {
     const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
 
     // Buat Dokumen Revisi (tetap sebagai RKA) atau Update jika draft_id ada
-    let docId = payload.draft_id;
-    let docError = null;
+      let docId = payload.draft_id;
+      let docError = null;
+      let wasRejected = false;
 
-    if (docId) {
-      const { error } = await adminClient
-        .from('dokumen_pengajuan')
-        .update({
-          status: payload.status || 'MENUNGGU_VERIFIKASI',
-          total_nominal: payload.total_nominal,
-          catatan_revisi: payload.catatan_revisi || null
-        })
-        .eq('id', docId)
-      docError = error;
-    } else {
+      if (docId) {
+        // Cek status sebelumnya
+        const { data: oldDoc } = await adminClient.from('dokumen_pengajuan').select('status').eq('id', docId).single();
+        if (oldDoc && oldDoc.status === 'REVISI' && (payload.status === 'MENUNGGU_VERIFIKASI')) {
+           wasRejected = true;
+        }
+
+        let finalNote = payload.catatan_revisi || null;
+        if (wasRejected && finalNote && !finalNote.includes('[RESUBMITTED]')) {
+           finalNote = finalNote + ' [RESUBMITTED]';
+        }
+
+        const { error } = await adminClient
+          .from('dokumen_pengajuan')
+          .update({
+            status: payload.status || 'MENUNGGU_VERIFIKASI',
+            total_nominal: payload.total_nominal,
+            catatan_revisi: finalNote
+          })
+          .eq('id', docId)
+        docError = error;
+      } else {
       const { data: doc, error } = await adminClient
         .from('dokumen_pengajuan')
         .insert({

@@ -341,8 +341,8 @@ export default function AdminDashboardPage() {
                 status: statusDisplay,
                 rawStatus: doc.status, // Original DB status
                 statusColor: statusColor,
-                note: doc.catatan_revisi,
-                isRevised: !!doc.catatan_revisi && doc.status !== 'REVISI' && (doc.jenis !== 'REVISI_RKA' || doc.catatan_revisi.includes('- ['))
+                note: doc.catatan_revisi ? doc.catatan_revisi.replace(' [RESUBMITTED]', '') : doc.catatan_revisi,
+                isRevised: !!doc.catatan_revisi && doc.status !== 'REVISI' && (doc.jenis !== 'REVISI_RKA' || doc.catatan_revisi.includes('- [') || doc.catatan_revisi.includes('[RESUBMITTED]'))
             };
         });
         setTransactions(mapped);
@@ -1210,7 +1210,7 @@ export default function AdminDashboardPage() {
                             <FileText className="w-4 h-4 text-amber-600" />
                             <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Alasan Pengajuan Revisi (Catatan Pengaju)</h4>
                         </div>
-                        <p className="text-xs font-bold text-slate-700 italic leading-relaxed">"{selectedTrxForReview.note}"</p>
+                        <p className="text-xs font-bold text-slate-700 italic leading-relaxed">"{selectedTrxForReview.note ? selectedTrxForReview.note.replace(' [RESUBMITTED]', '') : ''}"</p>
                     </div>
                 )}
 

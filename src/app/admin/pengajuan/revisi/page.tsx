@@ -774,7 +774,7 @@ export default function RkaRevisiPage() {
             <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest">Catatan Revisi dari Pemberi Otoritas</h3>
           </div>
           <div className="pl-7">
-            <p className="text-xs font-bold text-rose-700 italic leading-relaxed whitespace-pre-wrap">{catatanRevisi}</p>
+            <p className="text-xs font-bold text-rose-700 italic leading-relaxed whitespace-pre-wrap">{catatanRevisi.replace(' [RESUBMITTED]', '')}</p>
           </div>
         </div>
       )}
