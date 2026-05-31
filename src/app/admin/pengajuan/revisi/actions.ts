@@ -3,7 +3,7 @@
 import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function getApprovedRkaList() {
+export async function getApprovedRkaList(allowedParentId?: string) {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user.user) return []
@@ -91,8 +91,8 @@ export async function getApprovedRkaList() {
     }
   })
 
-  // Saring RKA yang belum diproses di LPJ maupun Revisi
-  return data.filter(doc => !processedRkaIds.has(doc.id))
+  // Saring RKA yang belum diproses di LPJ maupun Revisi, KECUALI jika ID-nya adalah allowedParentId (saat edit draft)
+  return data.filter(doc => !processedRkaIds.has(doc.id) || (allowedParentId && String(doc.id) === String(allowedParentId)))
 }
 
 export async function getDraftRevisiById(draftId: string) {
