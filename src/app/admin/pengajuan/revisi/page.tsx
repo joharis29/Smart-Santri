@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock, Download, Bookmark, Send } from 'lucide-react'
 import ExcelJS from 'exceljs'
@@ -37,16 +38,43 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node) &&
+                !(dropdownRef.current && dropdownRef.current.contains(e.target as Node))) {
                 setIsOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen && wrapperRef.current) {
+            const rect = wrapperRef.current.getBoundingClientRect();
+            setDropdownStyle({
+                position: 'fixed',
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: Math.max(rect.width, 300),
+                zIndex: 99999
+            });
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handleScroll = (e: Event) => {
+            if (isOpen) {
+                if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) return;
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('scroll', handleScroll, true);
+        return () => window.removeEventListener('scroll', handleScroll, true);
+    }, [isOpen]);
 
     const filteredOptions = useMemo(() => {
         if (!search) return options;
@@ -63,8 +91,8 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
                 <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
             </div>
             
-            {isOpen && (
-                <div className="absolute top-full left-0 z-50 w-full min-w-[300px] mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div ref={dropdownRef} style={dropdownStyle} className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="p-2 border-b border-slate-100 bg-slate-50">
                         <input
                             type="text"
@@ -72,7 +100,7 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Ketik untuk mencari program..."
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:font-normal text-slate-700"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:font-normal text-slate-700 shadow-inner"
                         />
                     </div>
                     <ul className="max-h-56 overflow-y-auto p-1 bg-white">
@@ -98,7 +126,8 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
                             ))
                         )}
                     </ul>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
