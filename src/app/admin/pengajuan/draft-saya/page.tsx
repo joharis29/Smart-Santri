@@ -81,7 +81,7 @@ export default function DraftSayaPage() {
                     item_pengajuan(judul_kegiatan, nominal, rincian_json)
                 `)
                 .eq('pembuat_id', user.id)
-                .in('status', ['DRAFT', 'REVISI', 'MENUNGGU_VERIFIKASI'])
+                .in('status', ['DRAFT', 'REVISI'])
                 .order('created_at', { ascending: false });
 
             if (error) {
