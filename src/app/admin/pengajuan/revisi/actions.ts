@@ -61,7 +61,38 @@ export async function getApprovedRkaList() {
     console.error('Error fetching approved RKA:', error)
     return []
   }
-  return data || []
+
+  if (!data) return []
+
+  // Ambil semua dokumen untuk mengecek apakah RKA sudah direvisi atau masuk LPJ
+  const { data: childDocs } = await adminClient
+    .from('dokumen_pengajuan')
+    .select('id, jenis, parent_id, item_pengajuan(rincian_json)')
+
+  const processedRkaIds = new Set<string>()
+
+  childDocs?.forEach(doc => {
+    // 1. Jika dokumen ini adalah Revisi dari RKA (parent_id)
+    if (doc.jenis === 'RKA' && doc.parent_id) {
+      processedRkaIds.add(doc.parent_id)
+    }
+    // 2. Jika dokumen ini adalah LPJ yang merujuk ke RKA (via rka_id di rincian_json)
+    if (doc.jenis === 'LPJ') {
+      doc.item_pengajuan?.forEach((it: any) => {
+        try {
+          const details = typeof it.rincian_json === 'string' 
+            ? JSON.parse(it.rincian_json) 
+            : (it.rincian_json || {})
+          if (details.rka_id) {
+            processedRkaIds.add(details.rka_id)
+          }
+        } catch(e) {}
+      })
+    }
+  })
+
+  // Saring RKA yang belum diproses di LPJ maupun Revisi
+  return data.filter(doc => !processedRkaIds.has(doc.id))
 }
 
 export async function submitRevisiRka(payload: {
