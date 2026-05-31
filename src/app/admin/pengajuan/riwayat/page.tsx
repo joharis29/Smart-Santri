@@ -1146,18 +1146,19 @@ export default function RiwayatPengajuanPage() {
                                     {(() => {
                                         const summary: Record<string, number> = {};
                                         
-                                        if (detailRkaDoc) {
+                                        const docForFunding = detailLpjDoc || detailRkaDoc;
+                                        if (docForFunding) {
                                             const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
-                                            const rkaItems = (detailRkaDoc.item_pengajuan || []).filter((it: any) => {
+                                            const fundingItems = (docForFunding.item_pengajuan || []).filter((it: any) => {
                                                 const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
                                                 return itemTitle === targetTitle;
                                             });
-                                            const itemsToUse = rkaItems.length > 0 ? rkaItems : (detailRkaDoc.item_pengajuan || []);
+                                            const itemsToUse = fundingItems.length > 0 ? fundingItems : (docForFunding.item_pengajuan || []);
                                             itemsToUse.forEach((it: any) => {
-                                                let rkaDetails: any = {};
-                                                try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                let details: any = {};
+                                                try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
                                                 
-                                                const splits = rkaDetails.fundingSplits || [];
+                                                const splits = details.fundingSplits || details.subsidiSources || [];
                                                 if (Array.isArray(splits)) {
                                                     splits.forEach((s: any) => {
                                                         const source = s.source || s.sumber || 'Dana Yayasan';
@@ -1260,7 +1261,7 @@ export default function RiwayatPengajuanPage() {
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-4 bg-amber-500 rounded-full shadow-md"></div>
                                                 <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
-                                                    {detailLpjDoc?.jenis === 'REVISI_RKA' ? 'Rincian Revisi Anggaran (REVISI RKA)' : 'Rincian Rencana Kegiatan & Anggaran (RKA)'}
+                                                    Rincian Rencana Kegiatan & Anggaran (RKA{detailLpjDoc?.jenis === 'REVISI_RKA' ? ' ASLI' : ''})
                                                 </h4>
                                             </div>
                                         </div>
@@ -1360,6 +1361,47 @@ export default function RiwayatPengajuanPage() {
                                                         })()}
                                                     </tbody>
                                                 </table>
+                                                {/* ALOKASI DANA RKA ORIGINAL */}
+                                                {detailRkaDoc && (
+                                                    <div className="bg-amber-50/50 border-t border-amber-100 p-3">
+                                                        <div className="flex flex-col gap-2">
+                                                            <span className="text-[9px] font-black text-amber-800 uppercase tracking-widest">Alokasi Sumber Dana (RKA Original):</span>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {(() => {
+                                                                    const summary: Record<string, number> = {};
+                                                                    const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                                    const rkaItems = (detailRkaDoc.item_pengajuan || []).filter((it: any) => {
+                                                                        const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                                        return itemTitle === targetTitle;
+                                                                    });
+                                                                    const itemsToUse = rkaItems.length > 0 ? rkaItems : (detailRkaDoc.item_pengajuan || []);
+                                                                    itemsToUse.forEach((it: any) => {
+                                                                        let rkaDetails: any = {};
+                                                                        try { rkaDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                        const splits = rkaDetails.fundingSplits || [];
+                                                                        if (Array.isArray(splits)) {
+                                                                            splits.forEach((s: any) => {
+                                                                                const source = s.source || s.sumber || 'Dana Yayasan';
+                                                                                const amount = Number(s.nominal || s.amount || 0);
+                                                                                if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                    if (Object.keys(summary).length === 0) {
+                                                                        summary[selectedItemForDetail.sumber || 'Dana Yayasan'] = selectedItemForDetail.nominal;
+                                                                    }
+                                                                    return Object.entries(summary).map(([source, amount], idx) => (
+                                                                        <div key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-lg border border-amber-200 shadow-sm">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                                                            <span className="text-[9px] font-black text-amber-900 uppercase tracking-tighter">{source}:</span>
+                                                                            <span className="text-[9px] font-black text-amber-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
+                                                                        </div>
+                                                                    ));
+                                                                })()}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1450,6 +1492,45 @@ export default function RiwayatPengajuanPage() {
                                                         })()}
                                                     </tbody>
                                                 </table>
+                                                {/* ALOKASI DANA REVISI / LPJ */}
+                                                <div className="bg-sky-50/50 border-t border-sky-100 p-3">
+                                                    <div className="flex flex-col gap-2">
+                                                        <span className="text-[9px] font-black text-sky-800 uppercase tracking-widest">Alokasi Sumber Dana {detailLpjDoc?.jenis === 'REVISI_RKA' ? '(Revisi RKA)' : '(Realisasi)'}:</span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(() => {
+                                                                const summary: Record<string, number> = {};
+                                                                const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                                const lpjItems = (detailLpjDoc.item_pengajuan || []).filter((it: any) => {
+                                                                    const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                                    return itemTitle === targetTitle;
+                                                                });
+                                                                const itemsToUse = lpjItems.length > 0 ? lpjItems : (detailLpjDoc.item_pengajuan || []);
+                                                                itemsToUse.forEach((it: any) => {
+                                                                    let details: any = {};
+                                                                    try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                    const splits = details.fundingSplits || details.subsidiSources || [];
+                                                                    if (Array.isArray(splits)) {
+                                                                        splits.forEach((s: any) => {
+                                                                            const source = s.source || s.sumber || 'Dana Yayasan';
+                                                                            const amount = Number(s.nominal || s.amount || 0);
+                                                                            if (amount > 0) summary[source] = (summary[source] || 0) + amount;
+                                                                        });
+                                                                    }
+                                                                });
+                                                                if (Object.keys(summary).length === 0) {
+                                                                    summary[selectedItemForDetail.sumber || 'Dana Yayasan'] = selectedItemForDetail.nominal;
+                                                                }
+                                                                return Object.entries(summary).map(([source, amount], idx) => (
+                                                                    <div key={idx} className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-lg border border-sky-200 shadow-sm">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>
+                                                                        <span className="text-[9px] font-black text-sky-900 uppercase tracking-tighter">{source}:</span>
+                                                                        <span className="text-[9px] font-black text-sky-950 italic">Rp {amount.toLocaleString('id-ID')}</span>
+                                                                    </div>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
