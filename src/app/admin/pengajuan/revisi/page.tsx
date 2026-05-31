@@ -8,16 +8,71 @@ import ExcelJS from 'exceljs'
 import { getApprovedRkaList, submitRevisiRka } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
-const FUND_SOURCES = [
-  'Dana Pesantren/Yayasan',
-  'Dana BOS',
-  'SPP Siswa',
-  'Tabungan Siswa',
-  'Kas Internal',
-  'Uang Saku',
-  'Infaq Siswa',
-  'Subsidi Pesantren'
-];
+const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
+  'Pusat (Yayasan)': [
+    'Dana SPP',
+    'Dana Zakat',
+    'Dana Wakaf',
+    'Dana Infaq',
+    'Laba Usaha Koperasi',
+    'Laba Usaha Poskestren',
+    'Tabungan Wajib',
+    'Tabungan Siswa',
+    'Uang Saku'
+  ],
+  'TK': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa',
+    'Iuran Non-Wajib'
+  ],
+  'SDIT 1': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa'
+  ],
+  'SDIT 2': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa'
+  ],
+  'MTs': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa'
+  ],
+  'MA': [
+    'Dana BOS',
+    'Dana Pesantren/Yayasan',
+    'Tabungan Siswa'
+  ],
+  'Diniyah': [
+    'Dana Pesantren/Yayasan',
+    'Subsidi Pesantren',
+    'Infaq Siswa'
+  ],
+  'Asrama Putra': [
+    'Dana Pesantren/Yayasan',
+    'Kas Internal',
+    'Uang Saku'
+  ],
+  'Asrama Putri': [
+    'Dana Pesantren/Yayasan',
+    'Kas Internal',
+    'Uang Saku'
+  ],
+  'THQ': [
+    'Dana Pesantren/Yayasan',
+    'Uang Saku',
+    'Tabungan Siswa'
+  ],
+  'Dapur Asrama Putra': [
+    'Kas Internal'
+  ],
+  'Dapur Asrama Putri': [
+    'Kas Internal'
+  ]
+};
 
 const BIDANG_BY_UNIT: Record<string, string[]> = {
   'Pusat (Yayasan)': ['Kesekretariatan', 'Pendidikan', 'Sumber Daya Insani', 'Kesejahteraan Sosial', 'Sarana', 'Keuangan', 'Penelitian Dan Pengembangan'],
@@ -1120,7 +1175,7 @@ export default function RkaRevisiPage() {
                                                                     className="w-full h-8 px-2 bg-transparent outline-none font-bold text-slate-700"
                                                                 >
                                                                     <option value="">Pilih Sumber Dana</option>
-                                                                    {FUND_SOURCES.map(fs => <option key={fs} value={fs}>{fs}</option>)}
+                                                                    {(FUNDING_SOURCES_BY_UNIT[unit] || ['Dana Pesantren/Yayasan']).map(fs => <option key={fs} value={fs}>{fs}</option>)}
                                                                 </select>
                                                             </td>
                                                             <td className="p-0">
