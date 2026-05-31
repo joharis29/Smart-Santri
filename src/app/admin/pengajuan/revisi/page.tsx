@@ -487,10 +487,6 @@ export default function RkaRevisiPage() {
       {/* STEP 3: FORM REVISI (UI PARITY DENGAN LPJ) */}
       {selectedRka && (
         <div className="flex flex-col gap-6 w-full">
-            <datalist id="program-list">
-              {availablePrograms.map(p => <option key={p} value={p} />)}
-            </datalist>
-
             {/* TABEL REVISI RKA (TOP) */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -532,15 +528,21 @@ export default function RkaRevisiPage() {
                             {rows.map((row, idx) => (
                                 <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                     <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
-                                    <td className="p-0 border-r border-slate-100">
+                                    <td className="p-0 relative group border-r border-slate-100">
                                         <input 
                                             type="text" 
-                                            list="program-list"
+                                            list={`programs-${row.id}`}
                                             value={row.program}
                                             onChange={(e) => updateRow(row.id, 'program', e.target.value)}
-                                            className="w-full h-10 px-3 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                                            className={`w-full h-10 px-3 pr-8 bg-white border-none outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all ${row.program === '' ? 'text-slate-400 italic' : 'text-emerald-900'}`}
                                             placeholder="Pilih/Ketik program..."
                                         />
+                                        <datalist id={`programs-${row.id}`}>
+                                            {availablePrograms.map(prog => (
+                                                <option key={prog} value={prog} />
+                                            ))}
+                                        </datalist>
+                                        <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
                                         <input 
