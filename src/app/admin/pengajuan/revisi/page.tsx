@@ -250,13 +250,24 @@ export default function RkaRevisiPage() {
             })
             setRows(mappedRows);
             setSelectedRkaId(draft.parent_id);
+            
+            getApprovedRkaList(draft.parent_id).then(data => {
+              setRkaList(data)
+              setLoading(false)
+            })
           } else {
              setSelectedRkaId(editId);
+             getApprovedRkaList(editId).then(data => {
+               setRkaList(data)
+               setLoading(false)
+             })
           }
         });
+        return; // Skip the default fetch below since it's chained
       }
     }
 
+    // Default fetch for new revision
     getApprovedRkaList().then(data => {
       setRkaList(data)
       setLoading(false)
