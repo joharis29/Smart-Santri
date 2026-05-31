@@ -334,7 +334,7 @@ export default function RiwayatPengajuanPage() {
         worksheet.addRow([]); 
 
         let globalTotal = 0;
-        const globalSummary = {};
+        const globalSummary: Record<string, number> = {};
 
         // Helper Function for Rendering a Table Block
         const renderTableBlock = (title: string, itemsData: any[], isOriginal: boolean) => {
@@ -366,14 +366,14 @@ export default function RiwayatPengajuanPage() {
             });
 
             let blockTotal = 0;
-            const blockSummary = {};
+            const blockSummary: Record<string, number> = {};
 
             itemsData.forEach((row, idx) => {
                 const nominal = Number(row.nominal) || 0;
                 blockTotal += nominal;
                 if (!isOriginal) globalTotal += nominal;
                 
-                let details = {};
+                let details: any = {};
                 try { details = typeof row.rincian_json === 'string' ? JSON.parse(row.rincian_json) : (row.rincian_json || {}); } catch(e) {}
 
                 const fundingSplits = details.fundingSplits || details.subsidiSources || [];
