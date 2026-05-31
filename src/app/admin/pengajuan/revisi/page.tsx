@@ -17,6 +17,21 @@ const FUND_SOURCES = [
   'Subsidi Pesantren'
 ];
 
+const BIDANG_BY_UNIT: Record<string, string[]> = {
+  'Pusat (Yayasan)': ['Kesekretariatan', 'Pendidikan', 'Sumber Daya Insani', 'Kesejahteraan Sosial', 'Sarana', 'Keuangan', 'Penelitian Dan Pengembangan'],
+  'TK': ['Kurikulum', 'Sarana', 'Humas', 'Kesejahteraan', 'Tata Usaha (TU)', 'Bendahara', 'Bimbingan & Konseling (BK)', 'Kesantrian', 'Mudir'],
+  'SDIT 1': ['Kurikulum', 'Tilawah & Hifdzil Qur\'an (THQ)', 'Humas', 'Kesiswaan', 'Sarana', 'Tenaga Administari Sekolah (TAS)', 'Bendahara', 'Kesekretariatan'],
+  'SDIT 2': ['Kurikulum', 'Tilawah & Hifdzil Qur\'an (THQ)', 'Humas', 'Kesiswaan', 'Sarana', 'Tenaga Administari Sekolah (TAS)', 'Bendahara', 'Kesekretariatan'],
+  'MTs': ['Kurikulum', 'Tilawah & Hifdzil Qur\'an (THQ)', 'Humas', 'Kesantrian', 'Sarana', 'Perpustakaan', 'Bimbingan & Konseling (BK)', 'Kordinator Ekstrakurikuler', 'Lembaga Bahasa', 'Kordinator Pengembangan Prestasi', 'Lab Komputer', 'Tenaga Administari Sekolah (TAS)', 'Bendahara', 'Mudir'],
+  'MA': ['Kurikulum', 'Bimbingan & Konseling (BK)', 'Lembaga Pengembangan Bahasa Asing (LPBA)', 'Kesantrian', 'Humas', 'Kordinator Piket', 'Pembina RG-UG', 'Kordinator Ekstrakurikuler', 'Perpustakaan', 'Tilawah & Hifdzil Qur\'an (THQ)', 'Mudir', 'Tenaga Administari Madrasah (TAM)', 'Operator', 'Kordinator Pengembangan Prestasi', 'Pendidik & Tenaga Kependidikan (PTK)', 'Lab Komputer', 'Lab Sains', 'Bendahara'],
+  'Diniyah': ['Kurikulum', 'Sarana', 'Humas', 'Bendahara', 'Kesantrian'],
+  'Asrama Putra': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
+  'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
+  'THQ': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
+  'Dapur Asrama Putra': ['Pengadaan Bahan', 'Operasional Dapur'],
+  'Dapur Asrama Putri': ['Pengadaan Bahan', 'Operasional Dapur']
+};
+
 export default function RkaRevisiPage() {
   const router = useRouter()
   const [rkaList, setRkaList] = useState<any[]>([])
@@ -320,6 +335,39 @@ export default function RkaRevisiPage() {
 
   if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
 
+  // Date Logic for Rescheduling blocks
+  const currentMonthIdx = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const isSecondHalf = currentMonthIdx < 7;
+  const currentTaStartYear = isSecondHalf ? currentYear - 1 : currentYear;
+  const currentTaString = `${currentTaStartYear}/${currentTaStartYear + 1}`;
+
+  const isPastTahunAjaran = (ta: string) => {
+     const taStartYear = parseInt(ta.split('/')[0] || '0');
+     return taStartYear < currentTaStartYear;
+  }
+
+  const isPastBulan = (monthName: string, ta: string) => {
+      if (isPastTahunAjaran(ta)) return true;
+      if (ta !== currentTaString) return false;
+      const monthMap: Record<string, number> = {
+          'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+          'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+      };
+      const mIdx = monthMap[monthName];
+      const isMIdxSecondHalf = mIdx < 7;
+      if (isSecondHalf) {
+          if (!isMIdxSecondHalf) return true; 
+          return mIdx < currentMonthIdx;
+      } else {
+          if (isMIdxSecondHalf) return false; 
+          return mIdx < currentMonthIdx;
+      }
+  }
+
+  const availableTahunAjaranList = ['2024/2025', '2025/2026', '2026/2027'];
+  const monthNamesList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3 border-b pb-4">
@@ -389,8 +437,10 @@ export default function RkaRevisiPage() {
                         onChange={(e) => setBidang(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
                     >
-                        <option value="">-- Bidang --</option>
-                        <option value={bidang}>{bidang}</option>
+                        <option value="">-- Pilih Bidang --</option>
+                        {(BIDANG_BY_UNIT[unit] || [bidang]).map(b => (
+                            <option key={b} value={b}>{b}</option>
+                        ))}
                     </select>
                 </div>
                 {/* Bulan */}
@@ -404,8 +454,10 @@ export default function RkaRevisiPage() {
                         className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
                     >
                         <option value="">-- Pilih Bulan --</option>
-                        {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map(m => (
-                            <option key={m} value={m}>{m}</option>
+                        {monthNamesList.map(m => (
+                            <option key={m} value={m} disabled={isPastBulan(m, tahunAjaran)}>
+                                {m} {isPastBulan(m, tahunAjaran) ? '(Berlalu)' : ''}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -420,9 +472,11 @@ export default function RkaRevisiPage() {
                         className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
                     >
                         <option value="">-- Pilih Tahun Ajaran --</option>
-                        <option value="2024/2025">2024/2025</option>
-                        <option value="2025/2026">2025/2026</option>
-                        <option value="2026/2027">2026/2027</option>
+                        {availableTahunAjaranList.map(ta => (
+                            <option key={ta} value={ta} disabled={isPastTahunAjaran(ta)}>
+                                {ta} {isPastTahunAjaran(ta) ? '(Berlalu)' : ''}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
