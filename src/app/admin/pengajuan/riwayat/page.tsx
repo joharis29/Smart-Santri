@@ -55,21 +55,26 @@ export default function RiwayatPengajuanPage() {
                 return;
             }
 
-            // Determine if it is RKA or LPJ
-            const isLpj = clickedDoc.status === 'SELESAI';
+            // Determine if it is RKA or LPJ or REVISI_RKA
+            const isLpjOrRevisi = clickedDoc.jenis === 'LPJ' || clickedDoc.jenis === 'REVISI_RKA';
 
-            if (isLpj) {
+            if (isLpjOrRevisi) {
                 setDetailLpjDoc(clickedDoc);
-                const lpjItem = clickedDoc.item_pengajuan?.find((it: any) => it.id === item.itemId) || clickedDoc.item_pengajuan?.[0];
-                let lpjDetails: any = {};
-                if (lpjItem?.rincian_json) {
-                    try {
-                        lpjDetails = typeof lpjItem.rincian_json === 'string'
-                            ? JSON.parse(lpjItem.rincian_json)
-                            : lpjItem.rincian_json;
-                    } catch (e) {}
+                let rkaId = clickedDoc.jenis === 'REVISI_RKA' ? clickedDoc.parent_id : null;
+                
+                if (clickedDoc.jenis === 'LPJ') {
+                    const lpjItem = clickedDoc.item_pengajuan?.find((it: any) => it.id === item.itemId) || clickedDoc.item_pengajuan?.[0];
+                    let lpjDetails: any = {};
+                    if (lpjItem?.rincian_json) {
+                        try {
+                            lpjDetails = typeof lpjItem.rincian_json === 'string'
+                                ? JSON.parse(lpjItem.rincian_json)
+                                : lpjItem.rincian_json;
+                        } catch (e) {}
+                    }
+                    rkaId = lpjDetails?.rka_id;
                 }
-                const rkaId = lpjDetails?.rka_id;
+
                 if (rkaId) {
                     const { data: rkaDoc } = await supabase
                         .from('dokumen_pengajuan')
@@ -1254,7 +1259,9 @@ export default function RiwayatPengajuanPage() {
                                         <div className="flex items-center justify-between px-1">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-4 bg-amber-500 rounded-full shadow-md"></div>
-                                                <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Rincian Rencana Kegiatan & Anggaran (RKA)</h4>
+                                                <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                                                    {detailLpjDoc?.jenis === 'REVISI_RKA' ? 'Rincian Revisi Anggaran (REVISI RKA)' : 'Rincian Rencana Kegiatan & Anggaran (RKA)'}
+                                                </h4>
                                             </div>
                                         </div>
                                         
@@ -1356,6 +1363,96 @@ export default function RiwayatPengajuanPage() {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Revisi / LPJ Table */}
+                                    {detailLpjDoc && (
+                                        <div className="space-y-2 mt-6">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-4 bg-sky-500 rounded-full shadow-md"></div>
+                                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                                                        {detailLpjDoc?.jenis === 'REVISI_RKA' ? 'Rincian Revisi Anggaran (REVISI RKA)' : 'Rincian Realisasi Pengeluaran (LPJ)'}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                <table className="w-full text-left text-[9px] border-collapse">
+                                                    <thead className="bg-sky-50/50 border-b border-sky-100">
+                                                        <tr>
+                                                            <th className="px-3 py-2 font-black text-sky-800 uppercase tracking-widest">No</th>
+                                                            <th className="px-3 py-2 font-black text-sky-800 uppercase tracking-widest">Program / Kegiatan</th>
+                                                            <th className="px-3 py-2 font-black text-sky-800 uppercase tracking-widest">Operasional</th>
+                                                            <th className="px-3 py-2 font-black text-sky-800 uppercase tracking-widest text-center">Jml Kegiatan</th>
+                                                            <th className="px-3 py-2 font-black text-sky-800 uppercase tracking-widest text-right">Nominal {detailLpjDoc?.jenis === 'REVISI_RKA' ? 'Revisi' : 'Realisasi'}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {(() => {
+                                                            const targetTitle = (selectedItemForDetail?.kegiatan || '').trim().toLowerCase();
+                                                            let itemsToRender = (detailLpjDoc.item_pengajuan || []).filter((it: any) => {
+                                                                const itemTitle = (it.judul_kegiatan || it.kegiatan || '').trim().toLowerCase();
+                                                                return itemTitle === targetTitle;
+                                                            });
+                                                            if (itemsToRender.length === 0 && detailLpjDoc.item_pengajuan?.length > 0) {
+                                                                itemsToRender = [detailLpjDoc.item_pengajuan[0]];
+                                                            }
+                                                            return itemsToRender.map((it: any, idx: number) => {
+                                                                let lpjDetails: any = {};
+                                                                try { lpjDetails = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                                const lpjRincian = lpjDetails.items || (Array.isArray(lpjDetails) ? lpjDetails : []);
+                                                                
+                                                                return (
+                                                                    <Fragment key={`lpj-${idx}`}>
+                                                                        <tr className="bg-white">
+                                                                            <td className="px-3 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                                                                            <td className="px-3 py-2 font-black text-slate-900 italic">{it.judul_kegiatan || it.kegiatan || '-'}</td>
+                                                                            <td className="px-3 py-2"><span className="px-2 py-0.5 bg-sky-50 text-sky-800 rounded-md font-black uppercase text-[8px]">{it.kategori_coa || it.operasional || '-'}</span></td>
+                                                                            <td className="px-3 py-2 text-center font-black text-slate-800">{it.jumlah_kegiatan || 1}x</td>
+                                                                            <td className="px-3 py-2 text-right font-black text-slate-950 text-xs">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                                                        </tr>
+                                                                        {lpjRincian.length > 0 && (
+                                                                            <tr>
+                                                                                <td colSpan={7} className="px-8 pb-4 bg-sky-50/10">
+                                                                                    <div className="bg-white rounded-xl border border-sky-100 p-3 space-y-3 shadow-sm">
+                                                                                        <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                            <div className="w-1.5 h-3 bg-sky-500 rounded-full"></div>
+                                                                                            <p className="text-[9px] font-black text-sky-800 uppercase tracking-widest">Rincian Item {detailLpjDoc?.jenis === 'REVISI_RKA' ? 'Revisi' : 'Realisasi'}</p>
+                                                                                        </div>
+                                                                                        <table className="w-full text-[9px]">
+                                                                                            <thead>
+                                                                                                <tr className="text-slate-600 font-black uppercase tracking-tighter border-b border-slate-100">
+                                                                                                    <th className="py-1.5 text-left">Nama Item</th>
+                                                                                                    <th className="py-1.5 text-center">Satuan</th>
+                                                                                                    <th className="py-1.5 text-right">Harga Satuan</th>
+                                                                                                    <th className="py-1.5 text-center">Qty</th>
+                                                                                                    <th className="py-1.5 text-right">Total (Rp)</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-slate-100 text-slate-800">
+                                                                                                {lpjRincian.map((sub: any, sIdx: number) => (
+                                                                                                    <tr key={sIdx}>
+                                                                                                        <td className="py-1.5 font-bold italic">{sub.name}</td>
+                                                                                                        <td className="py-1.5 text-center font-bold">{sub.unit || sub.satuan}</td>
+                                                                                                        <td className="py-1.5 text-right font-black">Rp {Number(sub.price || sub.harga_satuan || 0).toLocaleString('id-ID')}</td>
+                                                                                                        <td className="py-1.5 text-center font-black">{sub.qty || sub.kuantitas}</td>
+                                                                                                        <td className="py-1.5 text-right font-black text-slate-950">Rp {Number(sub.total || 0).toLocaleString('id-ID')}</td>
+                                                                                                    </tr>
+                                                                                                ))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </Fragment>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* RIWAYAT REVISI SNAPSHOT LOG (RKA Only) */}
                                     {(() => {
