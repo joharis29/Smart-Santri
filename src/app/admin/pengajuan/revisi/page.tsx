@@ -511,7 +511,7 @@ export default function RkaRevisiPage() {
     }))
   }
 
-  const submitRevisi = async (statusToSave: string = 'DIAJUKAN') => {
+  const submitRevisi = async (statusToSave: string = 'MENUNGGU_VERIFIKASI') => {
     if (!selectedRka) {
       setErrorMsg('Data RKA Induk tidak ditemukan. Gagal memproses data.')
       return
@@ -577,7 +577,7 @@ export default function RkaRevisiPage() {
     }
   }
 
-  const handleSubmit = () => submitRevisi('DIAJUKAN')
+  const handleSubmit = () => submitRevisi('MENUNGGU_VERIFIKASI')
   const handleSaveDraft = () => submitRevisi('DRAFT')
 
   const handleExportExcelProfessional = async () => {
