@@ -226,7 +226,7 @@ export default function RkaRevisiPage() {
             
             // Map draft items to rows
             const mappedRows = (draft.item_pengajuan || []).map((item: any, idx: number) => {
-              let details = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
+              let details: any = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
               try {
                 if (typeof item.rincian_json === 'string') {
                   details = JSON.parse(item.rincian_json)
@@ -277,7 +277,7 @@ export default function RkaRevisiPage() {
 
       // Map original items to editable rows
       const mappedRows = selectedRka.item_pengajuan.map((item: any, idx: number) => {
-        let details = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
+        let details: any = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
         try {
           if (typeof item.rincian_json === 'string') {
             details = JSON.parse(item.rincian_json)
