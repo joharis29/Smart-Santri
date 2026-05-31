@@ -124,11 +124,12 @@ export async function submitRevisiRka(payload: {
 }) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     const { data: user } = await supabase.auth.getUser()
     if (!user.user) return { error: 'Unauthorized' }
 
     // Dapatkan data RKA Asli untuk mereplika metadata (unit_id, dll)
-    const { data: parentRka } = await supabase
+    const { data: parentRka } = await adminClient
       .from('dokumen_pengajuan')
       .select('unit_id, jenjang_id, total_nominal')
       .eq('id', payload.parent_id)
@@ -151,7 +152,7 @@ export async function submitRevisiRka(payload: {
     let docError = null;
 
     if (docId) {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('dokumen_pengajuan')
         .update({
           status: payload.status || 'MENUNGGU_VERIFIKASI',
@@ -161,7 +162,7 @@ export async function submitRevisiRka(payload: {
         .eq('id', docId)
       docError = error;
     } else {
-      const { data: doc, error } = await supabase
+      const { data: doc, error } = await adminClient
         .from('dokumen_pengajuan')
         .insert({
           pembuat_id: user.user.id,
@@ -187,7 +188,7 @@ export async function submitRevisiRka(payload: {
 
     // Jika update draft, hapus item lama
     if (payload.draft_id) {
-      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId)
+      await adminClient.from('item_pengajuan').delete().eq('dokumen_id', docId)
     }
 
     // Insert Item Revisi
@@ -213,7 +214,7 @@ export async function submitRevisiRka(payload: {
         }
       })
 
-      const { error: itemError } = await supabase.from('item_pengajuan').insert(itemsToInsert)
+      const { error: itemError } = await adminClient.from('item_pengajuan').insert(itemsToInsert)
       if (itemError) return { error: 'Gagal menyimpan item revisi: ' + itemError.message }
     }
 
