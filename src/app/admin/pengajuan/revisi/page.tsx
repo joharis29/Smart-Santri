@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2 } from 'lucide-react'
+import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown } from 'lucide-react'
 import { getApprovedRkaList, submitRevisiRka } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
