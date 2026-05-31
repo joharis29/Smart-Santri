@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock, Download, Bookmark, Send } from 'lucide-react'
+import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock, Download, Bookmark, Send, AlertCircle } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { getApprovedRkaList, submitRevisiRka, getDraftRevisiById } from './actions'
 import { createClient } from '@/utils/supabase/client'
