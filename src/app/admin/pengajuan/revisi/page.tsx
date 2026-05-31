@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown } from 'lucide-react'
+import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock } from 'lucide-react'
 import { getApprovedRkaList, submitRevisiRka } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
@@ -484,13 +484,55 @@ export default function RkaRevisiPage() {
         </div>
       )}
 
-      {/* STEP 3: FORM REVISI (UI PARITY DENGAN LPJ) */}
+      {/* STEP 3 & 4: FORM REVISI (UI PARITY DENGAN LPJ DUAL-TABLE) */}
       {selectedRka && (
-        <div className="flex flex-col gap-6 w-full">
-            {/* TABEL REVISI RKA (TOP) */}
+        <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* TABEL RKA INDUK (TOP - READ ONLY) */}
+            <div className="bg-slate-50/50 rounded-3xl shadow-sm border border-slate-200 overflow-hidden opacity-95">
+                <div className="px-5 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-100">
+                    <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5" /> 3. Tabel Rencana Kegiatan & Anggaran (RKA Induk)
+                    </h2>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-200 px-2 py-0.5 rounded-full">Read-Only</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-[10px] min-w-[900px]">
+                        <thead className="bg-slate-200/50 border-b border-slate-200">
+                            <tr className="divide-x divide-slate-200">
+                                <th className="px-2 py-1.5 w-10 text-center font-black text-slate-500 uppercase tracking-widest">No</th>
+                                <th className="px-3 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Program/ Kegiatan</th>
+                                <th className="px-3 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Deskripsi Kegiatan</th>
+                                <th className="px-2 py-1.5 text-center w-16 font-black text-slate-500 uppercase tracking-widest leading-tight">Jumlah</th>
+                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Waktu</th>
+                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Tempat</th>
+                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest leading-tight">PIC</th>
+                                <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-widest">Sasaran</th>
+                                <th className="px-3 py-1.5 text-right w-24 font-black text-slate-500 uppercase tracking-widest">Anggaran</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white/60">
+                            {selectedRka.item_pengajuan.map((it: any, idx: number) => (
+                                <tr key={idx} className="divide-x divide-slate-100 hover:bg-slate-100/50 transition-colors italic">
+                                    <td className="px-2 py-1.5 text-center text-slate-400 font-bold">{idx + 1}</td>
+                                    <td className="px-3 py-1.5 font-bold text-slate-600">{it.judul_kegiatan}</td>
+                                    <td className="px-3 py-1.5 font-medium text-slate-500">{it.kategori_coa}</td>
+                                    <td className="px-2 py-1.5 text-center font-medium text-slate-500">{it.jumlah_kegiatan || 1}</td>
+                                    <td className="px-2 py-1.5 text-slate-500">{it.waktu || '-'}</td>
+                                    <td className="px-2 py-1.5 text-slate-500">{it.tempat || '-'}</td>
+                                    <td className="px-2 py-1.5 text-slate-500">{it.pic || '-'}</td>
+                                    <td className="px-2 py-1.5 text-slate-500">{it.sasaran || '-'}</td>
+                                    <td className="px-3 py-1.5 text-right font-black text-slate-600 bg-slate-100/50">Rp {(it.nominal || 0).toLocaleString('id-ID')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* TABEL REVISI RKA (BOTTOM - EDITABLE) */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">3. Tabel Rencana Kegiatan & Anggaran (Revisi)</h2>
+                    <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">4. Tabel Rencana Kegiatan & Anggaran (Revisi)</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-[11px] min-w-[900px]">
