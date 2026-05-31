@@ -95,7 +95,23 @@ export async function getApprovedRkaList() {
   return data.filter(doc => !processedRkaIds.has(doc.id))
 }
 
+export async function getDraftRevisiById(draftId: string) {
+  const supabase = await createClient()
+  const { data: doc, error } = await supabase
+    .from('dokumen_pengajuan')
+    .select(`
+      *,
+      item_pengajuan(*)
+    `)
+    .eq('id', draftId)
+    .single()
+
+  if (error || !doc) return null
+  return doc
+}
+
 export async function submitRevisiRka(payload: {
+  draft_id?: string,
   parent_id: string,
   unit: string,
   bidang: string,
@@ -130,58 +146,83 @@ export async function submitRevisiRka(payload: {
     const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
     const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
 
-    // Buat Dokumen Revisi (tetap sebagai RKA)
-    const { data: doc, error: docError } = await supabase
-      .from('dokumen_pengajuan')
-      .insert({
-        pembuat_id: user.user.id,
-        periode_bulan: bulanInt,
-        periode_tahun: tahunInt,
-        status: payload.status || 'MENUNGGU_VERIFIKASI', // Langsung masuk antrean approval
-        unit: payload.unit,
-        unit_id: parentRka.unit_id,
-        jenjang_id: parentRka.jenjang_id,
-        bidang: payload.bidang,
-        jenis: 'REVISI_RKA',
-        total_nominal: payload.total_nominal,
-        parent_id: payload.parent_id,
-        catatan_revisi: payload.catatan_revisi || null
-      })
-      .select('id')
-      .single()
+    // Buat Dokumen Revisi (tetap sebagai RKA) atau Update jika draft_id ada
+    let docId = payload.draft_id;
+    let docError = null;
 
-    if (docError) return { error: 'Gagal membuat dokumen revisi: ' + docError.message }
+    if (docId) {
+      const { error } = await supabase
+        .from('dokumen_pengajuan')
+        .update({
+          status: payload.status || 'MENUNGGU_VERIFIKASI',
+          total_nominal: payload.total_nominal,
+          catatan_revisi: payload.catatan_revisi || null
+        })
+        .eq('id', docId)
+      docError = error;
+    } else {
+      const { data: doc, error } = await supabase
+        .from('dokumen_pengajuan')
+        .insert({
+          pembuat_id: user.user.id,
+          periode_bulan: bulanInt,
+          periode_tahun: tahunInt,
+          status: payload.status || 'MENUNGGU_VERIFIKASI', // Langsung masuk antrean approval
+          unit: payload.unit,
+          unit_id: parentRka.unit_id,
+          jenjang_id: parentRka.jenjang_id,
+          bidang: payload.bidang,
+          jenis: 'REVISI_RKA',
+          total_nominal: payload.total_nominal,
+          parent_id: payload.parent_id,
+          catatan_revisi: payload.catatan_revisi || null
+        })
+        .select('id')
+        .single()
+      docError = error;
+      if (doc) docId = doc.id;
+    }
+
+    if (docError) return { error: 'Gagal membuat/memperbarui dokumen revisi: ' + docError.message }
+
+    // Jika update draft, hapus item lama
+    if (payload.draft_id) {
+      await supabase.from('item_pengajuan').delete().eq('dokumen_id', docId)
+    }
 
     // Insert Item Revisi
-    const itemsToInsert = payload.data.map(row => {
-      const firstSource = row.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS'
-      const finalDetails = {
-        ...(row.details || {}),
-        jumlah_kegiatan: row.jumlah || '1'
-      }
-      return {
-        dokumen_id: doc.id,
-        judul_kegiatan: '[REVISI] ' + row.program,
-        kategori_coa: row.operasional,
-        nominal: Number(row.nominal) || 0,
-        sumber_dana: firstSource,
-        pic: row.pic || '',
-        waktu: row.waktu || '',
-        tempat: row.tempat || '',
-        sasaran: row.sasaran || '',
-        catatan_revisi: payload.catatan_revisi || null,
-        rincian_json: finalDetails
-      }
-    })
+    if (payload.data && payload.data.length > 0) {
+      const itemsToInsert = payload.data.map(row => {
+        const firstSource = row.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS'
+        const finalDetails = {
+          ...(row.details || {}),
+          jumlah_kegiatan: row.jumlah || '1'
+        }
+        return {
+          dokumen_id: docId,
+          judul_kegiatan: '[REVISI] ' + row.program,
+          kategori_coa: row.operasional,
+          nominal: Number(row.nominal) || 0,
+          sumber_dana: firstSource,
+          pic: row.pic || '',
+          waktu: row.waktu || '',
+          tempat: row.tempat || '',
+          sasaran: row.sasaran || '',
+          catatan_revisi: payload.catatan_revisi || null,
+          rincian_json: finalDetails
+        }
+      })
 
-    const { error: itemError } = await supabase.from('item_pengajuan').insert(itemsToInsert)
-    if (itemError) return { error: 'Gagal menyimpan item revisi: ' + itemError.message }
+      const { error: itemError } = await supabase.from('item_pengajuan').insert(itemsToInsert)
+      if (itemError) return { error: 'Gagal menyimpan item revisi: ' + itemError.message }
+    }
 
     revalidatePath('/admin/pengajuan/riwayat')
     revalidatePath('/admin/pengajuan/rekap')
     revalidatePath('/admin/pengajuan/persetujuan')
+    revalidatePath('/admin/pengajuan/draft-saya')
 
-    return { success: true, id: doc.id }
+    return { success: true, id: docId }
   } catch (err: any) {
     return { error: err.message || 'Server error' }
   }

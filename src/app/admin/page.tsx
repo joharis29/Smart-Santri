@@ -556,8 +556,8 @@ export default function AdminDashboardPage() {
       if (t.status === 'DRAFT' || t.status === 'REVISI') return false;
     }
     
-    // SEMUA ROLE: Sembunyikan status akhir (Sudah Diterima / Selesai) dari Dasbor
-    if (['SUDAH DITERIMA', 'SELESAI'].includes(t.status)) return false;
+    // SEMUA ROLE: Sembunyikan status akhir (Sudah Diterima / Selesai) dan DRAFT dari Dasbor
+    if (['SUDAH DITERIMA', 'SELESAI', 'DRAFT'].includes(t.status)) return false;
 
     return true;
   });

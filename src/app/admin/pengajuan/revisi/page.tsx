@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock, Download, Bookmark, Send } from 'lucide-react'
 import ExcelJS from 'exceljs'
-import { getApprovedRkaList, submitRevisiRka } from './actions'
+import { getApprovedRkaList, submitRevisiRka, getDraftRevisiById } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
 const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
@@ -195,6 +195,7 @@ export default function RkaRevisiPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [draftId, setDraftId] = useState<string | null>(null)
 
   // Metadata States
   const [unit, setUnit] = useState('')
@@ -208,6 +209,54 @@ export default function RkaRevisiPage() {
   const [rows, setRows] = useState<any[]>([])
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get('id');
+      
+      if (editId) {
+        getDraftRevisiById(editId).then(draft => {
+          if (draft && draft.jenis === 'REVISI_RKA' && (draft.status === 'DRAFT' || draft.status === 'REVISI' || draft.status === 'BUTUH_REVISI')) {
+            setDraftId(draft.id);
+            setUnit(draft.unit || '');
+            setBidang(draft.bidang || '');
+            const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            setBulan(monthNames[draft.periode_bulan] || 'Januari');
+            setTahunAjaran(draft.periode_tahun ? `${draft.periode_tahun}/${Number(draft.periode_tahun)+1}` : '2025/2026');
+            setCatatanRevisi(draft.catatan_revisi || '');
+            
+            // Map draft items to rows
+            const mappedRows = (draft.item_pengajuan || []).map((item: any, idx: number) => {
+              let details = { items: [], fundingSplits: [{ source: item.sumber_dana, percent: 100, nominal: item.nominal }] }
+              try {
+                if (typeof item.rincian_json === 'string') {
+                  details = JSON.parse(item.rincian_json)
+                } else if (item.rincian_json) {
+                  details = item.rincian_json
+                }
+              } catch(e) {}
+              
+              return {
+                id: `draft-row-${idx}`,
+                program: item.judul_kegiatan?.replace('[REVISI] ', '') || '',
+                operasional: item.kategori_coa || '',
+                jumlah: details.jumlah_kegiatan || '1',
+                waktu: item.waktu || '',
+                tempat: item.tempat || '',
+                pic: item.pic || '',
+                sasaran: item.sasaran || '',
+                nominal: Number(item.nominal) || 0,
+                details: details
+              }
+            })
+            setRows(mappedRows);
+            setSelectedRkaId(draft.parent_id);
+          } else {
+             setSelectedRkaId(editId);
+          }
+        });
+      }
+    }
+
     getApprovedRkaList().then(data => {
       setRkaList(data)
       setLoading(false)
@@ -217,6 +266,8 @@ export default function RkaRevisiPage() {
   const selectedRka = useMemo(() => rkaList.find(r => r.id === selectedRkaId), [rkaList, selectedRkaId])
 
   useEffect(() => {
+    if (draftId) return; // Skip populating from parent RKA if we already loaded a draft
+
     if (selectedRka && selectedRka.item_pengajuan) {
       setUnit(selectedRka.unit || '')
       setBidang(selectedRka.bidang || '')
@@ -457,24 +508,26 @@ export default function RkaRevisiPage() {
     }
     
     // Validation
-    for (const r of rows) {
-      if (!r.program || !r.operasional) {
-        setErrorMsg('Harap lengkapi Program dan Deskripsi untuk semua baris.')
-        return
-      }
-      if (r.details?.items?.length > 0) {
-        for (let i = 0; i < r.details.items.length; i++) {
-          const item = r.details.items[i]
-          if (!item.name || item.price <= 0 || item.qty <= 0) {
-            setErrorMsg(`Harap lengkapi Nama Item, Harga (>0), dan Qty (>0) pada Rincian Detail baris ${r.program}.`)
-            return
+    if (statusToSave !== 'DRAFT') {
+      for (const r of rows) {
+        if (!r.program || !r.operasional) {
+          setErrorMsg('Harap lengkapi Program dan Deskripsi untuk semua baris.')
+          return
+        }
+        if (r.details?.items?.length > 0) {
+          for (let i = 0; i < r.details.items.length; i++) {
+            const item = r.details.items[i]
+            if (!item.name || item.price <= 0 || item.qty <= 0) {
+              setErrorMsg(`Harap lengkapi Nama Item, Harga (>0), dan Qty (>0) pada Rincian Detail baris ${r.program}.`)
+              return
+            }
           }
         }
-      }
-      const splitsTotal = (r.details?.fundingSplits || []).reduce((sum: number, s: any) => sum + Number(s.percent || 0), 0)
-      if (r.details?.fundingSplits?.length > 0 && Math.abs(splitsTotal - 100) > 0.1) {
-         setErrorMsg(`Total persentase Alokasi Sumber Dana pada baris ${r.program} harus 100%. Saat ini ${splitsTotal}%.`)
-         return
+        const splitsTotal = (r.details?.fundingSplits || []).reduce((sum: number, s: any) => sum + Number(s.percent || 0), 0)
+        if (r.details?.fundingSplits?.length > 0 && Math.abs(splitsTotal - 100) > 0.1) {
+           setErrorMsg(`Total persentase Alokasi Sumber Dana pada baris ${r.program} harus 100%. Saat ini ${splitsTotal}%.`)
+           return
+        }
       }
     }
 
@@ -482,6 +535,7 @@ export default function RkaRevisiPage() {
     setErrorMsg('')
 
     const payload = {
+      draft_id: draftId || undefined,
       parent_id: selectedRka.id,
       unit: unit,
       bidang: bidang,
