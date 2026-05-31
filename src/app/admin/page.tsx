@@ -342,7 +342,7 @@ export default function AdminDashboardPage() {
                 rawStatus: doc.status, // Original DB status
                 statusColor: statusColor,
                 note: doc.catatan_revisi,
-                isRevised: !!doc.catatan_revisi && doc.status !== 'REVISI'
+                isRevised: !!doc.catatan_revisi && doc.status !== 'REVISI' && (doc.jenis !== 'REVISI_RKA' || doc.catatan_revisi.includes('- ['))
             };
         });
         setTransactions(mapped);
