@@ -2226,9 +2226,9 @@ export default function BuatRealisasiPage() {
                                                     <input 
                                                         list={`lpj-programs-${row.id}`}
                                                         value={row.program}
-                                                        onChange={(e) => updateLpjRow(row.id, 'program', e.target.value)}
-                                                        className="w-full h-10 px-3 pr-8 bg-white border border-slate-100 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all text-emerald-900"
-                                                        placeholder="Pilih atau ketik program..."
+                                                        readOnly
+                                                        className="w-full h-10 px-3 pr-8 bg-slate-50/70 border border-slate-100 outline-none text-[11px] font-black text-slate-500 cursor-not-allowed"
+                                                        placeholder="Program dari RKA"
                                                     />
                                                     <datalist id={`lpj-programs-${row.id}`}>
                                                         {availablePrograms.map(prog => <option key={prog} value={prog} />)}
