@@ -328,7 +328,7 @@ export default function RkaRevisiPage() {
                                     Program/ Kegiatan <span className="text-rose-500">*</span>
                                 </th>
                                 <th className="px-3 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
-                                    Kategori (COA) <span className="text-rose-500">*</span>
+                                    Deskripsi Kegiatan <span className="text-rose-500">*</span>
                                 </th>
                                 <th className="px-2 py-2 text-center w-20 font-black text-slate-900 uppercase tracking-widest leading-tight">
                                     Jumlah <span className="text-rose-500">*</span>
@@ -340,7 +340,7 @@ export default function RkaRevisiPage() {
                                     Tempat <span className="text-rose-500">*</span>
                                 </th>
                                 <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest leading-tight">
-                                    PIC <span className="text-rose-500">*</span>
+                                    Penanggung Jawab <span className="text-rose-500">*</span>
                                 </th>
                                 <th className="px-2 py-2 text-left font-black text-slate-900 uppercase tracking-widest">
                                     Sasaran <span className="text-rose-500">*</span>
@@ -355,28 +355,23 @@ export default function RkaRevisiPage() {
                             {rows.map((row, idx) => (
                                 <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                     <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
-                                    <td className="p-0 border-r border-slate-100">
+                                    <td className="p-0 border-r border-slate-100 bg-slate-50">
                                         <input 
                                             type="text" 
                                             value={row.program}
-                                            onChange={(e) => updateRow(row.id, 'program', e.target.value)}
-                                            className="w-full h-10 px-3 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
-                                            placeholder="Ketik program..."
+                                            readOnly
+                                            className="w-full h-10 px-3 bg-transparent border-none outline-none text-[11px] font-black text-slate-500 cursor-not-allowed"
+                                            title="Program tidak dapat diubah"
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <select 
+                                        <input 
+                                            type="text"
                                             value={row.operasional}
                                             onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
-                                            className="w-full h-10 px-2 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
-                                        >
-                                            <option value="">Pilih Kategori</option>
-                                            <option value="KONSUMSI">Konsumsi</option>
-                                            <option value="HONOR">Honor/Insentif</option>
-                                            <option value="BARANG_JASA">Barang & Jasa</option>
-                                            <option value="TRANSPORT">Transport</option>
-                                            <option value="LAINNYA">Lainnya</option>
-                                        </select>
+                                            className="w-full h-10 px-3 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                                            placeholder="Deskripsi kegiatan..."
+                                        />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
                                         <input 
