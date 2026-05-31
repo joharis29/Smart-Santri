@@ -135,7 +135,7 @@ export async function submitRevisiRka(payload: {
       .single()
 
     if (!parentRka) return { error: 'RKA Induk tidak ditemukan' }
-    if (payload.total_nominal > parentRka.total_nominal) {
+    if (payload.status !== 'DRAFT' && payload.total_nominal > parentRka.total_nominal) {
       return { error: 'Total nominal revisi tidak boleh melebihi total RKA asli' }
     }
 

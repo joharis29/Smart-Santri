@@ -263,7 +263,7 @@ export default function RkaRevisiPage() {
     })
   }, [])
 
-  const selectedRka = useMemo(() => rkaList.find(r => r.id === selectedRkaId), [rkaList, selectedRkaId])
+  const selectedRka = useMemo(() => rkaList.find(r => String(r.id) === String(selectedRkaId)), [rkaList, selectedRkaId])
 
   useEffect(() => {
     if (draftId) return; // Skip populating from parent RKA if we already loaded a draft
@@ -501,7 +501,10 @@ export default function RkaRevisiPage() {
   }
 
   const submitRevisi = async (statusToSave: string = 'DIAJUKAN') => {
-    if (!selectedRka) return
+    if (!selectedRka) {
+      setErrorMsg('Data RKA Induk tidak ditemukan. Gagal memproses data.')
+      return
+    }
     if (isOverBudget && statusToSave !== 'DRAFT') {
       setErrorMsg('Total Revisi melebihi Total Asli. Tidak dapat diajukan.')
       return
