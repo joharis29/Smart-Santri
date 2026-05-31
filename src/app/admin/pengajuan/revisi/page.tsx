@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock } from 'lucide-react'
+import { FileEdit, Save, Plus, Trash2, ArrowRight, PlusCircle, Info, DollarSign, Calendar, Layers, GraduationCap, Building2, ChevronDown, Lock, Download, Bookmark, Send } from 'lucide-react'
+import ExcelJS from 'exceljs'
 import { getApprovedRkaList, submitRevisiRka } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
@@ -117,6 +118,7 @@ export default function RkaRevisiPage() {
   const [bulan, setBulan] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
   const [availablePrograms, setAvailablePrograms] = useState<string[]>([])
+  const [catatanRevisi, setCatatanRevisi] = useState('')
 
   // State for the editable revision rows
   const [rows, setRows] = useState<any[]>([])
@@ -355,9 +357,9 @@ export default function RkaRevisiPage() {
     }))
   }
 
-  const handleSubmit = async () => {
+  const submitRevisi = async (statusToSave: string = 'DIAJUKAN') => {
     if (!selectedRka) return
-    if (isOverBudget) {
+    if (isOverBudget && statusToSave !== 'DRAFT') {
       setErrorMsg('Total Revisi melebihi Total Asli. Tidak dapat diajukan.')
       return
     }
@@ -394,7 +396,9 @@ export default function RkaRevisiPage() {
       bulan: bulan,
       tahun_ajaran: tahunAjaran,
       total_nominal: totalRevision,
-      data: rows
+      data: rows,
+      status: statusToSave,
+      catatan_revisi: catatanRevisi
     }
 
     const res = await submitRevisiRka(payload)
@@ -405,6 +409,130 @@ export default function RkaRevisiPage() {
     } else {
       router.push('/admin/pengajuan/riwayat')
     }
+  }
+
+  const handleSubmit = () => submitRevisi('DIAJUKAN')
+  const handleSaveDraft = () => submitRevisi('DRAFT')
+
+  const handleExportExcelProfessional = async () => {
+    if (!selectedRka) return
+
+    const reportTitle = "DOKUMEN REVISI RENCANA KEGIATAN DAN ANGGARAN (RKA)"
+
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Revisi RKA')
+
+    // 1. Header Styling
+    worksheet.mergeCells('A1:K1')
+    const titleCell = worksheet.getCell('A1')
+    titleCell.value = reportTitle
+    titleCell.font = { name: 'Times New Roman', size: 14, bold: true }
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+    // 2. Metadata
+    worksheet.getRow(3).values = ['Unit / Jenjang:', unit, '', 'Bidang / Dept:', bidang || '-']
+    worksheet.getRow(4).values = ['Bulan:', bulan, '', 'Tahun Ajaran:', tahunAjaran]
+    worksheet.getRow(3).font = { bold: true }
+    worksheet.getRow(4).font = { bold: true }
+
+    // 3. Tabel RKA Induk (Read Only)
+    worksheet.getRow(6).values = ['TABEL 1: RKA INDUK (SEBELUM REVISI)']
+    worksheet.getRow(6).font = { bold: true, size: 12 }
+    
+    const indukHeader = worksheet.getRow(7)
+    indukHeader.values = ['No', 'Program / Kegiatan', 'Operasional', 'Jumlah', 'Waktu', 'Tempat', 'PIC', 'Sasaran', 'Anggaran']
+    indukHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    indukHeader.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF64748B' } }
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+    })
+
+    let currentRow = 8
+    selectedRka.item_pengajuan.forEach((it: any, idx: number) => {
+      const r = worksheet.getRow(currentRow)
+      r.values = [
+        idx + 1,
+        it.judul_kegiatan,
+        it.kategori_coa,
+        it.jumlah_kegiatan || 1,
+        it.waktu || '-',
+        it.tempat || '-',
+        it.pic || '-',
+        it.sasaran || '-',
+        Number(it.nominal || 0)
+      ]
+      r.getCell(9).numFmt = '"Rp"#,##0'
+      r.font = { italic: true, color: { argb: 'FF475569' } }
+      currentRow++
+    })
+
+    currentRow += 2
+
+    // 4. Tabel Revisi RKA
+    worksheet.getRow(currentRow).values = ['TABEL 2: RKA REVISI (PENGAJUAN BARU)']
+    worksheet.getRow(currentRow).font = { bold: true, size: 12, color: { argb: 'FF059669' } }
+    currentRow++
+
+    const revisiHeader = worksheet.getRow(currentRow)
+    revisiHeader.values = ['No', 'Program / Kegiatan', 'Operasional', 'Jumlah', 'Waktu', 'Tempat', 'PIC', 'Sasaran', 'Sumber Dana', 'Nominal Revisi']
+    revisiHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    revisiHeader.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } }
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+    })
+    currentRow++
+
+    rows.forEach((row, idx) => {
+      const r = worksheet.getRow(currentRow)
+      const splitStr = (row.details?.fundingSplits || []).map((s:any) => `${s.source} (${s.percent}%)`).join(', ')
+      
+      r.values = [
+        idx + 1,
+        row.program,
+        row.operasional,
+        row.jumlah,
+        row.waktu,
+        row.tempat,
+        row.pic,
+        row.sasaran,
+        splitStr || 'Lainnya',
+        Number(row.nominal || 0)
+      ]
+      r.getCell(10).numFmt = '"Rp"#,##0'
+      currentRow++
+    })
+
+    currentRow += 2
+    worksheet.getRow(currentRow).values = ['Total RKA Asli:', totalOriginal]
+    worksheet.getRow(currentRow).getCell(2).numFmt = '"Rp"#,##0'
+    worksheet.getRow(currentRow).font = { bold: true }
+    currentRow++
+    worksheet.getRow(currentRow).values = ['Total Revisi:', totalRevision]
+    worksheet.getRow(currentRow).getCell(2).numFmt = '"Rp"#,##0'
+    worksheet.getRow(currentRow).font = { bold: true }
+
+    if (catatanRevisi) {
+      currentRow += 2
+      worksheet.getRow(currentRow).values = ['Catatan Revisi:']
+      worksheet.getRow(currentRow).font = { bold: true }
+      currentRow++
+      worksheet.getRow(currentRow).values = [catatanRevisi]
+    }
+
+    worksheet.columns.forEach((col, i) => { 
+        if (i === 1) col.width = 35;
+        else if (i === 2 || i === 8 || i === 9) col.width = 25;
+        else col.width = 15;
+    })
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `Revisi_RKA_${unit}_${bulan}.xlsx`
+    anchor.click()
+    window.URL.revokeObjectURL(url)
   }
 
   // Calculate Aggregated Funding Splits for Summary
@@ -1008,7 +1136,7 @@ export default function RkaRevisiPage() {
             {/* Bottom Action & Summary Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
                 {/* Summary Box */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between h-full">
                     <div className="space-y-4">
                         <div className="flex justify-between items-center text-[11px] font-black text-slate-400 uppercase tracking-widest">
                             <span>Total RKA Asli</span>
@@ -1023,26 +1151,77 @@ export default function RkaRevisiPage() {
                             <span>Rp {Math.abs(totalOriginal - totalRevision).toLocaleString('id-ID')} {isOverBudget ? '(Overbudget)' : ''}</span>
                         </div>
                     </div>
+
+                    <div className="mt-6 pt-6 border-t border-slate-100">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Catatan Revisi / Uraian Perubahan:</label>
+                        <textarea
+                            value={catatanRevisi}
+                            onChange={(e) => setCatatanRevisi(e.target.value)}
+                            placeholder="Jelaskan alasan mengapa program ini direvisi (opsional)..."
+                            className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all placeholder:italic"
+                        />
+                    </div>
                 </div>
 
                 {/* Submit Box */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex flex-col justify-center items-center text-center space-y-4">
-                    <div className="bg-emerald-50 w-12 h-12 rounded-full flex items-center justify-center text-emerald-600 mb-2">
-                        <Save size={24} />
+                <div className="bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-700 flex flex-col justify-between h-full relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
+                        <svg width="120" height="120" viewBox="0 0 100 100">
+                            <pattern id="diagonal-stripe" width="10" height="10" patternUnits="userSpaceOnUse">
+                                <path d="M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2" stroke="currentColor" strokeWidth="2"/>
+                            </pattern>
+                            <rect width="100" height="100" fill="url(#diagonal-stripe)"/>
+                        </svg>
                     </div>
-                    <div>
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Simpan & Ajukan Revisi</h3>
-                        <p className="text-xs text-slate-500 mt-1">Revisi RKA akan diproses dan menggantikan data lama setelah disetujui.</p>
+
+                    <div className="relative z-10 space-y-4 text-center">
+                        <div className="bg-slate-700/50 w-12 h-12 rounded-full flex items-center justify-center text-emerald-400 mb-2 mx-auto border border-slate-600">
+                            <Save size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest">Kirim Revisi RKA</h3>
+                            <p className="text-[10px] font-medium text-slate-400 mt-1.5 px-4 leading-relaxed">
+                                Revisi RKA akan dikirim ke Bendahara Unit, lalu disetujui Kepala Unit, dan terakhir oleh Bendahara Pusat. Jika disimpan sebagai Draft, dokumen ini dapat Anda edit kembali nanti.
+                            </p>
+                        </div>
                     </div>
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={submitting || isOverBudget}
-                        className={`w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all ${
-                            isOverBudget ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200'
-                        }`}
-                    >
-                        {submitting ? 'Menyimpan...' : (isOverBudget ? 'Melebihi Budget Asli' : 'Kirim Revisi RKA')}
-                    </button>
+
+                    <div className="relative z-10 grid grid-cols-2 gap-3 mt-6">
+                        <button 
+                            onClick={handleExportExcelProfessional}
+                            className="col-span-2 w-full py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 flex items-center justify-center gap-2"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Ekspor Excel
+                        </button>
+
+                        <button 
+                            onClick={handleSaveDraft}
+                            disabled={submitting || isOverBudget}
+                            className={`w-full py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                submitting || isOverBudget ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-amber-950 hover:shadow-lg hover:shadow-amber-500/20'
+                            }`}
+                        >
+                            <Bookmark className="w-4 h-4" />
+                            Simpan Draft
+                        </button>
+
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={submitting || isOverBudget}
+                            className={`w-full py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                isOverBudget ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-emerald-500 text-slate-900 border border-emerald-400 hover:bg-emerald-400 hover:shadow-lg hover:shadow-emerald-500/30'
+                            }`}
+                        >
+                            {submitting ? 'Menyimpan...' : (
+                                <>
+                                    <Send className="w-4 h-4" />
+                                    {isOverBudget ? 'Overbudget' : 'Kirim Revisi'}
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

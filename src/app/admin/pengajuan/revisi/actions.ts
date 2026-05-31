@@ -102,7 +102,9 @@ export async function submitRevisiRka(payload: {
   bulan: string,
   tahun_ajaran: string,
   total_nominal: number,
-  data: any[]
+  data: any[],
+  status?: string,
+  catatan_revisi?: string
 }) {
   try {
     const supabase = await createClient()
@@ -135,14 +137,15 @@ export async function submitRevisiRka(payload: {
         pembuat_id: user.user.id,
         periode_bulan: bulanInt,
         periode_tahun: tahunInt,
-        status: 'MENUNGGU_VERIFIKASI', // Langsung masuk antrean approval
+        status: payload.status || 'MENUNGGU_VERIFIKASI', // Langsung masuk antrean approval
         unit: payload.unit,
         unit_id: parentRka.unit_id,
         jenjang_id: parentRka.jenjang_id,
         bidang: payload.bidang,
-        jenis: 'RKA',
+        jenis: 'REVISI_RKA',
         total_nominal: payload.total_nominal,
-        parent_id: payload.parent_id
+        parent_id: payload.parent_id,
+        catatan_revisi: payload.catatan_revisi || null
       })
       .select('id')
       .single()
@@ -166,6 +169,7 @@ export async function submitRevisiRka(payload: {
         waktu: row.waktu || '',
         tempat: row.tempat || '',
         sasaran: row.sasaran || '',
+        catatan_revisi: payload.catatan_revisi || null,
         rincian_json: finalDetails
       }
     })
