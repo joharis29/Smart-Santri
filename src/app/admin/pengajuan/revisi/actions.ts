@@ -73,7 +73,7 @@ export async function getApprovedRkaList() {
 
   childDocs?.forEach(doc => {
     // 1. Jika dokumen ini adalah Revisi dari RKA (parent_id)
-    if (doc.jenis === 'RKA' && doc.parent_id) {
+    if (doc.jenis === 'REVISI_RKA' && doc.parent_id) {
       processedRkaIds.add(doc.parent_id)
     }
     // 2. Jika dokumen ini adalah LPJ yang merujuk ke RKA (via rka_id di rincian_json)
