@@ -247,6 +247,7 @@ export default function DraftSayaPage() {
                         <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">
                             {drafts.filter(d => d.type === 'LPJ').length}
                         </span>
+                    </button>
                     <button 
                         onClick={() => setActiveTab('REVISI_RKA')}
                         className={`flex-1 lg:flex-none px-5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'REVISI_RKA' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
