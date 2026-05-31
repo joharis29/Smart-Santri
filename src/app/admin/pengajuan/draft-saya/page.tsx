@@ -44,7 +44,7 @@ export default function DraftSayaPage() {
     const supabase = createClient();
     const [drafts, setDrafts] = useState<Draft[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ'>('RKA');
+    const [activeTab, setActiveTab] = useState<'RKA' | 'LPJ' | 'REVISI_RKA'>('RKA');
     const [searchQuery, setSearchQuery] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filterBidang, setFilterBidang] = useState('');
@@ -137,6 +137,16 @@ export default function DraftSayaPage() {
         fetchDrafts();
     }, []);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab === 'REVISI_RKA') {
+                setActiveTab('REVISI_RKA');
+            }
+        }
+    }, []);
+
     // Close filter when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -149,8 +159,12 @@ export default function DraftSayaPage() {
     }, []);
 
     const handleEdit = (realId: string, type: string) => {
-        const path = type === 'RKA' ? `/admin/pengajuan/buat?id=${realId}` : `/admin/realisasi/buat?id=${realId}`;
-        window.location.href = path;
+        let path = '';
+        if (type === 'RKA') path = `/admin/pengajuan/buat?id=${realId}`;
+        else if (type === 'LPJ') path = `/admin/realisasi/buat?id=${realId}`;
+        else if (type === 'REVISI_RKA') path = `/admin/pengajuan/revisi?id=${realId}`;
+        
+        if (path) window.location.href = path;
     };
 
     const handleKirim = async (realId: string) => {
@@ -232,6 +246,14 @@ export default function DraftSayaPage() {
                         <ClipboardCheck className="w-3.5 h-3.5" /> LPJ
                         <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">
                             {drafts.filter(d => d.type === 'LPJ').length}
+                        </span>
+                    <button 
+                        onClick={() => setActiveTab('REVISI_RKA')}
+                        className={`flex-1 lg:flex-none px-5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'REVISI_RKA' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <FileEdit className="w-3.5 h-3.5" /> Revisi RKA
+                        <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">
+                            {drafts.filter(d => d.type === 'REVISI_RKA').length}
                         </span>
                     </button>
                 </div>

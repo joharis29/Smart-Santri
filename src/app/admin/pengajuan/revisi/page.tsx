@@ -491,7 +491,11 @@ export default function RkaRevisiPage() {
     if (res.error) {
       setErrorMsg(res.error)
     } else {
-      router.push('/admin/pengajuan/riwayat')
+      if (statusToSave === 'DRAFT') {
+        router.push('/admin/pengajuan/draft-saya?tab=REVISI_RKA')
+      } else {
+        router.push('/admin/pengajuan/riwayat')
+      }
     }
   }
 
