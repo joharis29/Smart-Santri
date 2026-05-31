@@ -180,13 +180,13 @@ export default function AdminDashboardPage() {
 
         if (action === 'APPROVE') {
             if (selectedTrxForReview.rawStatus === 'MENUNGGU_VERIFIKASI') {
-                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'MENUNGGU_KEPALA' : 'REKAP_BENDAHARA';
+                calculatedNextStatus = (selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? 'MENUNGGU_KEPALA' : 'REKAP_BENDAHARA';
             } else if (selectedTrxForReview.rawStatus === 'REKAP_BENDAHARA') {
                 calculatedNextStatus = 'MENUNGGU_KEPALA';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_KEPALA') {
                 calculatedNextStatus = 'MENUNGGU_PUSAT';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_PUSAT') {
-                calculatedNextStatus = selectedTrxForReview.type === 'LPJ' ? 'DISETUJUI' : 'MENUNGGU_CAIR';
+                calculatedNextStatus = (selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? 'DISETUJUI' : 'MENUNGGU_CAIR';
             } else if (selectedTrxForReview.rawStatus === 'DISETUJUI') {
                 calculatedNextStatus = 'SELESAI';
             } else if (selectedTrxForReview.rawStatus === 'MENUNGGU_CAIR') {
@@ -931,7 +931,7 @@ export default function AdminDashboardPage() {
               <div className="relative space-y-6">
                 <div className="absolute left-[9px] top-1 bottom-1 w-[1px] bg-slate-100"></div>
                 {(() => {
-                    const statusRank: Record<string, number> = {
+                    let statusRank: Record<string, number> = {
                         'DRAFT': 0,
                         'REVISI': 0,
                         'MENUNGGU_VERIFIKASI': 1,
@@ -942,16 +942,38 @@ export default function AdminDashboardPage() {
                         'SUDAH_DITERIMA': 6,
                         'SELESAI': 6
                     };
-                    const currentRank = statusRank[selectedTrxForTracking.rawStatus] || 0;
 
-                    return [
+                    let steps = [
                         { l: 'DRAFT', d: 'Staf Pengaju', rank: 1 },
                         { l: 'VERIFIKASI', d: 'Bendahara Unit', rank: 2 },
                         { l: 'PERSETUJUAN', d: 'Kepala Unit', rank: 3 },
                         { l: 'OTORISASI', d: 'Bendahara Pusat', rank: 4 },
                         { l: 'PENCAIRAN', d: 'Dana Siap/Cair', rank: 5 },
                         { l: 'SELESAI', d: 'Sudah Diterima', rank: 6 }
-                    ].map((step, i) => {
+                    ];
+
+                    if (selectedTrxForTracking.type === 'LPJ' || selectedTrxForTracking.type === 'REVISI_RKA') {
+                        statusRank = {
+                            'DRAFT': 0,
+                            'REVISI': 0,
+                            'MENUNGGU_VERIFIKASI': 1,
+                            'MENUNGGU_KEPALA': 2,
+                            'MENUNGGU_PUSAT': 3,
+                            'DISETUJUI': 4,
+                            'SELESAI': 5
+                        };
+                        steps = [
+                            { l: 'DRAFT', d: 'Staf Pengaju', rank: 1 },
+                            { l: 'VERIFIKASI', d: 'Bendahara Unit', rank: 2 },
+                            { l: 'PERSETUJUAN', d: 'Kepala Unit', rank: 3 },
+                            { l: 'OTORISASI', d: 'Bendahara Pusat', rank: 4 },
+                            { l: 'SELESAI', d: 'Selesai & Disetujui', rank: 5 }
+                        ];
+                    }
+
+                    const currentRank = statusRank[selectedTrxForTracking.rawStatus] || 0;
+
+                    return steps.map((step, i) => {
                         const isDone = currentRank >= step.rank;
                         const isActive = currentRank === step.rank - 1;
 
