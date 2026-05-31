@@ -67,13 +67,15 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchParentRka = async () => {
-      if (!selectedTrxForReview || selectedTrxForReview.type !== 'LPJ') {
+      if (!selectedTrxForReview || (selectedTrxForReview.type !== 'LPJ' && selectedTrxForReview.type !== 'REVISI_RKA')) {
         setParentRkaData(null);
         return;
       }
       
       let parentRkaId = null;
-      if (selectedTrxForReview.items) {
+      if (selectedTrxForReview.type === 'REVISI_RKA') {
+        parentRkaId = selectedTrxForReview.parent_id;
+      } else if (selectedTrxForReview.items) {
         for (const item of selectedTrxForReview.items) {
           let details: any = {};
           try {
@@ -285,6 +287,7 @@ export default function AdminDashboardPage() {
     if (!error && data) {
         const mapped = data.map(doc => ({
             id: doc.id,
+            parent_id: doc.parent_id,
             shortId: String(doc.id).slice(0, 8).toUpperCase(),
             bidang: doc.bidang || 'Tanpa Bidang',
             periode: `${doc.periode_bulan} ${doc.periode_tahun}`,
@@ -326,6 +329,7 @@ export default function AdminDashboardPage() {
 
             return {
                 id: doc.id,
+                parent_id: doc.parent_id,
                 type: doc.jenis || 'RKA',
                 title: doc.kegiatan || items[0]?.judul_kegiatan || items[0]?.kegiatan || 'Pengajuan Tanpa Judul',
                 unit: doc.unit || 'SDIT 1', 
@@ -1112,17 +1116,21 @@ export default function AdminDashboardPage() {
                         </span>
                     </div>
                     
-                    {selectedTrxForReview.type === 'LPJ' && parentRkaData && (() => {
-                        const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
-                        const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
-                            const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
-                            return rkaActivityName === lpjActivityName;
-                        }) || [];
-                        const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
+                    {(selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') && parentRkaData && (() => {
+                        let rkaItemsToRender = parentRkaData.item_pengajuan || [];
+                        
+                        if (selectedTrxForReview.type === 'LPJ') {
+                            const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
+                            const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
+                                const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                return rkaActivityName === lpjActivityName;
+                            }) || [];
+                            rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : rkaItemsToRender;
+                        }
 
                         const totalRka = rkaItemsToRender.reduce((sum: number, it: any) => sum + (it.nominal || 0), 0) || 0;
-                        const totalLpj = selectedTrxForReview.nominal || 0;
-                        const selisih = totalRka - totalLpj;
+                        const totalTrx = selectedTrxForReview.nominal || 0;
+                        const selisih = totalRka - totalTrx;
                         const isOverBudget = selisih < 0;
 
                         let details: any = {};
@@ -1140,19 +1148,21 @@ export default function AdminDashboardPage() {
                         return (
                             <div className="flex flex-wrap items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner animate-in fade-in zoom-in duration-300">
                                 <div className="text-[9px] font-bold text-slate-500">
-                                    Total RKA: <span className="font-black text-slate-800">Rp {totalRka.toLocaleString('id-ID')}</span>
+                                    Total RKA Asli: <span className="font-black text-slate-800">Rp {totalRka.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="w-[1px] h-3 bg-slate-200"></div>
                                 <div className="text-[9px] font-bold text-slate-500">
-                                    Total Realisasi: <span className="font-black text-slate-800">Rp {totalLpj.toLocaleString('id-ID')}</span>
+                                    {selectedTrxForReview.type === 'REVISI_RKA' ? 'Total RKA Revisi:' : 'Total Realisasi:'} <span className="font-black text-slate-800">Rp {totalTrx.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="w-[1px] h-3 bg-slate-200"></div>
                                 <div className="flex items-center gap-2">
-                                    <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                        {isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:'}
+                                    <div className={`text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${isOverBudget ? (selectedTrxForReview.type === 'REVISI_RKA' ? 'text-amber-600' : 'text-rose-600') : 'text-emerald-600'}`}>
+                                        {selectedTrxForReview.type === 'REVISI_RKA' 
+                                            ? (isOverBudget ? '📈 Penambahan Anggaran:' : '📉 Pengurangan Anggaran:') 
+                                            : (isOverBudget ? '⚠️ Over-Budget:' : '✅ Sisa Anggaran:')}
                                         <span className="italic font-extrabold">Rp {Math.abs(selisih).toLocaleString('id-ID')}</span>
                                     </div>
-                                    {isOverBudgetSolved && (
+                                    {isOverBudgetSolved && selectedTrxForReview.type === 'LPJ' && (
                                         <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                                             Subsidi Silang Aktif (Kekurangan Rp 0)
                                         </span>
@@ -1165,22 +1175,24 @@ export default function AdminDashboardPage() {
                     <div className="text-right flex flex-col items-end">
                         <div className="flex items-center gap-2">
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                {selectedTrxForReview.type === 'LPJ' ? 'Total Realisasi LPJ:' : 'Total Pengajuan:'}
+                                {selectedTrxForReview.type === 'LPJ' ? 'Total Realisasi LPJ:' : (selectedTrxForReview.type === 'REVISI_RKA' ? 'Total Revisi:' : 'Total Pengajuan:')}
                             </span>
                             <span className="text-sm font-black text-slate-800 italic">Rp {selectedTrxForReview.nominal.toLocaleString('id-ID')}</span>
                         </div>
                     </div>
                 </div>
 
-                {selectedTrxForReview.type === 'LPJ' ? (
-                    // DUAL PANE COMPARISON FOR LPJ
+                {(selectedTrxForReview.type === 'LPJ' || selectedTrxForReview.type === 'REVISI_RKA') ? (
+                    // DUAL PANE COMPARISON FOR LPJ AND REVISI_RKA
                     <div className="space-y-6">
                         {/* SECTION 1: RKA (Target/Rencana) */}
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-3 duration-300">
                             <div className="flex items-center justify-between px-1">
                                 <div className="flex items-center gap-2">
                                     <div className="w-1.5 h-4 bg-amber-500 rounded-full shadow-md shadow-amber-100"></div>
-                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">1. Rencana Kegiatan & Anggaran (RKA) - Target/Rencana</h4>
+                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                                        1. {selectedTrxForReview.type === 'REVISI_RKA' ? 'Rencana Kegiatan & Anggaran (RKA) Induk - Versi Asli' : 'Rencana Kegiatan & Anggaran (RKA) - Target/Rencana'}
+                                    </h4>
                                 </div>
                                 <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                                     Rujukan Utama
@@ -1208,12 +1220,16 @@ export default function AdminDashboardPage() {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
-                                                const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
-                                                const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
-                                                    const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
-                                                    return rkaActivityName === lpjActivityName;
-                                                }) || [];
-                                                const rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : (parentRkaData.item_pengajuan || []);
+                                                let rkaItemsToRender = parentRkaData.item_pengajuan || [];
+                                                
+                                                if (selectedTrxForReview.type === 'LPJ') {
+                                                    const lpjActivityName = (selectedTrxForReview.items?.[0]?.judul_kegiatan || selectedTrxForReview.title || '').trim().toLowerCase();
+                                                    const matchingRkaItems = parentRkaData.item_pengajuan?.filter((it: any) => {
+                                                        const rkaActivityName = (it.judul_kegiatan || it.kegiatan || it.item || '').trim().toLowerCase();
+                                                        return rkaActivityName === lpjActivityName;
+                                                    }) || [];
+                                                    rkaItemsToRender = matchingRkaItems.length > 0 ? matchingRkaItems : rkaItemsToRender;
+                                                }
                                                 
                                                 return rkaItemsToRender.map((it: any, idx: number) => (
                                                     <Fragment key={idx}>
@@ -1284,12 +1300,14 @@ export default function AdminDashboardPage() {
                             )}
                         </div>
 
-                        {/* SECTION 2: LPJ (Aktual/Realisasi) */}
+                        {/* SECTION 2: LPJ / REVISI RKA (Aktual/Realisasi/Revisi) */}
                         <div className="space-y-2 animate-in fade-in slide-in-from-bottom-3 duration-300">
                             <div className="flex items-center justify-between px-1">
                                 <div className="flex items-center gap-2">
                                     <div className="w-1.5 h-4 bg-blue-600 rounded-full shadow-md shadow-blue-100"></div>
-                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">2. Realisasi Anggaran (LPJ) - Aktual/Realisasi</h4>
+                                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                                        2. {selectedTrxForReview.type === 'REVISI_RKA' ? 'Draft Revisi Anggaran - Pengajuan Baru' : 'Realisasi Anggaran (LPJ) - Aktual/Realisasi'}
+                                    </h4>
                                 </div>
                                 <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                                     Butuh Peninjauan
