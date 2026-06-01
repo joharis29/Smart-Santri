@@ -12,6 +12,7 @@ Fokus pada penyiapan infrastruktur dasar, autentikasi, dan skema basis data yang
   - [x] Landing Page (Homepage)
   - [x] Halaman Login
   - [x] Halaman Register (Khusus untuk keperluan Demo)
+    - [x] Freemium Access Model: Fitur akun Guest dengan akses pratinjau antar unit tanpa batas dan penguncian fitur administratif (Lock Screen).
   - [x] Dashboard Inti
   - [x] Halaman Manajemen User
   - [x] Halaman Manajemen Role Information
@@ -43,6 +44,7 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
   - [x] Fitur pencairan dana oleh Bendahara Pusat (Status CAIR).
   - [x] Sistem otomatis saldo unit bertambah saat status menjadi "SUDAH DITERIMA".
   - [x] Dasbor pemisahan saldo otomatis berdasarkan dompet dana (BOS, Yayasan, Zakat, dll).
+  - [x] Dukungan Saldo Defisit (Negatif): Menghapus limitasi level database untuk mengakomodasi pelacakan talangan antar unit secara transparan.
   - [x] Penyelarasan branding: "Dana Dengan Pembatasan" (Restricted) & "Dana Tanpa Pembatasan" (Unrestricted) dengan skema warna Amber/Emerald.
   - [x] **Klasifikasi Dana Iuran Non-Wajib**: Dikoreksi menjadi "Dana Dengan Pembatasan" karena eksklusif untuk biaya antar jemput siswa TK.
 - [x] **Modul Pelaporan Realisasi (LPJ)**
@@ -84,6 +86,8 @@ Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk valid
 - [x] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering) — `src/lib/rag.ts` terintegrasi dengan LLM alternatif (Gemini).
 - [x] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan LLM alternatif — `POST /api/audit`.
 - [x] Integrasi UI: Menampilkan bendera peringatan (*Flag*) anomali audit (Kepatuhan Syariah) di tabel pengajuan.
+  - [x] Limitasi Akses Audit (RBAC): Tombol *Smart Audit AI* eksklusif hanya dapat diakses oleh peran Pimpinan Pesantren.
+  - [x] Pembersihan Kebocoran State (*State Leakage*): Mereset cache hasil analisis LLM saat pengguna berpindah antar dokumen.
 
 ---
 
@@ -111,9 +115,10 @@ Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 - [ ] *Unit Testing* & *Integration Testing* (Terutama kalkulasi nominal saldo).
 - [ ] Pemindaian keamanan kode (*Static Code Analysis*) dengan SonarCloud.
 - [ ] Simulasi dan Pengujian Kotak Hitam (*Black Box Testing*).
-- [ ] *User Acceptance Testing* (UAT) bersama Bendahara Pesantren.
+- [/] *User Acceptance Testing* (UAT) bersama Bendahara Pesantren.
+  - [x] Penyiapan dokumen formal skenario UAT berbasis kerangka metodologi DSRM yang disesuaikan dengan peran (*Role-Based*).
 - [ ] Peluncuran *Production* di Vercel dan *Monitoring* Performa (Core Web Vitals).
 
 ---
 *Catatan: Centang kotak `[ ]` menjadi `[x]` seiring berjalannya progres pengembangan aplikasi.*
-*Terakhir diperbarui: 28 Mei 2026*
+*Terakhir diperbarui: 01 Juni 2026*
