@@ -119,6 +119,7 @@ export default function RiwayatDokumenPage() {
 
     const handleViewDetail = async (item: RiwayatDokumen) => {
         setSelectedItemForDetail(item);
+        setAuditResult(null);
         setLoadingDetail(true);
         try {
             // Fetch full LPJ Document and its items
