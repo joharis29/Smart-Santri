@@ -462,23 +462,23 @@ export default function LandingPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Administrator</p>
-                                    <p className="text-lg font-black text-slate-800">Admin Sidqi</p>
+                                    <p className="text-lg font-black text-slate-800">Admin Smart Santri</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <a href="mailto:sidqi.johari@gmail.com" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
+                                <a href="mailto:admin.smartsantri@gmail.com" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
                                     <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
                                         <Mail className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
                                     </div>
-                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">sidqi.johari@gmail.com</span>
+                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">admin.smartsantri@gmail.com</span>
                                 </a>
 
-                                <a href="https://wa.me/628141986019" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
+                                <a href="https://wa.me/6282141986019" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all group">
                                     <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg transition-colors">
                                         <Phone className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
                                     </div>
-                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">+62 814 1986 019</span>
+                                    <span className="text-slate-600 font-medium group-hover:text-emerald-700">+62 821 4198 6019</span>
                                 </a>
 
                                 <div className="flex items-start gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100 mt-2">
