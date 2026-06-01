@@ -469,12 +469,31 @@ export default function AdminDashboardPage() {
         };
 
         activeWallets.forEach((w: any) => {
-          if (w.kategori === 'SPP') newBalances.spp = Number(w.saldo);
-          else if (w.kategori === 'YAYASAN' || w.kategori === 'INFAQ') newBalances.yayasan = Number(w.saldo);
-          else if (w.kategori === 'BOS') newBalances.bos = Number(w.saldo);
+          const cat = w.kategori;
+          // Legacy check
+          if (cat === 'SPP') newBalances.spp = Number(w.saldo);
+          else if (cat === 'YAYASAN' || cat === 'INFAQ') newBalances.yayasan = Number(w.saldo);
+          else if (cat === 'BOS') newBalances.bos = Number(w.saldo);
+
+          // NEW String Mapping for UI Dashboard Widgets
+          if (cat === 'Dana SPP') newBalances['SPP'] = Number(w.saldo);
+          if (cat === 'Dana BOS') newBalances['BOS'] = Number(w.saldo);
+          if (cat === 'Dana Pesantren/Yayasan') newBalances['YAYASAN'] = Number(w.saldo);
+          if (cat === 'Dana Zakat') newBalances['ZAKAT'] = Number(w.saldo);
+          if (cat === 'Dana Wakaf') newBalances['WAKAF'] = Number(w.saldo);
+          if (cat === 'Dana Infaq') newBalances['INFAQ'] = Number(w.saldo);
+          if (cat === 'Laba Usaha Koperasi') newBalances['KOPERASI'] = Number(w.saldo);
+          if (cat === 'Laba Usaha Poskestren') newBalances['POSKESTREN'] = Number(w.saldo);
+          if (cat === 'Tabungan Wajib') newBalances['TABUNGAN_WAJIB'] = Number(w.saldo);
+          if (cat === 'Tabungan Siswa') newBalances['TABUNGAN_SISWA'] = Number(w.saldo);
+          if (cat === 'Uang Saku') newBalances['UANG_SAKU'] = Number(w.saldo);
+          if (cat === 'Iuran Non-Wajib') newBalances['IURAN_NON_WAJIB'] = Number(w.saldo);
+          if (cat === 'Subsidi Pesantren') newBalances['YAYASAN'] = Number(w.saldo);
+          if (cat === 'Infaq Siswa') newBalances['INFAQ'] = Number(w.saldo);
+          if (cat === 'Kas Internal') newBalances['KAS_INTERNAL'] = Number(w.saldo);
 
           // Save exact category balance
-          newBalances[w.kategori] = Number(w.saldo);
+          newBalances[cat] = Number(w.saldo);
         });
 
         setBalances(newBalances);
