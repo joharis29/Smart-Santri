@@ -475,22 +475,23 @@ export default function AdminDashboardPage() {
           else if (cat === 'YAYASAN' || cat === 'INFAQ') newBalances.yayasan = Number(w.saldo);
           else if (cat === 'BOS') newBalances.bos = Number(w.saldo);
 
-          // NEW String Mapping for UI Dashboard Widgets
-          if (cat === 'Dana SPP') newBalances['SPP'] = Number(w.saldo);
-          if (cat === 'Dana BOS') newBalances['BOS'] = Number(w.saldo);
-          if (cat === 'Dana Pesantren/Yayasan') newBalances['YAYASAN'] = Number(w.saldo);
-          if (cat === 'Dana Zakat') newBalances['ZAKAT'] = Number(w.saldo);
-          if (cat === 'Dana Wakaf') newBalances['WAKAF'] = Number(w.saldo);
-          if (cat === 'Dana Infaq') newBalances['INFAQ'] = Number(w.saldo);
-          if (cat === 'Laba Usaha Koperasi') newBalances['KOPERASI'] = Number(w.saldo);
-          if (cat === 'Laba Usaha Poskestren') newBalances['POSKESTREN'] = Number(w.saldo);
-          if (cat === 'Tabungan Wajib') newBalances['TABUNGAN_WAJIB'] = Number(w.saldo);
-          if (cat === 'Tabungan Siswa') newBalances['TABUNGAN_SISWA'] = Number(w.saldo);
-          if (cat === 'Uang Saku') newBalances['UANG_SAKU'] = Number(w.saldo);
-          if (cat === 'Iuran Non-Wajib') newBalances['IURAN_NON_WAJIB'] = Number(w.saldo);
-          if (cat === 'Subsidi Pesantren') newBalances['YAYASAN'] = Number(w.saldo);
-          if (cat === 'Infaq Siswa') newBalances['INFAQ'] = Number(w.saldo);
-          if (cat === 'Kas Internal') newBalances['KAS_INTERNAL'] = Number(w.saldo);
+          // NEW String Mapping for UI Dashboard Widgets (Case Insensitive)
+          const catUP = cat.toUpperCase();
+          if (catUP === 'DANA SPP' || catUP === 'SPP') newBalances['SPP'] = Number(w.saldo);
+          if (catUP === 'DANA BOS' || catUP === 'BOS') newBalances['BOS'] = Number(w.saldo);
+          if (catUP === 'DANA PESANTREN/YAYASAN' || catUP === 'DANA PESANTREN / YAYASAN' || catUP === 'YAYASAN' || catUP === 'DANA PESANTREN') newBalances['YAYASAN'] = Number(w.saldo);
+          if (catUP === 'DANA ZAKAT' || catUP === 'ZAKAT') newBalances['ZAKAT'] = Number(w.saldo);
+          if (catUP === 'DANA WAKAF' || catUP === 'WAKAF') newBalances['WAKAF'] = Number(w.saldo);
+          if (catUP === 'DANA INFAQ' || catUP === 'INFAQ') newBalances['INFAQ'] = Number(w.saldo);
+          if (catUP === 'LABA USAHA KOPERASI' || catUP === 'KOPERASI') newBalances['KOPERASI'] = Number(w.saldo);
+          if (catUP === 'LABA USAHA POSKESTREN' || catUP === 'POSKESTREN') newBalances['POSKESTREN'] = Number(w.saldo);
+          if (catUP === 'TABUNGAN WAJIB') newBalances['TABUNGAN_WAJIB'] = Number(w.saldo);
+          if (catUP === 'TABUNGAN SISWA') newBalances['TABUNGAN_SISWA'] = Number(w.saldo);
+          if (catUP === 'UANG SAKU') newBalances['UANG_SAKU'] = Number(w.saldo);
+          if (catUP === 'IURAN NON-WAJIB') newBalances['IURAN_NON_WAJIB'] = Number(w.saldo);
+          if (catUP === 'SUBSIDI PESANTREN') newBalances['YAYASAN'] = Number(w.saldo);
+          if (catUP === 'INFAQ SISWA') newBalances['INFAQ'] = Number(w.saldo);
+          if (catUP === 'KAS INTERNAL') newBalances['KAS_INTERNAL'] = Number(w.saldo);
 
           // Save exact category balance
           newBalances[cat] = Number(w.saldo);
