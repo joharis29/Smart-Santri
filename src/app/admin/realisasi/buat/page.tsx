@@ -315,32 +315,40 @@ export default function BuatRealisasiPage() {
                 .order('created_at', { ascending: false });
             
             if (data) {
-                // Fetch all LPJ documents to find which RKAs have already been reported
-                const { data: lpjDocs } = await supabase
+                // Fetch all LPJ and REVISI_RKA documents to find which RKAs have already been reported or revised
+                const { data: relatedDocs } = await supabase
                     .from('dokumen_pengajuan')
-                    .select('id, item_pengajuan(rincian_json)')
-                    .eq('jenis', 'LPJ');
+                    .select('id, jenis, parent_id, item_pengajuan(rincian_json)')
+                    .in('jenis', ['LPJ', 'REVISI_RKA']);
 
                 const params = new URLSearchParams(window.location.search);
                 const currentEditId = params.get('id');
 
                 const realizedRkaIds = new Set<string>();
-                lpjDocs?.forEach(doc => {
+                relatedDocs?.forEach(doc => {
                     if (currentEditId && String(doc.id) === String(currentEditId)) return;
 
-                    doc.item_pengajuan?.forEach((it: any) => {
-                        try {
-                            const details = typeof it.rincian_json === 'string' 
-                                ? JSON.parse(it.rincian_json) 
-                                : (it.rincian_json || {});
-                            if (details.rka_id) {
-                                realizedRkaIds.add(details.rka_id);
-                            }
-                        } catch(e) {}
-                    });
+                    // Hide original RKAs that have already been revised
+                    if (doc.jenis === 'REVISI_RKA' && doc.parent_id) {
+                        realizedRkaIds.add(doc.parent_id);
+                    }
+
+                    // Hide RKAs that have already been realized into LPJs
+                    if (doc.jenis === 'LPJ') {
+                        doc.item_pengajuan?.forEach((it: any) => {
+                            try {
+                                const details = typeof it.rincian_json === 'string' 
+                                    ? JSON.parse(it.rincian_json) 
+                                    : (it.rincian_json || {});
+                                if (details.rka_id) {
+                                    realizedRkaIds.add(details.rka_id);
+                                }
+                            } catch(e) {}
+                        });
+                    }
                 });
 
-                // Filter out RKAs that have already been reported in an LPJ (except our own draft)
+                // Filter out RKAs that have already been reported in an LPJ or have been revised (except our own draft)
                 const filtered = data.filter(doc => !realizedRkaIds.has(doc.id));
                 setApprovedRkas(filtered);
             }
