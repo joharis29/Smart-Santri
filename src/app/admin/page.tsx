@@ -425,6 +425,11 @@ export default function AdminDashboardPage() {
           setActiveUnit(finalUnit);
           setUserRole(mapProfileRoleToDashboard(savedRole));
           setIsGuest(cleanRole === 'GUEST');
+        } else {
+          const fallbackUnit = localStorage.getItem(`activeUnit_${user.id}`) || 'Pusat (Yayasan)';
+          setActiveUnit(fallbackUnit);
+          setUserRole('STAFF');
+          setIsGuest(true);
         }
       } catch (err) {
         console.error('Error fetching dashboard user role:', err);
