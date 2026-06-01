@@ -118,9 +118,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }
 
                 if (profileError || !profile) {
+                    const fallbackUnit = localStorage.getItem(`activeUnit_${user.id}`) || 'Pusat (Yayasan)';
                     setActualRole('GUEST');
                     setActiveRole('GUEST');
-                    setActiveUnit('Pusat (Yayasan)');
+                    setActiveUnit(fallbackUnit);
                     setUserProfile({ name: 'Pengguna Baru', role: 'Guest' });
                     return;
                 }
