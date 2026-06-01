@@ -114,6 +114,127 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
     ]
 };
 
+const BIDANG_BY_UNIT: Record<string, string[]> = {
+  'Pusat (Yayasan)': [
+    'Kesekretariatan',
+    'Pendidikan',
+    'Sumber Daya Insani',
+    'Kesejahteraan Sosial',
+    'Sarana',
+    'Keuangan',
+    'Penelitian Dan Pengembangan'
+  ],
+  'TK': [
+    'Kurikulum',
+    'Sarana',
+    'Humas',
+    'Kesejahteraan',
+    'Tata Usaha (TU)',
+    'Bendahara',
+    'Bimbingan & Konseling (BK)',
+    'Kesantrian',
+    'Mudir'
+  ],
+  'SDIT 1': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesiswaan',
+    'Sarana',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Kesekretariatan'
+  ],
+  'SDIT 2': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesiswaan',
+    'Sarana',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Kesekretariatan'
+  ],
+  'MTs': [
+    'Kurikulum',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Humas',
+    'Kesantrian',
+    'Sarana',
+    'Perpustakaan',
+    'Bimbingan & Konseling (BK)',
+    'Kordinator Ekstrakurikuler',
+    'Lembaga Bahasa',
+    'Kordinator Pengembangan Prestasi',
+    'Lab Komputer',
+    'Tenaga Administari Sekolah (TAS)',
+    'Bendahara',
+    'Mudir'
+  ],
+  'MA': [
+    'Kurikulum',
+    'Bimbingan & Konseling (BK)',
+    'Lembaga Pengembangan Bahasa Asing (LPBA)',
+    'Kesantrian',
+    'Humas',
+    'Kordinator Piket',
+    'Pembina RG-UG',
+    'Kordinator Ekstrakurikuler',
+    'Perpustakaan',
+    'Tilawah & Hifdzil Qur\'an (THQ)',
+    'Mudir',
+    'Tenaga Administari Madrasah (TAM)',
+    'Operator',
+    'Kordinator Pengembangan Prestasi',
+    'Pendidik & Tenaga Kependidikan (PTK)',
+    'Lab Komputer',
+    'Lab Sains',
+    'Bendahara'
+  ],
+  'Diniyah': [
+    'Kurikulum',
+    'Sarana',
+    'Humas',
+    'Bendahara',
+    'Kesantrian'
+  ],
+  'Asrama Putra': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'Asrama Putri': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'THQ': [
+    'Sekretaris',
+    'Bendahara',
+    'Pendidikan Dan Pengasuhan',
+    'Kesantrian Dan Kedisiplinan',
+    'Pondok Tahfidz',
+    'Kesehatan Dan Kesejahteraan',
+    'Sarana Dan Kebersihan Lingkungan'
+  ],
+  'Dapur Asrama Putra': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ],
+  'Dapur Asrama Putri': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ]
+};
+
 interface SubsidiSource {
     source: string;
     amount: number;
@@ -152,6 +273,39 @@ export default function BuatRealisasiPage() {
         return '';
     });
     const [bidang, setBidang] = useState('');
+    const [availableBidangs, setAvailableBidangs] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchCustomMetadata = async () => {
+            if (!unit) return;
+            try {
+                const supabase = createClient();
+                const { data: dbBidangs } = await supabase
+                    .from('pengaturan_bidang')
+                    .select('nama_bidang')
+                    .eq('unit_name', unit);
+
+                if (dbBidangs && dbBidangs.length > 0) {
+                    setAvailableBidangs(dbBidangs.map(b => b.nama_bidang));
+                } else {
+                    let normalizedUnit = unit;
+                    if (unit.includes('Yayasan')) normalizedUnit = 'Pusat (Yayasan)';
+                    setAvailableBidangs(BIDANG_BY_UNIT[normalizedUnit] || BIDANG_BY_UNIT[unit] || ['Umum']);
+                }
+            } catch (err) {
+                console.error("Error loading dynamic metadata:", err);
+            }
+        };
+        fetchCustomMetadata();
+    }, [unit]);
+
+    // Ensure the current RKA's bidang is available in the list so it doesn't get cleared incorrectly
+    useEffect(() => {
+        if (bidang && availableBidangs.length > 0 && !availableBidangs.includes(bidang)) {
+            setAvailableBidangs(prev => [...prev, bidang]);
+        }
+    }, [bidang, availableBidangs]);
+
     const [bulan, setBulan] = useState('');
     const [tahunAjaran, setTahunAjaran] = useState('');
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -1915,11 +2069,9 @@ export default function BuatRealisasiPage() {
                                         className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                                     >
                                         <option value="">Pilih Bidang...</option>
-                                        <option value="KESISWAAN">KESISWAAN</option>
-                                        <option value="KURIKULUM">KURIKULUM</option>
-                                        <option value="SARPRAS">SARPRAS</option>
-                                        <option value="SDM">SDM</option>
-                                        <option value="HUMAS">HUMAS</option>
+                                        {availableBidangs.map(b => (
+                                            <option key={b} value={b}>{b}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="space-y-1">
