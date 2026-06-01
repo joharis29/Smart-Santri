@@ -391,9 +391,11 @@ export default function AdminDashboardPage() {
           const isCenterRole = ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN'].includes(cleanRole);
 
           let finalUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
+          
+          const isGuestRole = cleanRole === 'GUEST';
 
-          // Strict RBAC Enforcement: If NOT a center/super-user role, lock them strictly to their database-assigned unit!
-          if (!isCenterRole) {
+          // Strict RBAC Enforcement: If NOT a center/super-user role and NOT GUEST, lock them strictly to their database-assigned unit!
+          if (!isCenterRole && !isGuestRole) {
             const dbUnitName = (Array.isArray(profile.unit) ? profile.unit[0]?.name : (profile.unit as any)?.name) || 'Pusat (Yayasan)';
             if (finalUnit !== dbUnitName) {
               finalUnit = dbUnitName;
@@ -648,7 +650,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-tighter">Unit:</h2>
             <div className="relative">
-              {userRole === 'BENDAHARA_PUSAT' ? (
+              {userRole === 'BENDAHARA_PUSAT' || isGuest ? (
                 <>
                   <select 
                     className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
