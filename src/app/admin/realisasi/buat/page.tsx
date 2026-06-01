@@ -301,8 +301,16 @@ export default function BuatRealisasiPage() {
 
     // Ensure the current RKA's bidang is available in the list so it doesn't get cleared incorrectly
     useEffect(() => {
-        if (bidang && availableBidangs.length > 0 && !availableBidangs.includes(bidang)) {
-            setAvailableBidangs(prev => [...prev, bidang]);
+        if (bidang && availableBidangs.length > 0) {
+            const exactMatch = availableBidangs.includes(bidang);
+            if (!exactMatch) {
+                const caseInsensitiveMatch = availableBidangs.find(b => b.toLowerCase() === bidang.toLowerCase());
+                if (caseInsensitiveMatch) {
+                    setBidang(caseInsensitiveMatch);
+                } else {
+                    setAvailableBidangs(prev => [...prev, bidang]);
+                }
+            }
         }
     }, [bidang, availableBidangs]);
 
@@ -689,10 +697,10 @@ export default function BuatRealisasiPage() {
                 const unitVal = rka.unit || rka.unit_id || '';
                 setUnit(unitVal);
 
-                // Bidang mapping (convert to uppercase, map 'Sarana' -> 'SARPRAS')
-                const dbBidang = String(rka.bidang || '').toUpperCase();
-                if (dbBidang.includes('SARANA') || dbBidang.includes('SARPRAS')) {
-                    setBidang('SARPRAS');
+                // Bidang mapping (case-insensitive mapping for 'Sarana')
+                const dbBidang = String(rka.bidang || '');
+                if (dbBidang.toUpperCase().includes('SARANA') || dbBidang.toUpperCase().includes('SARPRAS')) {
+                    setBidang('Sarana');
                 } else {
                     setBidang(dbBidang);
                 }
