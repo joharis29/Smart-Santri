@@ -1388,18 +1388,20 @@ export default function RiwayatDokumenPage() {
                                                 
                                                 return (
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <button
-                                                            onClick={handleAuditAI}
-                                                            disabled={isAuditing}
-                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isAuditing ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95 cursor-pointer'}`}
-                                                        >
-                                                            {isAuditing ? (
-                                                                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                                            ) : (
-                                                                <Bot className="w-3.5 h-3.5 text-blue-100" />
-                                                            )}
-                                                            {isAuditing ? 'Menganalisis...' : 'Audit Smart AI'}
-                                                        </button>
+                                                        {userRole === 'PIMPINAN' && (
+                                                            <button
+                                                                onClick={handleAuditAI}
+                                                                disabled={isAuditing}
+                                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isAuditing ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95 cursor-pointer'}`}
+                                                            >
+                                                                {isAuditing ? (
+                                                                    <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                                                ) : (
+                                                                    <Bot className="w-3.5 h-3.5 text-blue-100" />
+                                                                )}
+                                                                {isAuditing ? 'Menganalisis...' : 'Audit Smart AI'}
+                                                            </button>
+                                                        )}
                                                         
                                                         {aiStatus !== 'PENDING' && (
                                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${

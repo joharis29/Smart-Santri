@@ -71,7 +71,8 @@ const INITIAL_ROLES: RoleData[] = [
       'Riwayat Pengajuan (Read-Only)',
       'Riwayat Dokumen (Read-Only)',
       'View-Only Sumber Dana Dasbor',
-      'View-Only Aktivitas Real-time'
+      'View-Only Aktivitas Real-time',
+      'Smart Audit AI'
     ]
   },
   {
@@ -147,7 +148,8 @@ const INITIAL_PERMISSIONS_MASTER = [
   'Riwayat Dokumen (Edit/Approve)',
   'View-Only Sumber Dana Dasbor',
   'View-Only Aktivitas Real-time',
-  'Action Aktivitas Real-time'
+  'Action Aktivitas Real-time',
+  'Smart Audit AI'
 ];
 
 export default function RoleManagementPage() {
