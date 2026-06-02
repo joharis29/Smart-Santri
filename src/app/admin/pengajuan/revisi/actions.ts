@@ -10,7 +10,7 @@ export async function getApprovedRkaList(allowedParentId?: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, unit_id, jenjang_id')
+    .select('role, unit_id, jenjang_id, unit:unit_id(name), jenjang:jenjang_id(name)')
     .eq('id', user.user.id)
     .single()
 
@@ -21,6 +21,8 @@ export async function getApprovedRkaList(allowedParentId?: string) {
     .select(`
       id,
       unit,
+      unit_id,
+      jenjang_id,
       bidang,
       periode_bulan,
       periode_tahun,
@@ -58,27 +60,33 @@ export async function getApprovedRkaList(allowedParentId?: string) {
   if (role !== 'PIMPINAN' && role !== 'ADMINISTRATOR') {
     const { data: multiRoles } = await supabase
       .from('profiles_multi_role')
-      .select('unit_id, jenjang_id')
+      .select('unit_id, jenjang_id, unit:unit_id(name), jenjang:jenjang_id(name)')
       .eq('user_id', user.user.id);
 
     const allowedUnitIds = new Set<string>();
     const allowedJenjangIds = new Set<string>();
+    const allowedUnitNames = new Set<string>();
 
     if (profile?.unit_id) allowedUnitIds.add(profile.unit_id);
     if (profile?.jenjang_id) allowedJenjangIds.add(profile.jenjang_id);
+    if ((profile as any)?.unit?.name) allowedUnitNames.add((profile as any).unit.name);
+    if ((profile as any)?.jenjang?.name) allowedUnitNames.add((profile as any).jenjang.name);
     
-    multiRoles?.forEach(mr => {
+    multiRoles?.forEach((mr: any) => {
       if (mr.unit_id) allowedUnitIds.add(mr.unit_id);
       if (mr.jenjang_id) allowedJenjangIds.add(mr.jenjang_id);
+      if (mr.unit?.name) allowedUnitNames.add(mr.unit.name);
+      if (mr.jenjang?.name) allowedUnitNames.add(mr.jenjang.name);
     });
 
+    if (role === 'BENDAHARA_PUSAT') {
+      allowedUnitNames.add('Pusat (Yayasan)');
+    }
+
     filteredData = filteredData.filter((doc: any) => {
-       if (role === 'BENDAHARA_PUSAT' && doc.unit === 'Pusat (Yayasan)') return true;
+       if (doc.unit && allowedUnitNames.has(doc.unit)) return true;
        if (doc.unit_id && allowedUnitIds.has(doc.unit_id)) return true;
        if (doc.jenjang_id && allowedJenjangIds.has(doc.jenjang_id)) return true;
-       
-       // Fallback for docs created without unit_id/jenjang_id but have text unit name mapping
-       if (role === 'BENDAHARA_PUSAT' && doc.unit === 'Pusat (Yayasan)') return true;
        return false;
     });
   }
