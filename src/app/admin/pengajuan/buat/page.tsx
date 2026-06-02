@@ -1710,18 +1710,19 @@ function BuatPengajuanContent() {
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Pilih Bulan...</option>
-                  <option value="Januari" disabled>Januari (Lampau)</option>
-                  <option value="Februari" disabled>Februari (Lampau)</option>
-                  <option value="Maret" disabled>Maret (Lampau)</option>
-                  <option value="April" disabled>April (Lampau)</option>
-                  <option value="Mei">Mei (Sekarang)</option>
-                  <option value="Juni">Juni</option>
-                  <option value="Juli">Juli</option>
-                  <option value="Agustus">Agustus</option>
-                  <option value="September">September</option>
-                  <option value="Oktober">Oktober</option>
-                  <option value="November">November</option>
-                  <option value="Desember">Desember</option>
+                  {(() => {
+                    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    const currentMonthIndex = new Date().getMonth();
+                    return months.map((m, i) => {
+                      if (i < currentMonthIndex) {
+                        return <option key={m} value={m} disabled>{m} (Lampau)</option>;
+                      } else if (i === currentMonthIndex) {
+                        return <option key={m} value={m}>{m} (Sekarang)</option>;
+                      } else {
+                        return <option key={m} value={m}>{m}</option>;
+                      }
+                    });
+                  })()}
                   <option value="Tahunan">Tahunan (Full Year)</option>
                 </select>
               </div>
@@ -1735,9 +1736,22 @@ function BuatPengajuanContent() {
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400"
                 >
                   <option value="">Pilih Tahun...</option>
-                  <option value="2024/2025" disabled>2024/2025 (Lampau)</option>
-                  <option value="2025/2026">2025/2026 (Aktif)</option>
-                  <option value="2026/2027">2026/2027</option>
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const currentMonth = new Date().getMonth(); // 0-11
+                    // If month < 6 (Jan-Jun), academic year started last year.
+                    const startYear = currentMonth < 6 ? currentYear - 1 : currentYear;
+                    const prevYearStr = `${startYear - 1}/${startYear}`;
+                    const currYearStr = `${startYear}/${startYear + 1}`;
+                    const nextYearStr = `${startYear + 1}/${startYear + 2}`;
+                    return (
+                      <>
+                        <option value={prevYearStr} disabled>{prevYearStr} (Lampau)</option>
+                        <option value={currYearStr}>{currYearStr} (Aktif)</option>
+                        <option value={nextYearStr}>{nextYearStr}</option>
+                      </>
+                    );
+                  })()}
                 </select>
               </div>
             </div>
