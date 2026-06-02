@@ -655,13 +655,10 @@ Target Status: ${nextStatus}`
     return { error: diagMsg }
   }
 
-  // Email notification berdasarkan nextStatus — non-blocking
+  // =====================================================================
+  // FINANCIAL MUTATION LOGIC (Bypassing RLS with adminClient)
+  // =====================================================================
   try {
-    const supabaseFresh = await createClient()
-
-    // =====================================================================
-    // FINANCIAL MUTATION LOGIC (Bypassing RLS with adminClient)
-    // =====================================================================
     if (nextStatus === 'SUDAH_DITERIMA' && doc?.jenis === 'RKA' && !doc?.parent_id) {
       const todayStr = new Date().toISOString().split('T')[0];
       const { data: items } = await adminClient.from('item_pengajuan').select('*').eq('dokumen_id', id);
@@ -707,7 +704,10 @@ Target Status: ${nextStatus}`
                       keterangan: `Penerimaan Dana RKA dari Pusat: ${rkaLabel} (ID RKA: ${id})`,
                       created_by: user?.id || null
                   }]);
-              if (insErr) console.error("Error inserting RKA pendapatan:", insErr);
+              if (insErr) {
+                  console.error("Error inserting RKA pendapatan:", insErr);
+                  throw new Error("Gagal menyimpan RKA Pendapatan: " + insErr.message);
+              }
 
               // 2. Insert transaksi_pengeluaran -> Pusat (KREDIT)
               const { error: expErr } = await adminClient
@@ -725,22 +725,7 @@ Target Status: ${nextStatus}`
               
               if (expErr) {
                   console.error("Error inserting RKA pengeluaran Pusat:", expErr);
-                  // Fallback: update dompet SPP Pusat secara manual
-                  const { data: centralWallet } = await adminClient
-                      .from('dompet_dana')
-                      .select('*')
-                      .is('unit_id', null)
-                      .eq('kategori', 'SPP')
-                      .maybeSingle();
-                  if (centralWallet) {
-                      await adminClient
-                          .from('dompet_dana')
-                          .update({
-                              saldo: Number(centralWallet.saldo) - itemYayasanAmount,
-                              updated_at: new Date().toISOString()
-                          })
-                          .eq('id', centralWallet.id);
-                  }
+                  throw new Error("Gagal menyimpan RKA Pengeluaran Pusat: " + expErr.message);
               }
           }
         }
@@ -776,7 +761,10 @@ Target Status: ${nextStatus}`
                               keterangan: `Realisasi LPJ: ${activityLabel} [${splitSource}] (ID LPJ: ${id})`,
                               created_by: user?.id || null
                           }]);
-                      if (lpjExpErr) console.error(`Error inserting LPJ pengeluaran (${splitSource}):`, lpjExpErr);
+                      if (lpjExpErr) {
+                          console.error(`Error inserting LPJ pengeluaran (${splitSource}):`, lpjExpErr);
+                          throw new Error("Gagal mencatat pengeluaran LPJ: " + lpjExpErr.message);
+                      }
                   }
               }
           } else {
@@ -794,13 +782,28 @@ Target Status: ${nextStatus}`
                           keterangan: `Realisasi LPJ: ${activityLabel} (ID LPJ: ${id})`,
                           created_by: user?.id || null
                       }]);
-                  if (lpjExpErr) console.error("Error inserting LPJ pengeluaran fallback:", lpjExpErr);
+                  if (lpjExpErr) {
+                      console.error("Error inserting LPJ pengeluaran fallback:", lpjExpErr);
+                      throw new Error("Gagal mencatat pengeluaran LPJ: " + lpjExpErr.message);
+                  }
               }
           }
         }
       }
     }
+  } catch (finErr: any) {
+    console.error('[Financial Mutation Error]', finErr);
+    // Kita harus membatalkan status jika mutasi gagal (rollback secara manual, karena tidak ada transaksi DB di Supabase Data API)
+    await adminClient
+      .from('dokumen_pengajuan')
+      .update({ status: doc?.status || 'MENUNGGU_PUSAT' })
+      .eq('id', id);
+    return { error: 'Mutasi keuangan gagal: ' + finErr.message };
+  }
 
+  // Email notification berdasarkan nextStatus — non-blocking
+  try {
+    const supabaseFresh = await createClient()
     const bulanName = getBulanName(doc?.periode_bulan)
     const tahunStr = String(doc?.periode_tahun || '')
     const baseParams = {
