@@ -44,18 +44,7 @@ export async function getApprovedRkaList(allowedParentId?: string) {
     .order('created_at', { ascending: false })
 
   const role = profile?.role || '';
-  if (['STAF', 'STAF_UNIT', 'STAFF_BIDANG', 'BENDAHARA_UNIT', 'KEPALA_UNIT'].includes(role)) {
-    if (profile?.unit_id) {
-      query = query.eq('unit_id', profile.unit_id);
-    } else if (profile?.jenjang_id) {
-      query = query.eq('jenjang_id', profile.jenjang_id);
-    }
-  } else if (['BENDAHARA_JENJANG', 'KEPALA_JENJANG'].includes(role)) {
-    if (profile?.jenjang_id) {
-      query = query.eq('jenjang_id', profile.jenjang_id);
-    }
-  }
-
+  
   const { data, error } = await query
   if (error) {
     console.error('Error fetching approved RKA:', error)
@@ -63,6 +52,36 @@ export async function getApprovedRkaList(allowedParentId?: string) {
   }
 
   if (!data) return []
+
+  let filteredData = data;
+
+  if (role !== 'PIMPINAN' && role !== 'ADMINISTRATOR') {
+    const { data: multiRoles } = await supabase
+      .from('profiles_multi_role')
+      .select('unit_id, jenjang_id')
+      .eq('user_id', user.user.id);
+
+    const allowedUnitIds = new Set<string>();
+    const allowedJenjangIds = new Set<string>();
+
+    if (profile?.unit_id) allowedUnitIds.add(profile.unit_id);
+    if (profile?.jenjang_id) allowedJenjangIds.add(profile.jenjang_id);
+    
+    multiRoles?.forEach(mr => {
+      if (mr.unit_id) allowedUnitIds.add(mr.unit_id);
+      if (mr.jenjang_id) allowedJenjangIds.add(mr.jenjang_id);
+    });
+
+    filteredData = filteredData.filter((doc: any) => {
+       if (role === 'BENDAHARA_PUSAT' && doc.unit === 'Pusat (Yayasan)') return true;
+       if (doc.unit_id && allowedUnitIds.has(doc.unit_id)) return true;
+       if (doc.jenjang_id && allowedJenjangIds.has(doc.jenjang_id)) return true;
+       
+       // Fallback for docs created without unit_id/jenjang_id but have text unit name mapping
+       if (role === 'BENDAHARA_PUSAT' && doc.unit === 'Pusat (Yayasan)') return true;
+       return false;
+    });
+  }
 
   // Ambil semua dokumen untuk mengecek apakah RKA sudah direvisi atau masuk LPJ
   const { data: childDocs } = await adminClient
@@ -92,7 +111,7 @@ export async function getApprovedRkaList(allowedParentId?: string) {
   })
 
   // Saring RKA yang belum diproses di LPJ maupun Revisi, KECUALI jika ID-nya adalah allowedParentId (saat edit draft)
-  return data.filter(doc => !processedRkaIds.has(doc.id) || (allowedParentId && String(doc.id) === String(allowedParentId)))
+  return filteredData.filter((doc: any) => !processedRkaIds.has(doc.id) || (allowedParentId && String(doc.id) === String(allowedParentId)))
 }
 
 export async function getDraftRevisiById(draftId: string) {
