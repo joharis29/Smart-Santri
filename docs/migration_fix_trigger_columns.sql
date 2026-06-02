@@ -18,6 +18,8 @@ BEGIN
       ELSIF NEW.sumber_dana = 'Uang Saku' THEN v_kategori = 'UANG_SAKU';
       ELSIF NEW.sumber_dana = 'Iuran Non-Wajib' THEN v_kategori = 'IURAN_NON_WAJIB';
       ELSIF NEW.sumber_dana = 'Kas Internal' THEN v_kategori = 'KAS_INTERNAL';
+      ELSIF NEW.sumber_dana = 'Laba Usaha Koperasi' THEN v_kategori = 'KOPERASI';
+      ELSIF NEW.sumber_dana = 'Laba Usaha Poskestren' THEN v_kategori = 'POSKESTREN';
       ELSE v_kategori = 'YAYASAN';
       END IF;
 
@@ -35,6 +37,8 @@ BEGIN
           ELSIF OLD.sumber_dana = 'Uang Saku' THEN v_old_kategori = 'UANG_SAKU';
           ELSIF OLD.sumber_dana = 'Iuran Non-Wajib' THEN v_old_kategori = 'IURAN_NON_WAJIB';
           ELSIF OLD.sumber_dana = 'Kas Internal' THEN v_old_kategori = 'KAS_INTERNAL';
+          ELSIF OLD.sumber_dana = 'Laba Usaha Koperasi' THEN v_old_kategori = 'KOPERASI';
+          ELSIF OLD.sumber_dana = 'Laba Usaha Poskestren' THEN v_old_kategori = 'POSKESTREN';
           ELSE v_old_kategori = 'YAYASAN';
           END IF;
 
@@ -44,15 +48,19 @@ BEGIN
 
           IF v_old_unit_id IS NULL THEN
               UPDATE dompet_dana SET saldo = saldo + OLD.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_old_kategori::kategori_dana;
+              IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_old_kategori::kategori_dana, OLD.nominal); END IF;
           ELSE
               UPDATE dompet_dana SET saldo = saldo + OLD.nominal, updated_at = NOW() WHERE unit_id = v_old_unit_id AND kategori = v_old_kategori::kategori_dana;
+              IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_old_unit_id, v_old_kategori::kategori_dana, OLD.nominal); END IF;
           END IF;
       END IF;
 
       IF v_unit_id IS NULL THEN
           UPDATE dompet_dana SET saldo = saldo - NEW.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_kategori::kategori_dana, -NEW.nominal); END IF;
       ELSE
           UPDATE dompet_dana SET saldo = saldo - NEW.nominal, updated_at = NOW() WHERE unit_id = v_unit_id AND kategori = v_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_unit_id, v_kategori::kategori_dana, -NEW.nominal); END IF;
       END IF;
   END IF;
 
@@ -66,6 +74,8 @@ BEGIN
       ELSIF OLD.sumber_dana = 'Uang Saku' THEN v_old_kategori = 'UANG_SAKU';
       ELSIF OLD.sumber_dana = 'Iuran Non-Wajib' THEN v_old_kategori = 'IURAN_NON_WAJIB';
       ELSIF OLD.sumber_dana = 'Kas Internal' THEN v_old_kategori = 'KAS_INTERNAL';
+      ELSIF OLD.sumber_dana = 'Laba Usaha Koperasi' THEN v_old_kategori = 'KOPERASI';
+      ELSIF OLD.sumber_dana = 'Laba Usaha Poskestren' THEN v_old_kategori = 'POSKESTREN';
       ELSE v_old_kategori = 'YAYASAN';
       END IF;
 
@@ -75,8 +85,10 @@ BEGIN
 
       IF v_old_unit_id IS NULL THEN
           UPDATE dompet_dana SET saldo = saldo + OLD.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_old_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_old_kategori::kategori_dana, OLD.nominal); END IF;
       ELSE
           UPDATE dompet_dana SET saldo = saldo + OLD.nominal, updated_at = NOW() WHERE unit_id = v_old_unit_id AND kategori = v_old_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_old_unit_id, v_old_kategori::kategori_dana, OLD.nominal); END IF;
       END IF;
   END IF;
 
@@ -105,6 +117,8 @@ BEGIN
       ELSIF NEW.sumber_dana = 'Uang Saku' THEN v_kategori = 'UANG_SAKU';
       ELSIF NEW.sumber_dana = 'Iuran Non-Wajib' THEN v_kategori = 'IURAN_NON_WAJIB';
       ELSIF NEW.sumber_dana = 'Kas Internal' THEN v_kategori = 'KAS_INTERNAL';
+      ELSIF NEW.sumber_dana = 'Laba Usaha Koperasi' THEN v_kategori = 'KOPERASI';
+      ELSIF NEW.sumber_dana = 'Laba Usaha Poskestren' THEN v_kategori = 'POSKESTREN';
       ELSE v_kategori = 'YAYASAN';
       END IF;
 
@@ -122,6 +136,8 @@ BEGIN
           ELSIF OLD.sumber_dana = 'Uang Saku' THEN v_old_kategori = 'UANG_SAKU';
           ELSIF OLD.sumber_dana = 'Iuran Non-Wajib' THEN v_old_kategori = 'IURAN_NON_WAJIB';
           ELSIF OLD.sumber_dana = 'Kas Internal' THEN v_old_kategori = 'KAS_INTERNAL';
+          ELSIF OLD.sumber_dana = 'Laba Usaha Koperasi' THEN v_old_kategori = 'KOPERASI';
+          ELSIF OLD.sumber_dana = 'Laba Usaha Poskestren' THEN v_old_kategori = 'POSKESTREN';
           ELSE v_old_kategori = 'YAYASAN';
           END IF;
 
@@ -131,15 +147,19 @@ BEGIN
 
           IF v_old_unit_id IS NULL THEN
               UPDATE dompet_dana SET saldo = saldo - OLD.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_old_kategori::kategori_dana;
+              IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_old_kategori::kategori_dana, -OLD.nominal); END IF;
           ELSE
               UPDATE dompet_dana SET saldo = saldo - OLD.nominal, updated_at = NOW() WHERE unit_id = v_old_unit_id AND kategori = v_old_kategori::kategori_dana;
+              IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_old_unit_id, v_old_kategori::kategori_dana, -OLD.nominal); END IF;
           END IF;
       END IF;
 
       IF v_unit_id IS NULL THEN
           UPDATE dompet_dana SET saldo = saldo + NEW.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_kategori::kategori_dana, NEW.nominal); END IF;
       ELSE
           UPDATE dompet_dana SET saldo = saldo + NEW.nominal, updated_at = NOW() WHERE unit_id = v_unit_id AND kategori = v_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_unit_id, v_kategori::kategori_dana, NEW.nominal); END IF;
       END IF;
   END IF;
 
@@ -153,6 +173,8 @@ BEGIN
       ELSIF OLD.sumber_dana = 'Uang Saku' THEN v_old_kategori = 'UANG_SAKU';
       ELSIF OLD.sumber_dana = 'Iuran Non-Wajib' THEN v_old_kategori = 'IURAN_NON_WAJIB';
       ELSIF OLD.sumber_dana = 'Kas Internal' THEN v_old_kategori = 'KAS_INTERNAL';
+      ELSIF OLD.sumber_dana = 'Laba Usaha Koperasi' THEN v_old_kategori = 'KOPERASI';
+      ELSIF OLD.sumber_dana = 'Laba Usaha Poskestren' THEN v_old_kategori = 'POSKESTREN';
       ELSE v_old_kategori = 'YAYASAN';
       END IF;
 
@@ -162,8 +184,10 @@ BEGIN
 
       IF v_old_unit_id IS NULL THEN
           UPDATE dompet_dana SET saldo = saldo - OLD.nominal, updated_at = NOW() WHERE unit_id IS NULL AND kategori = v_old_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (NULL, v_old_kategori::kategori_dana, -OLD.nominal); END IF;
       ELSE
           UPDATE dompet_dana SET saldo = saldo - OLD.nominal, updated_at = NOW() WHERE unit_id = v_old_unit_id AND kategori = v_old_kategori::kategori_dana;
+          IF NOT FOUND THEN INSERT INTO dompet_dana (unit_id, kategori, saldo) VALUES (v_old_unit_id, v_old_kategori::kategori_dana, -OLD.nominal); END IF;
       END IF;
   END IF;
 
