@@ -740,10 +740,10 @@ Target Status: ${nextStatus}`
       if (items && items.length > 0) {
         for (const item of items) {
           const details = typeof item.rincian_json === 'string' ? JSON.parse(item.rincian_json) : (item.rincian_json || {});
-          const splits = details.fundingSplits || [];
+          const splits = [...(details.fundingSplits || []), ...(details.subsidiSources || [])];
           const activityLabel = item.judul_kegiatan || item.kegiatan || 'Kegiatan LPJ';
 
-          if (Array.isArray(splits) && splits.length > 0) {
+          if (splits.length > 0) {
               for (const split of splits) {
                   const splitAmount = Number(split.amount || split.nominal || 0);
                   const splitSource = split.source || split.sumber || 'Dana Pesantren/Yayasan';
