@@ -10,7 +10,6 @@ export async function batchSavePengajuan(payload: {
   bidang: string,
   bulan: string,
   tahun_ajaran: string,
-  mode: 'RKA' | 'DAPUR',
   status: 'DRAFT' | 'MENUNGGU_VERIFIKASI' | 'MENUNGGU_KEPALA' | 'REVISI',
   parent_id?: string,
   data: any[]
@@ -104,7 +103,7 @@ export async function batchSavePengajuan(payload: {
           unit_id: unit_id,
           jenjang_id: jenjang_id,
           bidang: payload.bidang,
-          jenis: payload.mode,
+          jenis: 'RKA',
           total_nominal: total_nominal,
           parent_id: payload.parent_id || null
         })
@@ -127,7 +126,7 @@ export async function batchSavePengajuan(payload: {
           unit_id: unit_id,
           jenjang_id: jenjang_id,
           bidang: payload.bidang,
-          jenis: payload.mode,
+          jenis: 'RKA',
           total_nominal: total_nominal,
           parent_id: payload.parent_id || null
         })
@@ -154,8 +153,8 @@ export async function batchSavePengajuan(payload: {
 
       return {
         dokumen_id: docId,
-        judul_kegiatan: payload.mode === 'RKA' ? row.program : row.item,
-        kategori_coa: payload.mode === 'RKA' ? row.operasional : 'DAPUR',
+        judul_kegiatan: row.program,
+        kategori_coa: row.operasional,
         nominal: Number(row.nominal) || 0,
         sumber_dana: firstSource,
         pic: row.pic || '',
@@ -213,7 +212,7 @@ export async function batchSavePengajuan(payload: {
         if (bendahara?.email) {
           const bulanName = getBulanName(bulanInt)
           await sendNotifikasiEmail({
-            event: payload.mode === 'RKA' ? 'RKA_SUBMITTED' : 'LPJ_SUBMITTED',
+            event: 'RKA_SUBMITTED',
             toEmail: bendahara.email,
             toName: bendahara.full_name || 'Bendahara Unit',
             unitName: payload.unit,
@@ -222,7 +221,7 @@ export async function batchSavePengajuan(payload: {
             totalNominal: total_nominal,
             bulan: bulanName,
             tahun: payload.tahun_ajaran,
-            jenis: payload.mode === 'RKA' ? 'RKA' : 'LPJ'
+            jenis: 'RKA'
           })
         }
       } catch (emailErr) {

@@ -270,11 +270,8 @@ export default function RiwayatPengajuanPage() {
             parentDoc = pDoc;
         }
 
-        const isDapurMode = doc.unit === 'Dapur Pusat' || doc.unit === 'Dapur Asrama Putra' || doc.unit === 'Dapur Asrama Putri';
         let reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN (RKA)";
-        if (isDapurMode) {
-            reportTitle = "LAPORAN REIMBURSEMENT DAPUR";
-        } else if (doc.periode_bulan === 0 || doc.periode_bulan === '0') {
+        if (doc.periode_bulan === 0 || doc.periode_bulan === '0') {
             reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN TAHUNAN (RKAT)";
         }
         if (doc.jenis === 'REVISI_RKA') reportTitle = "LAPORAN REVISI ANGGARAN (REVISI RKA)";
@@ -347,15 +344,10 @@ export default function RiwayatPengajuanPage() {
                 worksheet.addRow([]);
             }
 
-            let tableHeader = [];
-            if (isDapurMode) {
-                tableHeader = ['No', 'Tanggal', 'Item / Bahan Makanan', 'Spesifikasi / Detail', 'Metode Pembayaran', 'Nominal (Rp)'];
-            } else {
-                tableHeader = [
-                    'No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 
-                    isOriginal ? 'Rencana Anggaran' : 'Nominal Revisi', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran'
-                ];
-            }
+            let tableHeader = [
+                'No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 
+                isOriginal ? 'Rencana Anggaran' : 'Nominal Revisi', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran'
+            ];
 
             const headerRow = worksheet.addRow(tableHeader);
             headerRow.eachCell((cell) => {
@@ -389,45 +381,32 @@ export default function RiwayatPengajuanPage() {
                     if (!isOriginal) globalSummary[row.sumber_dana || 'Dana Yayasan'] = (globalSummary[row.sumber_dana || 'Dana Yayasan'] || 0) + nominal;
                 }
 
-                if (isDapurMode) {
-                    const r = worksheet.addRow([
-                        idx + 1,
-                        row.tanggal_kebutuhan ? new Date(row.tanggal_kebutuhan).toLocaleDateString('id-ID') : '-',
-                        row.judul_kegiatan || 'Bahan Makanan', row.sasaran || '-', doc.metode_pencairan || 'CASH', nominal
-                    ]);
-                    r.getCell(6).numFmt = '"Rp "#,##0';
-                    r.eachCell(cell => {
-                        cell.font = { name: 'Times New Roman' };
-                        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-                    });
-                } else {
-                    const savedJumlah = details.jumlah_kegiatan || '1';
-                    const mainRow = worksheet.addRow([
-                        idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'
-                    ]);
-                    mainRow.getCell(8).numFmt = '"Rp "#,##0';
-                    mainRow.eachCell(cell => {
-                        cell.font = { bold: true, name: 'Times New Roman' };
-                        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-                    });
+                const savedJumlah = details.jumlah_kegiatan || '1';
+                const mainRow = worksheet.addRow([
+                    idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'
+                ]);
+                mainRow.getCell(8).numFmt = '"Rp "#,##0';
+                mainRow.eachCell(cell => {
+                    cell.font = { bold: true, name: 'Times New Roman' };
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                });
 
-                    const rincianItems = details.items || [];
-                    if (Array.isArray(rincianItems) && rincianItems.some(item => item.name || item.total > 0)) {
-                        const rincianLabelRow = worksheet.addRow(['', '   --- RINCIAN BUDGET ---']);
-                        rincianLabelRow.getCell(2).font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
-                        rincianItems.forEach((item) => {
-                            if (item.name || item.total > 0) {
-                                const subRow = worksheet.addRow(['', `   • ${item.name || '(Tanpa Nama)'}`, '', '', item.unit || item.satuan || '-', Number(item.price || item.harga_satuan || 0), Number(item.qty || item.kuantitas || 1), Number(item.total || 0), '', '', '', '']);
-                                subRow.getCell(6).numFmt = '"Rp "#,##0';
-                                subRow.getCell(8).numFmt = '"Rp "#,##0';
-                                subRow.eachCell(cell => {
-                                    cell.font = { name: 'Times New Roman' };
-                                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-                                });
-                            }
-                        });
-                        worksheet.addRow([]);
-                    }
+                const rincianItems = details.items || [];
+                if (Array.isArray(rincianItems) && rincianItems.some(item => item.name || item.total > 0)) {
+                    const rincianLabelRow = worksheet.addRow(['', '   --- RINCIAN BUDGET ---']);
+                    rincianLabelRow.getCell(2).font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
+                    rincianItems.forEach((item) => {
+                        if (item.name || item.total > 0) {
+                            const subRow = worksheet.addRow(['', `   • ${item.name || '(Tanpa Nama)'}`, '', '', item.unit || item.satuan || '-', Number(item.price || item.harga_satuan || 0), Number(item.qty || item.kuantitas || 1), Number(item.total || 0), '', '', '', '']);
+                            subRow.getCell(6).numFmt = '"Rp "#,##0';
+                            subRow.getCell(8).numFmt = '"Rp "#,##0';
+                            subRow.eachCell(cell => {
+                                cell.font = { name: 'Times New Roman' };
+                                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                            });
+                        }
+                    });
+                    worksheet.addRow([]);
                 }
             });
 

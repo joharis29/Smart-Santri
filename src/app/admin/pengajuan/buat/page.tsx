@@ -84,15 +84,6 @@ interface RkaRow {
   isAuditing?: boolean
 }
 
-interface DapurRow {
-  id: string
-  tanggal: string
-  item: string
-  spesifikasi: string
-  metode: 'Tunai' | 'Transfer'
-  nominal: number
-}
-
 const DEFAULT_DETAILS: RkaDetails = {
   items: [
     { name: '', unit: '', price: 0, qty: 0, total: 0 }
@@ -364,17 +355,11 @@ function BuatPengajuanContent() {
     
     fetchPrograms();
   }, [unit]);
-  const isDapurMode = useMemo(() => unit.toLowerCase().includes('dapur'), [unit])
-
   // RKA Mode States
   const [rows, setRows] = useState<RkaRow[]>([
     { id: '1', program: '', operasional: '', jumlah: '', waktu: '', tempat: '', pic: '', sasaran: '', nominal: 0, details: JSON.parse(JSON.stringify(DEFAULT_DETAILS)), isFilled: false }
   ])
 
-  // Dapur Mode States
-  const [dapurRows, setDapurRows] = useState<DapurRow[]>([
-    { id: '1', tanggal: new Date().toISOString().split('T')[0], item: '', spesifikasi: '', metode: 'Tunai', nominal: 0 }
-  ])
   const [attachments, setAttachments] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
@@ -383,21 +368,17 @@ function BuatPengajuanContent() {
   const isFormValid = useMemo(() => {
     if (!unit || !bidang || !bulan || !tahunAjaran) return false;
     
-    if (isDapurMode) {
-      return dapurRows.length > 0 && dapurRows.every(r => r.tanggal && r.item && r.nominal > 0) && attachments.length > 0;
-    } else {
-      return rows.length > 0 && rows.every(r => 
-        r.program && 
-        r.operasional && 
-        r.jumlah !== '' && 
-        r.waktu && 
-        r.tempat && 
-        r.pic && 
-        r.sasaran && 
-        r.nominal > 0
-      );
-    }
-  }, [unit, bidang, bulan, tahunAjaran, isDapurMode, dapurRows, rows, attachments]);
+    return rows.length > 0 && rows.every(r => 
+      r.program && 
+      r.operasional && 
+      r.jumlah !== '' && 
+      r.waktu && 
+      r.tempat && 
+      r.pic && 
+      r.sasaran && 
+      r.nominal > 0
+    );
+  }, [unit, bidang, bulan, tahunAjaran, rows]);
   
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -667,7 +648,6 @@ function BuatPengajuanContent() {
 
   // --- Logic: Calculations ---
   const summary = useMemo(() => {
-    if (isDapurMode) return {}
     const acc: Record<string, number> = {}
     rows.forEach(row => {
       row.details.fundingSplits.forEach(split => {
@@ -677,7 +657,7 @@ function BuatPengajuanContent() {
       })
     })
     return acc
-  }, [rows, isDapurMode])
+  }, [rows])
   const [stream, setStream] = useState<MediaStream | null>(null)
 
   const startCamera = async () => {
@@ -729,28 +709,8 @@ function BuatPengajuanContent() {
     return () => stopCamera()
   }, [isCameraOpen])
   const totalPengajuan = useMemo(() => {
-    if (isDapurMode) {
-      return dapurRows.reduce((acc, row) => acc + row.nominal, 0)
-    }
     return Object.values(summary).reduce((a, b) => a + b, 0)
-  }, [summary, dapurRows, isDapurMode])
-
-  // --- Logic: Row Management (Dapur) ---
-  const updateDapurRow = (id: string, field: keyof DapurRow, value: any) => {
-    setDapurRows(prev => prev.map(row => 
-      row.id === id ? { ...row, [field]: value } : row
-    ))
-  }
-
-  const addDapurRow = () => {
-    const newId = (dapurRows.length + 1).toString()
-    setDapurRows([...dapurRows, { id: newId, tanggal: new Date().toISOString().split('T')[0], item: '', spesifikasi: '', metode: 'Tunai', nominal: 0 }])
-  }
-
-  const deleteDapurRow = (id: string) => {
-    if (dapurRows.length === 1) return
-    setDapurRows(dapurRows.filter(r => r.id !== id))
-  }
+  }, [summary])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -965,9 +925,8 @@ function BuatPengajuanContent() {
       bidang,
       bulan,
       tahun_ajaran: tahunAjaran,
-      mode: (isDapurMode ? 'DAPUR' : 'RKA') as 'RKA' | 'DAPUR',
       status: 'DRAFT' as const,
-      data: isDapurMode ? dapurRows : rows
+      data: rows
     }
 
     try {
@@ -987,7 +946,7 @@ function BuatPengajuanContent() {
   }
 
   const handleKirim = async () => {
-    const isConfirmed = confirm(`Kirim ${isDapurMode ? 'Laporan' : 'Pengajuan'} ini untuk diperiksa Bendahara?`)
+    const isConfirmed = confirm(`Kirim Pengajuan ini untuk diperiksa Bendahara?`)
     if (!isConfirmed) return
 
     setLoading(true)
@@ -997,16 +956,15 @@ function BuatPengajuanContent() {
       bidang,
       bulan,
       tahun_ajaran: tahunAjaran,
-      mode: (isDapurMode ? 'DAPUR' : 'RKA') as 'RKA' | 'DAPUR',
       status: 'MENUNGGU_VERIFIKASI' as const,
-      data: isDapurMode ? dapurRows : rows
+      data: rows
     }
 
     try {
       const res = await batchSavePengajuan(payload)
       
       if (res.success) {
-        alert(`${isDapurMode ? 'Laporan' : 'Pengajuan'} Berhasil Dikirim!`)
+        alert(`Pengajuan Berhasil Dikirim!`)
         router.push('/admin')
       } else {
         alert('Gagal mengirim pengajuan: ' + res.error)
@@ -1028,28 +986,17 @@ function BuatPengajuanContent() {
     let dataToExport = []
     let fileName = `Pengajuan_${unit}_${bulan}_${Date.now()}.xlsx`
 
-    if (isDapurMode) {
-      dataToExport = dapurRows.map((row, idx) => ({
-        'No': idx + 1,
-        'Tanggal': row.tanggal,
-        'Item': row.item,
-        'Spesifikasi': row.spesifikasi,
-        'Metode': row.metode,
-        'Nominal': row.nominal
-      }))
-    } else {
-      dataToExport = rows.map((row, idx) => ({
-        'No': idx + 1,
-        'Program': row.program,
-        'Operasional': row.operasional,
-        'Jumlah Kegiatan': row.jumlah,
-        'Waktu': row.waktu,
-        'Tempat': row.tempat,
-        'PIC': row.pic,
-        'Sasaran': row.sasaran,
-        'Nominal': row.nominal
-      }))
-    }
+    dataToExport = rows.map((row, idx) => ({
+      'No': idx + 1,
+      'Program': row.program,
+      'Operasional': row.operasional,
+      'Jumlah Kegiatan': row.jumlah,
+      'Waktu': row.waktu,
+      'Tempat': row.tempat,
+      'PIC': row.pic,
+      'Sasaran': row.sasaran,
+      'Nominal': row.nominal
+    }))
 
     const ws = XLSX.utils.json_to_sheet(dataToExport)
     const wb = XLSX.utils.book_new()
@@ -1059,9 +1006,7 @@ function BuatPengajuanContent() {
 
   const handleExportExcelPremium = () => {
     let reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN (RKA)"
-    if (isDapurMode) {
-      reportTitle = "LAPORAN REIMBURSEMENT DAPUR"
-    } else if (bulan === 'Tahunan') {
+    if (bulan === 'Tahunan') {
       reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN TAHUNAN (RKAT)"
     }
 
@@ -1076,20 +1021,9 @@ function BuatPengajuanContent() {
     let tableHeader: any[][] = []
     let tableData: any[][] = []
 
-    if (isDapurMode) {
-      tableHeader = [['No', 'Tanggal', 'Item / Bahan Makanan', 'Spesifikasi / Detail', 'Metode Pembayaran', 'Nominal (Rp)']]
-      tableData = dapurRows.map((row, idx) => [
-        idx + 1,
-        row.tanggal,
-        row.item,
-        row.spesifikasi,
-        row.metode,
-        row.nominal
-      ])
-    } else {
-      tableHeader = [['No', 'Deskripsi (Kegiatan / Rincian)', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)', 'Waktu', 'Tempat', 'PIC', 'Sasaran']]
+    tableHeader = [['No', 'Deskripsi (Kegiatan / Rincian)', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 'Total (Rp)', 'Waktu', 'Tempat', 'PIC', 'Sasaran']]
       
-      rows.forEach((row, idx) => {
+    rows.forEach((row, idx) => {
         // Main Row
         tableData.push([
           idx + 1,
@@ -1129,7 +1063,6 @@ function BuatPengajuanContent() {
           tableData.push(['', '', '', '', '', '', '', '', '', '', ''])
         }
       })
-    }
 
     const summaryHeader = [
       [], // Spacer
@@ -1211,8 +1144,7 @@ function BuatPengajuanContent() {
         })
       }
 
-      // 2. Detect Mode & Start Row
-      const isDapurFile = aoa.some(row => String(row[0]).includes('REIMBURSEMENT DAPUR'))
+      // 2. Start Row
       const startRowIdx = aoa.findIndex(row => String(row[0]) === 'No' || String(row[1]) === 'Nama Program/ Kegiatan')
       
       if (startRowIdx === -1) {
@@ -1243,24 +1175,7 @@ function BuatPengajuanContent() {
         }
       }
 
-      if (isDapurFile) {
-        // --- Import Mode Dapur ---
-        const newDapurRows: DapurRow[] = []
-        dataRows.forEach((row, idx) => {
-          if (row[0] && row[2]) { // If No and Item exist
-            newDapurRows.push({
-              id: (newDapurRows.length + 1).toString(),
-              tanggal: String(row[1] || ''),
-              item: String(row[2] || ''),
-              spesifikasi: String(row[3] || ''),
-              metode: row[4] === 'Transfer' ? 'Transfer' : 'Tunai',
-              nominal: Number(row[5] || 0)
-            })
-          }
-        })
-        if (newDapurRows.length > 0) setDapurRows(newDapurRows)
-      } else {
-        // --- Import Mode RKA ---
+      // --- Import Mode RKA ---
         const newRkaRows: RkaRow[] = []
         let currentParent: RkaRow | null = null
 
@@ -1331,7 +1246,6 @@ function BuatPengajuanContent() {
           }))
           setRows(finalizedRows)
         }
-      }
 
       alert("Data berhasil di-import!")
       if (importRef.current) importRef.current.value = '' // Reset input
@@ -1341,9 +1255,7 @@ function BuatPengajuanContent() {
 
   const handleExportExcelProfessional = async () => {
     let reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN (RKA)"
-    if (isDapurMode) {
-      reportTitle = "LAPORAN REIMBURSEMENT DAPUR"
-    } else if (bulan === 'Tahunan') {
+    if (bulan === 'Tahunan') {
       reportTitle = "PENGAJUAN RENCANA KEGIATAN DAN ANGGARAN TAHUNAN (RKAT)"
     }
 
@@ -1380,11 +1292,7 @@ function BuatPengajuanContent() {
     worksheet.getRow(3).values = [] 
 
     // 2. Table Headers
-    let tableHeader = []
-    if (isDapurMode) {
-      tableHeader = ['No', 'Tanggal', 'Item / Bahan Makanan', 'Spesifikasi / Detail', 'Metode Pembayaran', 'Nominal (Rp)']
-    } else {
-      tableHeader = [
+    let tableHeader = [
         'No', 
         'Nama Program/ Kegiatan', 
         'Operasional', 
@@ -1398,7 +1306,6 @@ function BuatPengajuanContent() {
         'Penanggung Jawab', 
         'Sasaran'
       ]
-    }
 
     const headerRow = worksheet.addRow(tableHeader)
     headerRow.eachCell((cell) => {
@@ -1418,29 +1325,7 @@ function BuatPengajuanContent() {
     })
 
     // 3. Table Data
-    if (isDapurMode) {
-      dapurRows.forEach((row, idx) => {
-        const r = worksheet.addRow([
-          idx + 1,
-          row.tanggal,
-          row.item,
-          row.spesifikasi,
-          row.metode,
-          Number(row.nominal)
-        ])
-        r.getCell(6).numFmt = '"Rp "#,##0'
-        r.eachCell(cell => {
-          cell.font = { name: 'Times New Roman' }
-          cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          }
-        })
-      })
-    } else {
-      rows.forEach((row, idx) => {
+    rows.forEach((row, idx) => {
         // Main Row
         const mainRow = worksheet.addRow([
           idx + 1,
@@ -1504,7 +1389,6 @@ function BuatPengajuanContent() {
           worksheet.addRow([]) // Spacer after rincian
         }
       })
-    }
 
     // 4. Summary Section
     worksheet.addRow([])
@@ -1591,9 +1475,6 @@ function BuatPengajuanContent() {
       setRows([
         { id: '1', program: '', operasional: '', jumlah: '', waktu: '', tempat: '', pic: '', sasaran: '', nominal: 0, details: JSON.parse(JSON.stringify(DEFAULT_DETAILS)), isFilled: false }
       ])
-      setDapurRows([
-        { id: '1', tanggal: new Date().toISOString().split('T')[0], item: '', spesifikasi: '', metode: 'Tunai', nominal: 0 }
-      ])
       setAttachments([])
       if (importRef.current) importRef.current.value = ''
     }
@@ -1677,7 +1558,7 @@ function BuatPengajuanContent() {
                   value={unit} 
                   onChange={(e) => setUnit(e.target.value)}
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 disabled:bg-slate-100 disabled:text-slate-500"
-                  disabled={!isCenter || isDapurMode}
+                  disabled={!isCenter}
                 >
                   <option value="">Pilih Unit...</option>
                   {ALL_UNITS.map(u => (
@@ -1787,7 +1668,7 @@ function BuatPengajuanContent() {
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h2 className="text-xs font-bold text-slate-800 tracking-tight">
-            {isDapurMode ? 'Laporan Belanja Harian (Reimbursement Dapur)' : 'Tabel Rencana Kegiatan & Anggaran (RKA)'}
+            Tabel Rencana Kegiatan & Anggaran (RKA)
           </h2>
           <div className="flex items-center gap-2">
             <button 
@@ -1807,86 +1688,7 @@ function BuatPengajuanContent() {
         </div>
 
         <div className="overflow-x-auto">
-          {isDapurMode ? (
-            /* --- Mode Dapur: Laporan Belanja --- */
-            <table className="w-full border-collapse">
-              <thead className="bg-slate-100 border-b border-slate-200">
-                <tr className="divide-x divide-slate-200">
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest text-center w-10">No.</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest w-36 text-center">Tgl Belanja</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[200px]">Item / Bahan Makanan</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest min-w-[150px]">Spesifikasi / Detail</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest w-28 text-center">Metode</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest w-40 text-right">Nominal Riil</th>
-                  <th className="px-2 py-2 text-[10px] font-extrabold text-slate-700 uppercase tracking-widest text-center w-20">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {dapurRows.map((row, index) => (
-                  <tr key={row.id} className="divide-x divide-slate-100 hover:bg-slate-50/50">
-                    <td className="px-3 py-2 text-center text-xs font-bold text-slate-400">{index + 1}</td>
-                    <td className="p-0">
-                      <input 
-                        type="date" 
-                        value={row.tanggal}
-                        onChange={(e) => updateDapurRow(row.id, 'tanggal', e.target.value)}
-                        className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-medium text-center focus:bg-white"
-                      />
-                    </td>
-                    <td className="p-0">
-                      <input 
-                        type="text" 
-                        value={row.item}
-                        onChange={(e) => updateDapurRow(row.id, 'item', e.target.value)}
-                        className="w-full h-9 px-3 bg-transparent border-none outline-none text-[11px] font-bold text-slate-700 focus:bg-white"
-                        placeholder="Contoh: Beras, Sayuran, Daging..."
-                      />
-                    </td>
-                    <td className="p-0">
-                      <input 
-                        type="text" 
-                        value={row.spesifikasi}
-                        onChange={(e) => updateDapurRow(row.id, 'spesifikasi', e.target.value)}
-                        className="w-full h-9 px-3 bg-transparent border-none outline-none text-[11px] font-medium text-slate-500 focus:bg-white"
-                        placeholder="Detail jumlah/merk..."
-                      />
-                    </td>
-                    <td className="p-0">
-                      <select 
-                        value={row.metode}
-                        onChange={(e) => updateDapurRow(row.id, 'metode', e.target.value)}
-                        className="w-full h-9 px-2 bg-transparent border-none outline-none text-[11px] font-bold text-center text-slate-600 focus:bg-white appearance-none"
-                      >
-                        <option value="Tunai">Tunai</option>
-                        <option value="Transfer">Transfer</option>
-                      </select>
-                    </td>
-                    <td className="p-0 bg-emerald-50/20">
-                      <div className="relative">
-                        <span className="absolute left-2 top-2.5 text-[9px] font-bold text-emerald-400">Rp</span>
-                        <input 
-                          type="number" 
-                          value={row.nominal || ''}
-                          onChange={(e) => updateDapurRow(row.id, 'nominal', parseInt(e.target.value) || 0)}
-                          className="w-full h-9 pl-7 pr-3 bg-transparent border-none outline-none text-[11px] font-black text-right text-emerald-900 focus:bg-white"
-                          placeholder="0"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button 
-                        onClick={() => deleteDapurRow(row.id)}
-                        className="p-1.5 bg-rose-50 text-rose-400 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            /* --- Mode Reguler: Tabel RKA --- */
+            {/* --- Mode Reguler: Tabel RKA --- */}
             <table className="w-full border-collapse">
               <thead className="bg-slate-100 border-b border-slate-200">
                 <tr className="divide-x divide-slate-200">
@@ -2070,13 +1872,12 @@ function BuatPengajuanContent() {
                 })}
               </tbody>
             </table>
-          )}
         </div>
 
         {/* Footer Grid Info */}
         <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
           <button 
-            onClick={isDapurMode ? addDapurRow : addRow}
+            onClick={addRow}
             className="flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-bold text-xs"
           >
             <PlusCircle className="w-4 h-4" /> Tambah Baris Baru
@@ -2091,7 +1892,7 @@ function BuatPengajuanContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
 
-          {!isDapurMode && Object.keys(summary).length > 0 && (
+          {Object.keys(summary).length > 0 && (
             <div className="space-y-3 pt-2">
               <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-50 pb-1.5">List Alokasi Dana</h3>
               <div className="space-y-2">
@@ -2109,58 +1910,6 @@ function BuatPengajuanContent() {
             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Pengajuan</span>
             <span className="text-xl font-black text-emerald-700 tracking-tighter italic">Rp {totalPengajuan.toLocaleString('id-ID')}</span>
           </div>
-
-          {isDapurMode && (
-            <div className="pt-4 border-t border-slate-100 space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Bukti Nota / Lampiran <span className="text-rose-600">*</span>
-                </label>
-                <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-full">{attachments.length} File</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  type="button"
-                  onClick={() => setIsCameraOpen(true)}
-                  className="flex flex-col items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 border-dashed rounded-2xl transition-all group"
-                >
-                  <CameraIcon className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Ambil Foto</span>
-                </button>
-                <label className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-2xl cursor-pointer transition-all group">
-                  <Upload className="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Upload File</span>
-                  <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-                </label>
-              </div>
-
-              {attachments.length > 0 && (
-                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
-                  {attachments.map((att, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-100 group">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-emerald-600 shrink-0">
-                          <FileIcon className="w-4 h-4" />
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="text-[10px] font-bold text-slate-700 truncate">{att.name}</p>
-                          <p className="text-[8px] text-slate-400">{(att.size / 1024).toFixed(1)} KB</p>
-                        </div>
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => removeAttachment(idx)}
-                        className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col gap-3 items-end">
@@ -2172,14 +1921,11 @@ function BuatPengajuanContent() {
             <div className="flex items-center gap-2">
               <Send className="w-3.5 h-3.5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               <span className="text-[12px] uppercase tracking-widest">
-                  {docStatus === 'REVISI' 
-                      ? (isDapurMode ? 'Ajukan Ulang Laporan' : 'Ajukan Ulang Pengajuan RKA') 
-                      : (isDapurMode ? 'Kirim Laporan Reimbursement' : 'Kirim Pengajuan RKA')
-                  }
+                  {docStatus === 'REVISI' ? 'Ajukan Ulang Pengajuan RKA' : 'Kirim Pengajuan RKA'}
               </span>
             </div>
-            <span className={`text-[8px] font-bold tracking-widest uppercase ${isDapurMode ? 'text-emerald-100/60' : 'text-amber-800/60'}`}>
-                {isDapurMode ? 'Kirim ke Bendahara Pusat' : 'Kirim ke Tahap Persetujuan Unit'}
+            <span className="text-[8px] font-bold tracking-widest uppercase text-amber-800/60">
+                Kirim ke Tahap Persetujuan Unit
             </span>
             {!isFormValid && (
               <div className="absolute inset-0 bg-slate-50/30 flex items-center justify-center backdrop-blur-[1px]">
@@ -2187,73 +1933,10 @@ function BuatPengajuanContent() {
               </div>
             )}
           </button>
-
-          {isDapurMode && (
-            <div className="bg-amber-50 border-amber-100 border p-4 rounded-3xl flex gap-3 animate-in fade-in slide-in-from-top-4">
-              <div className="bg-amber-600 text-white p-1.5 rounded-lg h-fit">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <p className="text-[11px] leading-relaxed font-medium text-amber-800">
-                Laporan ini berbasis reimbursement (belanja riil). Pastikan seluruh lampiran nota sudah terunggah dengan jelas untuk verifikasi Bendahara Pusat.
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* --- Camera Modal --- */}
-      {isCameraOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <div 
-              className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" 
-              onClick={() => setIsCameraOpen(false)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  setIsCameraOpen(false);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Tutup Kamera"
-            ></div>
-            <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-in zoom-in-95 duration-300">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
-                            <CameraIcon className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-black text-slate-800 text-sm tracking-tight">Ambil Foto Nota</h3>
-                    </div>
-                    <button onClick={() => setIsCameraOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-slate-400" />
-                    </button>
-                </div>
 
-                <div className="relative bg-black aspect-[3/4] flex items-center justify-center">
-                    <video 
-                        ref={videoRef} 
-                        autoPlay 
-                        playsInline 
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 p-8 flex justify-center items-center gap-6 bg-gradient-to-t from-black/60 to-transparent">
-                        <button 
-                            onClick={capturePhoto}
-                            className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all group"
-                        >
-                            <div className="w-12 h-12 border-4 border-slate-900 rounded-full group-hover:bg-slate-100 transition-colors"></div>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 text-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                        <RotateCcw className="w-3 h-3" /> Posisikan nota tepat di tengah kamera
-                    </p>
-                </div>
-            </div>
-        </div>
-      )}
 
       {/* Rincian Modal (Smart Spreadsheet) */}
       {isModalOpen && (
