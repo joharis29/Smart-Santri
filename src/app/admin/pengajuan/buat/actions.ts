@@ -29,7 +29,12 @@ export async function batchSavePengajuan(payload: {
       'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
       'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
     }
-    const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
+    let bulanInt = new Date().getMonth() + 1
+    if (monthMap[payload.bulan]) {
+      bulanInt = monthMap[payload.bulan]
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(payload.bulan)) {
+      bulanInt = parseInt(payload.bulan.split('-')[1], 10)
+    }
     
     const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
     const total_nominal = payload.data.reduce((sum, row) => sum + (Number(row.nominal) || 0), 0);
