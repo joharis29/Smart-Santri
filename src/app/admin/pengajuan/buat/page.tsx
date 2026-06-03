@@ -1590,7 +1590,13 @@ function BuatPengajuanContent() {
                     type="date"
                     value={bulan}
                     onChange={(e) => setBulan(e.target.value)}
-                    className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                    onClick={(e) => {
+                      try {
+                        (e.target as HTMLInputElement).showPicker();
+                      } catch (err) {}
+                    }}
+                    onKeyDown={(e) => e.preventDefault()}
+                    className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                   />
                 ) : (
                   <select 

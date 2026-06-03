@@ -2084,28 +2084,43 @@ export default function BuatRealisasiPage() {
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                        <Calendar className="w-3 h-3 text-emerald-600" /> Bulan <span className="text-rose-600">*</span>
+                                        <Calendar className="w-3 h-3 text-emerald-600" /> {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? 'Tanggal' : 'Bulan'} <span className="text-rose-600">*</span>
                                     </label>
-                                    <select 
+                                    {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? (
+                                      <input 
+                                        type="date"
                                         value={bulan}
                                         onChange={(e) => setBulan(e.target.value)}
-                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                                    >
-                                        <option value="">Pilih Bulan...</option>
-                                        {(() => {
-                                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                                            const currentMonthIndex = new Date().getMonth();
-                                            return months.map((m, i) => {
-                                                if (i < currentMonthIndex) {
-                                                    return <option key={m} value={m} disabled>{m} (Lampau)</option>;
-                                                } else if (i === currentMonthIndex) {
-                                                    return <option key={m} value={m}>{m} (Sekarang)</option>;
-                                                } else {
-                                                    return <option key={m} value={m}>{m}</option>;
-                                                }
-                                            });
-                                        })()}
-                                    </select>
+                                        onClick={(e) => {
+                                          try {
+                                            (e.target as HTMLInputElement).showPicker();
+                                          } catch (err) {}
+                                        }}
+                                        onKeyDown={(e) => e.preventDefault()}
+                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
+                                      />
+                                    ) : (
+                                      <select 
+                                          value={bulan}
+                                          onChange={(e) => setBulan(e.target.value)}
+                                          className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                      >
+                                          <option value="">Pilih Bulan...</option>
+                                          {(() => {
+                                              const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                                              const currentMonthIndex = new Date().getMonth();
+                                              return months.map((m, i) => {
+                                                  if (i < currentMonthIndex) {
+                                                      return <option key={m} value={m} disabled>{m} (Lampau)</option>;
+                                                  } else if (i === currentMonthIndex) {
+                                                      return <option key={m} value={m}>{m} (Sekarang)</option>;
+                                                  } else {
+                                                      return <option key={m} value={m}>{m}</option>;
+                                                  }
+                                              });
+                                          })()}
+                                      </select>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">

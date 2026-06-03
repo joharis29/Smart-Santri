@@ -841,18 +841,33 @@ export default function RkaRevisiPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Calendar size={16} className="text-emerald-600" />
                     </div>
-                    <select
-                        value={bulan}
-                        onChange={(e) => setBulan(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
-                    >
-                        <option value="">-- Pilih Bulan --</option>
-                        {monthNamesList.map(m => (
-                            <option key={m} value={m} disabled={isPastBulan(m, tahunAjaran)}>
-                                {m} {isPastBulan(m, tahunAjaran) ? '(Berlalu)' : ''}
-                            </option>
-                        ))}
-                    </select>
+                    {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? (
+                      <input
+                          type="date"
+                          value={bulan}
+                          onChange={(e) => setBulan(e.target.value)}
+                          onClick={(e) => {
+                            try {
+                              (e.target as HTMLInputElement).showPicker();
+                            } catch (err) {}
+                          }}
+                          onKeyDown={(e) => e.preventDefault()}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
+                      />
+                    ) : (
+                      <select
+                          value={bulan}
+                          onChange={(e) => setBulan(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
+                      >
+                          <option value="">-- Pilih Bulan --</option>
+                          {monthNamesList.map(m => (
+                              <option key={m} value={m} disabled={isPastBulan(m, tahunAjaran)}>
+                                  {m} {isPastBulan(m, tahunAjaran) ? '(Berlalu)' : ''}
+                              </option>
+                          ))}
+                      </select>
+                    )}
                 </div>
                 {/* Tahun Ajaran */}
                 <div className="relative">
