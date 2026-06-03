@@ -168,7 +168,7 @@ export default function RKAReferencePage() {
     const [newKegiatanName, setNewKegiatanName] = useState('');
     
     const defaultFormState = {
-        unit: 'Asrama Putra',
+        unit: userUnit || 'Pusat (Yayasan)',
         bidang: '',
         standar: '(-)',
         program: '',
@@ -327,7 +327,10 @@ export default function RKAReferencePage() {
         setNewBidangName('');
         setNewProgramName('');
         setNewKegiatanName('');
-        setFormData(defaultFormState);
+        setFormData({
+            ...defaultFormState,
+            unit: userUnit || 'Pusat (Yayasan)'
+        });
         setIsModalOpen(true);
     };
 
