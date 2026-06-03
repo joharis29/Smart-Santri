@@ -472,8 +472,25 @@ export default function AdminDashboardPage() {
         const newBalances: Record<string, any> = {
           yayasan: 0,
           bos: 0,
-          spp: 0
+          spp: 0,
+          AKUMULASI_PENGELUARAN: 0
         };
+
+        // Fetch Akumulasi Pengeluaran (Total Belanja Bulan Ini)
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+        const { data: txData, error: txError } = await supabase
+          .from('transaksi_pengeluaran')
+          .select('nominal')
+          .eq('unit', activeUnit.trim())
+          .gte('tanggal', firstDay)
+          .lte('tanggal', lastDay);
+
+        if (!txError && txData) {
+          newBalances['AKUMULASI_PENGELUARAN'] = txData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
+        }
 
         activeWallets.forEach((w: any) => {
           const cat = w.kategori;

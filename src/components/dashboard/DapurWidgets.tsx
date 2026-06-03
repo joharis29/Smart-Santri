@@ -28,7 +28,7 @@ export function DapurWidgets({
       />
       <WidgetCard 
         title="Akumulasi Pengeluaran" 
-        amount="Rp 0" 
+        amount={`Rp ${(balances['AKUMULASI_PENGELUARAN'] || 0).toLocaleString('id-ID')}`} 
         type="Restricted" 
         icon={TrendingDown} 
         colorType="accent" 
