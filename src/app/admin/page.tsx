@@ -28,6 +28,7 @@ import { YayasanWidgets } from '@/components/dashboard/YayasanWidgets';
 import { PendidikanWidgets } from '@/components/dashboard/PendidikanWidgets';
 import { AsramaWidgets } from '@/components/dashboard/AsramaWidgets';
 import { DapurWidgets } from '@/components/dashboard/DapurWidgets';
+import { UniversalCashFlowWidgets } from '@/components/dashboard/UniversalCashFlowWidgets';
 import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
 import { switchActiveProfile } from './users/actions';
 import { createClient } from '@/utils/supabase/client';
@@ -42,6 +43,12 @@ const AVAILABLE_STATUSES = ['MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'MENUNGGU 
 export default function AdminDashboardPage() {
   // --- CORE STATE ---
   const [activeUnit, setActiveUnit] = useState('Pusat (Yayasan)');
+  const [activeTahunAjaran, setActiveTahunAjaran] = useState<string>(() => {
+    const now = new Date();
+    const isSecondHalf = now.getMonth() >= 6; // July is 6
+    const startYear = isSecondHalf ? now.getFullYear() : now.getFullYear() - 1;
+    return `${startYear}/${startYear + 1}`;
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'STAFF' | 'BENDAHARA_UNIT' | 'KEPALA_UNIT' | 'BENDAHARA_PUSAT'>('BENDAHARA_PUSAT');
@@ -473,23 +480,36 @@ export default function AdminDashboardPage() {
           yayasan: 0,
           bos: 0,
           spp: 0,
-          AKUMULASI_PENGELUARAN: 0
+          AKUMULASI_PENGELUARAN: 0,
+          AKUMULASI_PEMASUKAN: 0
         };
 
-        // Fetch Akumulasi Pengeluaran (Total Belanja Bulan Ini)
-        const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        // Fetch Akumulasi Pengeluaran dan Pendapatan (Tahun Ajaran Ini: 1 Juli - 30 Juni)
+        const [startYear] = activeTahunAjaran.split('/').map(Number);
+        const endYear = startYear + 1;
+        const firstDay = `${startYear}-07-01`;
+        const lastDay = `${endYear}-06-30`;
 
-        const { data: txData, error: txError } = await supabase
+        const { data: txOutData, error: txOutError } = await supabase
           .from('transaksi_pengeluaran')
           .select('nominal')
           .eq('unit', activeUnit.trim())
           .gte('tanggal', firstDay)
           .lte('tanggal', lastDay);
 
-        if (!txError && txData) {
-          newBalances['AKUMULASI_PENGELUARAN'] = txData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
+        if (!txOutError && txOutData) {
+          newBalances['AKUMULASI_PENGELUARAN'] = txOutData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
+        }
+
+        const { data: txInData, error: txInError } = await supabase
+          .from('transaksi_pendapatan')
+          .select('nominal')
+          .eq('unit', activeUnit.trim())
+          .gte('tanggal', firstDay)
+          .lte('tanggal', lastDay);
+
+        if (!txInError && txInData) {
+          newBalances['AKUMULASI_PEMASUKAN'] = txInData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
         }
 
         activeWallets.forEach((w: any) => {
@@ -544,7 +564,7 @@ export default function AdminDashboardPage() {
     if (userRole === 'BENDAHARA_UNIT' || userRole === 'KEPALA_UNIT' || userRole === 'BENDAHARA_PUSAT') {
         fetchVerificationQueue();
     }
-  }, [userRole, activeUnit, isProfileLoaded, isGuest]);
+  }, [userRole, activeUnit, isProfileLoaded, isGuest, activeTahunAjaran]);
 
   // --- DERIVED DATA ---
   const category = (unit: string) => {
@@ -578,7 +598,7 @@ export default function AdminDashboardPage() {
     }
   } else {
     // Dapur
-    activePrefsKeys = ['showSaldo', 'showAkumulasi', 'showSupplier'];
+    activePrefsKeys = ['showSaldo', 'showSupplier'];
   }
 
   const availableMonths = Array.from(new Set(
@@ -699,6 +719,28 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </div>
+          
+          <div className="flex items-baseline gap-2 hidden md:flex">
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-tighter">T.A:</h2>
+            <div className="relative">
+              <select 
+                className="appearance-none bg-slate-50 border border-slate-200 text-slate-800 font-bold py-1 pl-2 pr-6 rounded-md focus:outline-none text-[11px] cursor-pointer"
+                value={activeTahunAjaran}
+                onChange={(e) => setActiveTahunAjaran(e.target.value)}
+              >
+                {(() => {
+                  const now = new Date();
+                  const currentYear = now.getFullYear();
+                  const years = [];
+                  for (let y = currentYear - 3; y <= currentYear + 1; y++) {
+                    years.push(`${y}/${y + 1}`);
+                  }
+                  return years.map(ta => <option key={ta} value={ta}>{ta}</option>);
+                })()}
+              </select>
+              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -773,6 +815,11 @@ export default function AdminDashboardPage() {
             🔒 Terkunci
           </span>
         </div>
+      )}
+
+      {/* UNIVERSAL CASH FLOW WIDGETS */}
+      {userRole !== 'STAFF' && (
+        <UniversalCashFlowWidgets balances={balances} />
       )}
 
       {/* Integrated Audit Trail with Working Filter */}
