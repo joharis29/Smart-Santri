@@ -342,8 +342,8 @@ export default function RkaRevisiPage() {
         if (data) {
           const programSet = new Set<string>();
           data.forEach(item => {
-            if (item.program && item.nama_kegiatan) {
-              programSet.add(`${item.program} / ${item.nama_kegiatan}`);
+            if (item.program && item.nama_kegiatan && item.nama_kegiatan !== '-') {
+              programSet.add(`${item.program} - ${item.nama_kegiatan}`);
             } else if (item.program) {
               programSet.add(item.program);
             }
