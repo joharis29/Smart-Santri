@@ -35,15 +35,6 @@ export function DapurWidgets({
         subtitle="Total Belanja Bulan Ini"
         isVisible={preferences.showAkumulasi}
       />
-      <WidgetCard 
-        title="Tagihan Koperasi (Supplier)" 
-        amount="LUNAS" 
-        type="Unrestricted" 
-        icon={ClipboardCheck} 
-        colorType="emerald" 
-        subtitle="Pembayaran Bulan Sebelumnya"
-        isVisible={preferences.showSupplier}
-      />
     </>
   );
 }
