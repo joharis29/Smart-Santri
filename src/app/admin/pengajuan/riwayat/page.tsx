@@ -1524,71 +1524,115 @@ export default function RiwayatPengajuanPage() {
                                                     });
                                                 };
 
-                                                const injectApprovalsBeforeRevisi = (rev: any, typePrefix: string) => {
-                                                    const revTime = new Date(rev.tanggal_revisi).getTime();
-                                                    const status = rev.status_sebelumnya || '';
-                                                    const note = `Note: ${rev.catatan_revisi || '-'}`;
+                                                const hasCctvParent = Array.isArray(parentRka?.audit_log) && parentRka.audit_log.length > 0;
+                                                const hasCctvActive = Array.isArray(activeDoc?.audit_log) && activeDoc.audit_log.length > 0;
 
-                                                    if (status === 'MENUNGGU_KEPALA') {
-                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
-                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH KEPALA UNIT`, "rose", true, false, note);
-                                                    } else if (status === 'MENUNGGU_PUSAT' || status === 'MENUNGGU_VERIFIKASI_PUSAT') {
-                                                        addEvent(new Date(revTime - 4000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
-                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH KEPALA UNIT`, "emerald");
-                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA PUSAT`, "rose", true, false, note);
-                                                    } else {
-                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA UNIT`, "rose", true, false, note);
+                                                if (hasCctvParent || hasCctvActive) {
+                                                    // CCTV Mode
+                                                    const allLogs = [
+                                                        ...(hasCctvParent ? parentRka.audit_log : []),
+                                                        ...(hasCctvActive && isRevisiRka ? activeDoc.audit_log : [])
+                                                    ];
+
+                                                    allLogs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+                                                    allLogs.forEach((log: any) => {
+                                                        let color = 'emerald';
+                                                        let isPulse = false;
+                                                        let isFinal = false;
+                                                        let title = log.action;
+
+                                                        if (log.action === 'SUBMIT') title = 'PENGAJUAN RKA';
+                                                        else if (log.action === 'SUBMIT_LPJ') title = 'PENGAJUAN LAPORAN LPJ';
+                                                        else if (log.action === 'SUBMIT_REVISI') title = 'PENGAJUAN REVISI RKA';
+                                                        else if (log.action === 'SUBMIT_LPJ_REVISI') title = 'PENGAJUAN LAPORAN LPJ REVISI';
+                                                        else if (log.action === 'APPROVE') title = `DOKUMEN DISETUJUI OLEH ${log.actor_role.replace('_', ' ')}`;
+                                                        else if (log.action === 'REVISI') {
+                                                            title = `DOKUMEN DIREVISI OLEH ${log.actor_role.replace('_', ' ')}`;
+                                                            color = 'rose';
+                                                            isPulse = true;
+                                                        } else if (log.action === 'CAIR') title = 'PENCAIRAN DANA OLEH BENDAHARA PUSAT';
+                                                        else if (log.action === 'DITERIMA') {
+                                                            title = 'DANA TELAH DITERIMA OLEH BENDAHARA UNIT';
+                                                            isFinal = true;
+                                                        }
+
+                                                        let desc = '';
+                                                        if (log.notes) desc = log.notes;
+                                                        if (log.actor_name && log.action !== 'SUBMIT' && log.action !== 'SUBMIT_REVISI' && log.action !== 'SUBMIT_LPJ' && log.action !== 'SUBMIT_LPJ_REVISI') {
+                                                            desc += ` (Aktor: ${log.actor_name})`;
+                                                        }
+
+                                                        addEvent(log.timestamp, title, color, isPulse, isFinal, desc);
+                                                    });
+                                                } else {
+                                                    // Legacy Mode
+                                                    const injectApprovalsBeforeRevisi = (rev: any, typePrefix: string) => {
+                                                        const revTime = new Date(rev.tanggal_revisi).getTime();
+                                                        const status = rev.status_sebelumnya || '';
+                                                        const note = `Note: ${rev.catatan_revisi || '-'}`;
+
+                                                        if (status === 'MENUNGGU_KEPALA') {
+                                                            addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                            addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH KEPALA UNIT`, "rose", true, false, note);
+                                                        } else if (status === 'MENUNGGU_PUSAT' || status === 'MENUNGGU_VERIFIKASI_PUSAT') {
+                                                            addEvent(new Date(revTime - 4000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                            addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                            addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA PUSAT`, "rose", true, false, note);
+                                                        } else {
+                                                            addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA UNIT`, "rose", true, false, note);
+                                                        }
+                                                    };
+
+                                                    // 1. PENGAJUAN RKA AWAL (dari parentRka)
+                                                    if (parentRka?.created_at) {
+                                                        addEvent(parentRka.created_at, "PENGAJUAN RKA", "emerald");
                                                     }
-                                                };
 
-                                                // 1. PENGAJUAN RKA AWAL (dari parentRka)
-                                                if (parentRka?.created_at) {
-                                                    addEvent(parentRka.created_at, "PENGAJUAN RKA", "emerald");
-                                                }
-
-                                                // 2. LOG REVISI RKA AWAL (dari parentRka)
-                                                const rkaHistory = [...(parentRka?.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
-                                                rkaHistory.forEach((rev: any) => {
-                                                    if (rev.tanggal_revisi) {
-                                                        injectApprovalsBeforeRevisi(rev, "PENGAJUAN RKA");
-                                                        const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
-                                                        addEvent(new Date(resubDate), "PENGAJUAN RKA", "emerald");
-                                                    }
-                                                });
-
-                                                if (parentRka) {
-                                                    let pApproveDate = new Date(parentRka.updated_at);
-                                                    if (pApproveDate.getTime() <= lastTimestamp) pApproveDate = new Date(lastTimestamp + 10000);
-                                                    
-                                                    addEvent(new Date(pApproveDate.getTime() - 4000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
-                                                    addEvent(new Date(pApproveDate.getTime() - 3000), `PENGAJUAN RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
-                                                    addEvent(new Date(pApproveDate.getTime() - 2000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald");
-                                                    addEvent(new Date(pApproveDate.getTime() - 1000), `PENCAIRAN DANA OLEH BENDAHARA PUSAT`, "emerald");
-                                                    addEvent(pApproveDate, `DANA TELAH DITERIMA OLEH BENDAHARA UNIT`, "emerald", false, !isRevisiRka);
-                                                }
-
-                                                // 3. JIKA INI ADALAH DOKUMEN REVISI RKA
-                                                if (isRevisiRka && detailLpjDoc?.created_at) {
-                                                    addEvent(detailLpjDoc.created_at, "PENGAJUAN REVISI RKA", "emerald");
-
-                                                    const revisiHistory = [...(detailLpjDoc.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
-                                                    revisiHistory.forEach((rev: any) => {
+                                                    // 2. LOG REVISI RKA AWAL (dari parentRka)
+                                                    const rkaHistory = [...(parentRka?.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
+                                                    rkaHistory.forEach((rev: any) => {
                                                         if (rev.tanggal_revisi) {
-                                                            injectApprovalsBeforeRevisi(rev, "PENGAJUAN REVISI RKA");
+                                                            injectApprovalsBeforeRevisi(rev, "PENGAJUAN RKA");
                                                             const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
-                                                            addEvent(new Date(resubDate), "PENGAJUAN REVISI RKA", "emerald");
+                                                            addEvent(new Date(resubDate), "PENGAJUAN RKA", "emerald");
                                                         }
                                                     });
-                                                }
 
-                                                // 4. OTORISASI & PENCAIRAN (Dari dokumen aktif yang sedang berjalan)
-                                                if (isRevisiRka && activeDoc) {
-                                                    let finalUpdateDate = new Date(activeDoc.updated_at || activeDoc.created_at);
-                                                    if (finalUpdateDate.getTime() <= lastTimestamp) finalUpdateDate = new Date(lastTimestamp + 10000);
-                                                    
-                                                    addEvent(new Date(finalUpdateDate.getTime() - 2000), `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
-                                                    addEvent(new Date(finalUpdateDate.getTime() - 1000), `PENGAJUAN REVISI RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
-                                                    addEvent(finalUpdateDate, `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald", false, true);
+                                                    if (parentRka) {
+                                                        let pApproveDate = new Date(parentRka.updated_at);
+                                                        if (pApproveDate.getTime() <= lastTimestamp) pApproveDate = new Date(lastTimestamp + 10000);
+                                                        
+                                                        addEvent(new Date(pApproveDate.getTime() - 4000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                        addEvent(new Date(pApproveDate.getTime() - 3000), `PENGAJUAN RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                        addEvent(new Date(pApproveDate.getTime() - 2000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald");
+                                                        addEvent(new Date(pApproveDate.getTime() - 1000), `PENCAIRAN DANA OLEH BENDAHARA PUSAT`, "emerald");
+                                                        addEvent(pApproveDate, `DANA TELAH DITERIMA OLEH BENDAHARA UNIT`, "emerald", false, !isRevisiRka);
+                                                    }
+
+                                                    // 3. JIKA INI ADALAH DOKUMEN REVISI RKA
+                                                    if (isRevisiRka && detailLpjDoc?.created_at) {
+                                                        addEvent(detailLpjDoc.created_at, "PENGAJUAN REVISI RKA", "emerald");
+
+                                                        const revisiHistory = [...(detailLpjDoc.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
+                                                        revisiHistory.forEach((rev: any) => {
+                                                            if (rev.tanggal_revisi) {
+                                                                injectApprovalsBeforeRevisi(rev, "PENGAJUAN REVISI RKA");
+                                                                const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
+                                                                addEvent(new Date(resubDate), "PENGAJUAN REVISI RKA", "emerald");
+                                                            }
+                                                        });
+                                                    }
+
+                                                    // 4. OTORISASI & PENCAIRAN (Dari dokumen aktif yang sedang berjalan)
+                                                    if (isRevisiRka && activeDoc) {
+                                                        let finalUpdateDate = new Date(activeDoc.updated_at || activeDoc.created_at);
+                                                        if (finalUpdateDate.getTime() <= lastTimestamp) finalUpdateDate = new Date(lastTimestamp + 10000);
+                                                        
+                                                        addEvent(new Date(finalUpdateDate.getTime() - 2000), `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                        addEvent(new Date(finalUpdateDate.getTime() - 1000), `PENGAJUAN REVISI RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                        addEvent(finalUpdateDate, `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald", false, true);
+                                                    }
                                                 }
 
                                                 // Tambahkan penomoran

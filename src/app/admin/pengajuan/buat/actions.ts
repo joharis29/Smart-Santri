@@ -4,6 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { sendNotifikasiEmail, getBulanName } from '@/lib/email'
 
+async function appendAuditLog(docId: string, event: any, supabaseClient: any) {
+  try {
+    const { data: doc } = await supabaseClient.from('dokumen_pengajuan').select('audit_log').eq('id', docId).single();
+    const currentLog = Array.isArray(doc?.audit_log) ? doc.audit_log : [];
+    const newLog = [...currentLog, { ...event, timestamp: new Date().toISOString() }];
+    
+    await supabaseClient.from('dokumen_pengajuan').update({ audit_log: newLog }).eq('id', docId);
+  } catch (e) {
+    console.warn("Gagal menyimpan audit_log, mungkin kolom belum dibuat: ", e);
+  }
+}
+
 export async function batchSavePengajuan(payload: {
   id?: string, // Optional ID for updates
   unit: string,
@@ -180,7 +192,6 @@ export async function batchSavePengajuan(payload: {
       return { error: 'Gagal menyimpan rincian: ' + itemError.message }
     }
 
-    // 4. Now update document status from DRAFT to the actual target status
     if (targetStatus !== 'DRAFT') {
       const { error: statusError } = await supabase
         .from('dokumen_pengajuan')
@@ -200,6 +211,59 @@ export async function batchSavePengajuan(payload: {
         } catch {
           console.warn('Admin fallback for status update also failed, doc remains as DRAFT')
         }
+      }
+
+      // CCTV Audit Log for Submission
+      try {
+        const adminClient = createAdminClient();
+        const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', pembuat_id).maybeSingle();
+        
+        let notes = "Pengajuan dikirim.";
+        
+        // If this is a revision, calculate what changed
+        if (payload.parent_id) {
+            const { data: parentItems } = await supabase.from('item_pengajuan').select('*').eq('dokumen_id', payload.parent_id);
+            if (parentItems && parentItems.length > 0) {
+                const changes: string[] = [];
+                // Compare payload.data with parentItems (assuming 1 item for now, or total nominal)
+                const oldTotal = parentItems.reduce((acc: number, curr: any) => acc + Number(curr.nominal || 0), 0);
+                if (total_nominal !== oldTotal) {
+                    changes.push(`Total nominal berubah dari Rp ${oldTotal.toLocaleString('id-ID')} menjadi Rp ${total_nominal.toLocaleString('id-ID')}`);
+                }
+                
+                // Compare specific fields of the first item (most RKAs only have 1 item per doc in this app)
+                const firstNew = payload.data[0];
+                const firstOld = parentItems[0];
+                if (firstNew && firstOld) {
+                    if (firstNew.program !== firstOld.judul_kegiatan) {
+                        changes.push(`Program diubah dari "${firstOld.judul_kegiatan}" menjadi "${firstNew.program}"`);
+                    }
+                    if (String(firstNew.jumlah) !== String(firstOld.rincian_json?.jumlah_kegiatan || '1')) {
+                        changes.push(`Kuantitas diubah dari ${firstOld.rincian_json?.jumlah_kegiatan || '1'} menjadi ${firstNew.jumlah}`);
+                    }
+                    const newSource = firstNew.details?.fundingSplits?.find((s: any) => s.source && s.nominal > 0)?.source || 'Dana BOS';
+                    if (newSource !== firstOld.sumber_dana) {
+                        changes.push(`Sumber dana utama diubah dari ${firstOld.sumber_dana} menjadi ${newSource}`);
+                    }
+                }
+                if (changes.length > 0) {
+                    notes = "Revisi dikirim. Perubahan: " + changes.join(', ');
+                } else {
+                    notes = "Revisi dikirim tanpa perubahan nominal/program signifikan.";
+                }
+            }
+        }
+
+        await appendAuditLog(docId as string, {
+            action: payload.parent_id ? 'SUBMIT_REVISI' : 'SUBMIT',
+            actor_id: pembuat_id,
+            actor_name: profile?.full_name || 'Staf',
+            actor_role: profile?.role || 'STAF',
+            status_baru: targetStatus,
+            notes: notes
+        }, adminClient);
+      } catch (logErr) {
+        console.error("CCTV Log Error on submit:", logErr);
       }
     }
 
@@ -337,6 +401,20 @@ export async function submitPengajuan(id: string) {
     .eq('id', id)
 
   if (error) return { error: error.message }
+
+  try {
+    const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
+    await appendAuditLog(id, {
+        action: 'SUBMIT',
+        actor_id: user.id,
+        actor_name: profile?.full_name || 'Staf',
+        actor_role: profile?.role || 'STAF',
+        status_baru: 'MENUNGGU_VERIFIKASI',
+        notes: "Pengajuan Draf dikirim."
+    }, adminClient);
+  } catch (e) {
+    console.error("Audit log error", e);
+  }
 
   return { success: true }
 }
@@ -514,6 +592,22 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   }
 
   if (error) return { error: error.message }
+
+  // CCTV Audit Log for Rejection
+  try {
+    await appendAuditLog(id, {
+        action: 'REVISI',
+        actor_id: user.id,
+        actor_name: userProfile?.full_name || 'Peninjau',
+        actor_role: userProfile?.role || 'VERIFIKATOR',
+        status_baru: 'REVISI',
+        status_sebelumnya: doc.status,
+        notes: `Revisi diminta: ${catatan}`
+    }, adminClient);
+  } catch (e) {
+    console.error("Audit log error", e);
+  }
+
   if (!data || data.length === 0) {
     const diagMsg = `RLS Denied. Diag Info:
 User ID: ${user?.id || 'none'}
@@ -646,6 +740,32 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string, metod
     .select()
 
   if (error) return { error: error.message }
+  
+  // CCTV Audit Log for Approval
+  try {
+    let actionDesc = 'APPROVE';
+    let noteDesc = 'Dokumen disetujui.';
+    if (nextStatus === 'CAIR') {
+        actionDesc = 'CAIR';
+        noteDesc = 'Dana dicairkan oleh Bendahara Pusat.';
+    } else if (nextStatus === 'SUDAH_DITERIMA') {
+        actionDesc = 'DITERIMA';
+        noteDesc = 'Dana diterima oleh Bendahara Unit.';
+    }
+
+    await appendAuditLog(id, {
+        action: actionDesc,
+        actor_id: user.id,
+        actor_name: userProfile?.full_name || 'Verifikator',
+        actor_role: userProfile?.role || 'VERIFIKATOR',
+        status_baru: nextStatus || 'MENUNGGU_KEPALA',
+        status_sebelumnya: doc.status,
+        notes: noteDesc
+    }, adminClient);
+  } catch (e) {
+    console.error("Audit log error", e);
+  }
+
   if (!data || data.length === 0) {
     const diagMsg = `RLS Denied. Diag Info:
 User ID: ${user?.id || 'none'}
@@ -1012,6 +1132,26 @@ export async function saveLPJ(payload: {
     if (itemError) {
       console.error('Item Error:', itemError);
       return { error: 'Gagal menyimpan rincian LPJ: ' + itemError.message };
+    }
+
+    // CCTV Audit Log for LPJ Submission
+    try {
+        const { data: profile } = await adminClient.from('profiles').select('full_name, role').eq('id', pembuat_id).maybeSingle();
+        let notes = "Pengajuan LPJ dikirim.";
+        // Check if revision
+        if (payload.id && payload.status === 'MENUNGGU_VERIFIKASI') {
+            notes = "Revisi LPJ dikirim.";
+        }
+        await appendAuditLog(docId, {
+            action: payload.id && payload.status === 'MENUNGGU_VERIFIKASI' ? 'SUBMIT_LPJ_REVISI' : 'SUBMIT_LPJ',
+            actor_id: pembuat_id,
+            actor_name: profile?.full_name || 'Staf',
+            actor_role: profile?.role || 'STAF',
+            status_baru: payload.status,
+            notes: notes
+        }, adminClient);
+    } catch (e) {
+        console.error("Audit log error on LPJ:", e);
     }
 
     return { success: true, id: docId }
