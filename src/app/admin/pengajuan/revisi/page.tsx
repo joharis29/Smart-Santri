@@ -274,7 +274,19 @@ export default function RkaRevisiPage() {
             setUnit(draft.unit || '');
             setBidang(draft.bidang || '');
             const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            setBulan(monthNames[draft.periode_bulan] || 'Januari');
+            
+            let savedBulan = monthNames[draft.periode_bulan] || 'Januari';
+            if (draft.item_pengajuan && draft.item_pengajuan.length > 0) {
+                try {
+                    const firstItem = draft.item_pengajuan[0];
+                    const details = typeof firstItem.rincian_json === 'string' ? JSON.parse(firstItem.rincian_json) : (firstItem.rincian_json || {});
+                    if (details._tanggal_pengajuan) {
+                        savedBulan = details._tanggal_pengajuan;
+                    }
+                } catch(e) {}
+            }
+            setBulan(savedBulan);
+            
             setTahunAjaran(draft.periode_tahun ? `${draft.periode_tahun}/${Number(draft.periode_tahun)+1}` : '2025/2026');
             setCatatanRevisi(draft.catatan_revisi || '');
             
