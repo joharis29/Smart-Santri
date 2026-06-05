@@ -33,6 +33,7 @@ import { UniversalCashFlowWidgets } from '@/components/dashboard/UniversalCashFl
 import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
 import { switchActiveProfile } from './users/actions';
 import { createClient } from '@/utils/supabase/client';
+import { getDashboardBalances } from './dashboardActions';
 
 const UNITS = [
   'Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 
@@ -461,16 +462,14 @@ export default function AdminDashboardPage() {
 
   const fetchLiveBalances = async () => {
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('dompet_dana')
-        .select('*, unit:unit_id(name)');
-      
-      if (error) throw error;
-      
-      if (data) {
+      const result = await getDashboardBalances(activeUnit, activeTahunAjaran);
+      if (result.error) return;
+
+      const { dompetData, sourcesData, txOutTA, txInTA, allTxOut, allTxIn } = result;
+
+      if (dompetData) {
         // Filter dompet milik unit aktif
-        const activeWallets = data.filter((w: any) => {
+        const activeWallets = dompetData.filter((w: any) => {
           const uName = (Array.isArray(w.unit) ? w.unit[0]?.name : (w.unit as any)?.name) || 'Pusat (Yayasan)';
           return uName.trim() === activeUnit.trim();
         });
@@ -482,12 +481,6 @@ export default function AdminDashboardPage() {
           AKUMULASI_PENGELUARAN: 0,
           AKUMULASI_PEMASUKAN: 0
         };
-
-        // Fetch Akumulasi Pengeluaran dan Pendapatan (Tahun Ajaran Ini: 1 Juli - 30 Juni)
-        const [startYear] = activeTahunAjaran.split('/').map(Number);
-        const endYear = startYear + 1;
-        const firstDay = `${startYear}-07-01`;
-        const lastDay = `${endYear}-06-30`;
 
         // Filter function for non-operational funds (ZISWAF & Titipan)
         const isNonOperational = (sumberDana: string) => {
@@ -506,29 +499,15 @@ export default function AdminDashboardPage() {
           return false;
         };
 
-        const { data: txOutData, error: txOutError } = await supabase
-          .from('transaksi_pengeluaran')
-          .select('nominal, sumber_dana')
-          .eq('unit', activeUnit.trim())
-          .gte('tanggal', firstDay)
-          .lte('tanggal', lastDay);
-
-        if (!txOutError && txOutData) {
-          newBalances['AKUMULASI_PENGELUARAN'] = txOutData.reduce((acc, tx) => {
+        if (txOutTA) {
+          newBalances['AKUMULASI_PENGELUARAN'] = txOutTA.reduce((acc: number, tx: any) => {
             if (isNonOperational(tx.sumber_dana)) return acc;
             return acc + (Number(tx.nominal) || 0);
           }, 0);
         }
 
-        const { data: txInData, error: txInError } = await supabase
-          .from('transaksi_pendapatan')
-          .select('nominal, sumber_dana')
-          .eq('unit', activeUnit.trim())
-          .gte('tanggal', firstDay)
-          .lte('tanggal', lastDay);
-
-        if (!txInError && txInData) {
-          newBalances['AKUMULASI_PEMASUKAN'] = txInData.reduce((acc, tx) => {
+        if (txInTA) {
+          newBalances['AKUMULASI_PEMASUKAN'] = txInTA.reduce((acc: number, tx: any) => {
             if (isNonOperational(tx.sumber_dana)) return acc;
             return acc + (Number(tx.nominal) || 0);
           }, 0);
@@ -564,17 +543,6 @@ export default function AdminDashboardPage() {
           newBalances[cat] = Number(w.saldo);
         });
 
-        // Fetch all time exact balances for dynamic widgets
-        const { data: allTxOut } = await supabase
-          .from('transaksi_pengeluaran')
-          .select('nominal, sumber_dana')
-          .eq('unit', activeUnit.trim());
-          
-        const { data: allTxIn } = await supabase
-          .from('transaksi_pendapatan')
-          .select('nominal, sumber_dana')
-          .eq('unit', activeUnit.trim());
-
         const exactBals: Record<string, number> = {};
         
         if (allTxIn) {
@@ -590,11 +558,6 @@ export default function AdminDashboardPage() {
         }
         setExactBalances(exactBals);
 
-        const { data: sourcesData } = await supabase
-          .from('pengaturan_sumber_dana')
-          .select('nama_sumber_dana')
-          .eq('unit_name', activeUnit.trim());
-          
         if (sourcesData) {
           setCustomSources(sourcesData.map((s: any) => ({ name: s.nama_sumber_dana })));
         } else {
