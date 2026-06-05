@@ -577,6 +577,31 @@ export default function RkaRevisiPage() {
     }))
   }
 
+  const isFormValid = useMemo(() => {
+    if (!selectedRka) return false;
+    if (isOverBudget) return false;
+    if (!rows || rows.length === 0) return false;
+
+    for (const r of rows) {
+      if (!r.program || !r.operasional) return false;
+
+      if (r.details?.items?.length > 0) {
+        for (let i = 0; i < r.details.items.length; i++) {
+          const item = r.details.items[i];
+          if (!item.name || item.price <= 0 || item.qty <= 0) {
+            return false;
+          }
+        }
+      }
+
+      const splitsTotal = (r.details?.fundingSplits || []).reduce((sum: number, s: any) => sum + Number(s.percent || 0), 0);
+      if (r.details?.fundingSplits?.length > 0 && Math.abs(splitsTotal - 100) > 0.1) {
+         return false;
+      }
+    }
+    return true;
+  }, [selectedRka, isOverBudget, rows]);
+
   const submitRevisi = async (statusToSave: string = 'MENUNGGU_VERIFIKASI') => {
     if (!selectedRka) {
       setErrorMsg('Data RKA Induk tidak ditemukan. Gagal memproses data.')
@@ -1493,9 +1518,9 @@ export default function RkaRevisiPage() {
 
                         <button 
                             onClick={handleSaveDraft}
-                            disabled={submitting || isOverBudget}
+                            disabled={!isFormValid || submitting}
                             className={`w-full py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                                submitting || isOverBudget ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-amber-950 hover:shadow-lg hover:shadow-amber-500/20'
+                                !isFormValid || submitting ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-amber-950 hover:shadow-lg hover:shadow-amber-500/20'
                             }`}
                         >
                             <Bookmark className="w-4 h-4" />
@@ -1504,9 +1529,9 @@ export default function RkaRevisiPage() {
 
                         <button 
                             onClick={handleSubmit}
-                            disabled={submitting || isOverBudget}
+                            disabled={!isFormValid || submitting}
                             className={`w-full py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                                isOverBudget ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-emerald-500 text-slate-900 border border-emerald-400 hover:bg-emerald-400 hover:shadow-lg hover:shadow-emerald-500/30'
+                                !isFormValid || submitting ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-emerald-500 text-slate-900 border border-emerald-400 hover:bg-emerald-400 hover:shadow-lg hover:shadow-emerald-500/30'
                             }`}
                         >
                             {submitting ? 'Menyimpan...' : (
