@@ -567,7 +567,17 @@ export default function BuatRealisasiPage() {
                 setCatatanRevisi(d.catatan_revisi || '');
                 
                 const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                const bulanVal = monthNames[d.periode_bulan] || String(d.periode_bulan);
+                let bulanVal = monthNames[d.periode_bulan] || String(d.periode_bulan);
+                
+                const items = d.item_pengajuan || [];
+                if (items.length > 0) {
+                    const firstItem = items[0];
+                    const details = typeof firstItem.rincian_json === 'string' ? JSON.parse(firstItem.rincian_json) : (firstItem.rincian_json || {});
+                    if (details._tanggal_pengajuan) {
+                        bulanVal = details._tanggal_pengajuan;
+                    }
+                }
+                
                 setBulan(bulanVal);
                 
                 const tahunVal = d.periode_tahun ? `${d.periode_tahun}/${Number(d.periode_tahun) + 1}` : '';
@@ -575,10 +585,9 @@ export default function BuatRealisasiPage() {
                 setUnit(d.unit || '');
                 setBidang(d.bidang || '');
                 
-                const items = d.item_pengajuan || [];
                 if (items.length > 0) {
                     const firstItem = items[0];
-                    const details = firstItem.rincian_json || {};
+                    const details = typeof firstItem.rincian_json === 'string' ? JSON.parse(firstItem.rincian_json) : (firstItem.rincian_json || {});
                     
                     if (details.rka_id) {
                         setSelectedRkaId(details.rka_id);

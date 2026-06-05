@@ -674,7 +674,7 @@ function BuatPengajuanContent() {
 
   // Reset bidang if it is no longer valid for the selected unit
   useEffect(() => {
-    if (bidang && !availableBidangs.includes(bidang)) {
+    if (availableBidangs.length > 0 && bidang && !availableBidangs.includes(bidang)) {
       setBidang('')
     }
   }, [availableBidangs, bidang])
@@ -690,7 +690,18 @@ function BuatPengajuanContent() {
           
           setUnit(d.unit || 'SDIT 1')
           setBidang(d.bidang || '')
-          setBulan(monthNames[d.periode_bulan] || String(d.periode_bulan))
+          
+          let savedBulan = monthNames[d.periode_bulan] || String(d.periode_bulan)
+          
+          if (d.items && d.items.length > 0) {
+            try {
+                const firstDetails = typeof d.items[0].rincian_json === 'string' ? JSON.parse(d.items[0].rincian_json) : (d.items[0].rincian_json || {})
+                if (firstDetails._tanggal_pengajuan) {
+                   savedBulan = firstDetails._tanggal_pengajuan
+                }
+            } catch(e) {}
+          }
+          setBulan(savedBulan)
           
           // Reconstruct Tahun Ajaran string from integer (e.g. 2025 -> 2025/2026)
           if (d.periode_tahun) {

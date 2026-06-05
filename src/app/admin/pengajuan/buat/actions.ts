@@ -153,7 +153,8 @@ export async function batchSavePengajuan(payload: {
       // Inject 'jumlah_kegiatan' into the details JSON since the column doesn't exist in DB
       const finalDetails = {
         ...(row.details || {}),
-        jumlah_kegiatan: row.jumlah || '1'
+        jumlah_kegiatan: row.jumlah || '1',
+        _tanggal_pengajuan: payload.bulan
       };
 
       return {
@@ -883,7 +884,12 @@ export async function saveLPJ(payload: {
       'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
       'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
     }
-    const bulanInt = monthMap[payload.bulan] || new Date().getMonth() + 1
+    let bulanInt = new Date().getMonth() + 1
+    if (monthMap[payload.bulan]) {
+      bulanInt = monthMap[payload.bulan]
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(payload.bulan)) {
+      bulanInt = parseInt(payload.bulan.split('-')[1], 10)
+    }
     const tahunInt = parseInt(payload.tahun_ajaran.match(/\d+/)?.[0] || new Date().getFullYear().toString())
 
     // Resolve Unit Name to unit_id and jenjang_id
@@ -982,7 +988,8 @@ export async function saveLPJ(payload: {
       narasi: payload.narasi,
       subsidiSources: payload.subsidiSources,
       attachments: payload.attachments,
-      jumlah_kegiatan: firstRow.jumlah || '1x'
+      jumlah_kegiatan: firstRow.jumlah || '1x',
+      _tanggal_pengajuan: payload.bulan
     };
 
     const itemToInsert = {
