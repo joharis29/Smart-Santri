@@ -2060,9 +2060,11 @@ export default function BuatRealisasiPage() {
                                         <option value="Diniyah">Diniyah</option>
                                         <option value="Asrama Putra">Asrama Putra</option>
                                         <option value="Asrama Putri">Asrama Putri</option>
+                                        <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
+                                        <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
                                         <option value="THQ">THQ</option>
                                         <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
-                                        {unit && !["SDIT 1", "SDIT 2", "SMPIT", "SMAIT", "Pesantren", "TK", "MTs", "MA", "Diniyah", "Asrama Putra", "Asrama Putri", "THQ", "Pusat (Yayasan)"].includes(unit) && (
+                                        {unit && !["SDIT 1", "SDIT 2", "SMPIT", "SMAIT", "Pesantren", "TK", "MTs", "MA", "Diniyah", "Asrama Putra", "Asrama Putri", "Dapur Asrama Putra", "Dapur Asrama Putri", "THQ", "Pusat (Yayasan)"].includes(unit) && (
                                             <option value={unit}>{unit}</option>
                                         )}
                                     </select>
