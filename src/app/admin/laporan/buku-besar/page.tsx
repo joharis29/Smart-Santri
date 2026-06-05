@@ -111,9 +111,10 @@ export default function BukuBesarPage() {
         const coa = item.coa.toUpperCase();
         
         // Kewajiban / Titipan
-        if (coa.includes('TABUNGAN')) {
+        if (coa.includes('TABUNGAN') || coa.includes('UANG SAKU') || coa.includes('TITIPAN')) {
             return `Penarikan ${item.coa}`;
         }
+
         
         // Dana Terikat (Non-Operasional)
         if (coa.includes('ZAKAT') || 
