@@ -154,20 +154,31 @@ export default function InputPengeluaranPage() {
     const fetchWalletBalance = async (unitName: string, sourceName: string) => {
         try {
             const supabase = createClient();
-            const categoryEnum = getKategoriEnum(sourceName);
             
-            const { data, error } = await supabase
-                .from('dompet_dana')
-                .select('*, unit:unit_id(name)');
-            
-            if (error) throw error;
-            
-            const wallet = data?.find((w: any) => {
-                const uName = w.unit?.name || 'Pusat (Yayasan)';
-                return uName.trim() === unitName.trim() && w.kategori === categoryEnum;
-            });
-            
-            setLiveWalletBalance(wallet ? Number(wallet.saldo || 0) : 0);
+            // Calculate exact balance from transactions (same as Dashboard Dynamic Widgets)
+            const { data: txIn } = await supabase
+                .from('transaksi_pendapatan')
+                .select('nominal')
+                .eq('unit', unitName.trim())
+                .eq('sumber_dana', sourceName.trim());
+
+            const { data: txOut } = await supabase
+                .from('transaksi_pengeluaran')
+                .select('nominal')
+                .eq('unit', unitName.trim())
+                .eq('sumber_dana', sourceName.trim());
+
+            let totalIn = 0;
+            if (txIn) {
+                totalIn = txIn.reduce((sum, tx) => sum + Number(tx.nominal || 0), 0);
+            }
+
+            let totalOut = 0;
+            if (txOut) {
+                totalOut = txOut.reduce((sum, tx) => sum + Number(tx.nominal || 0), 0);
+            }
+
+            setLiveWalletBalance(totalIn - totalOut);
         } catch (err) {
             console.error("Error fetching live balance:", err);
             setLiveWalletBalance(0);
