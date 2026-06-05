@@ -155,6 +155,15 @@ export default function RiwayatDokumenPage() {
                     .select('*, item_pengajuan(*)')
                     .eq('id', rkaId)
                     .maybeSingle();
+
+                if (rkaDoc && rkaDoc.jenis === 'REVISI_RKA' && rkaDoc.parent_id) {
+                    const { data: parentRkaDoc } = await supabase
+                        .from('dokumen_pengajuan')
+                        .select('*, item_pengajuan(*)')
+                        .eq('id', rkaDoc.parent_id)
+                        .maybeSingle();
+                    rkaDoc.parentDoc = parentRkaDoc;
+                }
                 setDetailRkaDoc(rkaDoc);
             } else {
                 setDetailRkaDoc(null);
@@ -1864,7 +1873,6 @@ export default function RiwayatDokumenPage() {
                                                 };
 
                                                 const lpjHistory = detailLpjDoc?.riwayat_revisi || [];
-                                                const rkaHistory = detailRkaDoc?.riwayat_revisi || [];
                                                 const finalUpdateDate = detailLpjDoc?.updated_at || detailLpjDoc?.created_at;
                                                 const lpjCreateDate = detailLpjDoc?.created_at;
 
@@ -1872,35 +1880,126 @@ export default function RiwayatDokumenPage() {
 
                                                 // 1. RKA (If exists)
                                                 if (detailRkaDoc) {
-                                                    events.push({
-                                                        date: new Date(detailRkaDoc.created_at),
-                                                        title: `PENGAJUAN RKA`,
-                                                        desc: "Rencana Kegiatan dan Anggaran diajukan.",
-                                                        color: "emerald",
-                                                        isMain: true,
-                                                        dateStr: formatFullDate(detailRkaDoc.created_at)
-                                                    });
+                                                    const isRevisiRka = detailRkaDoc.jenis === 'REVISI_RKA';
+                                                    const parentRka = detailRkaDoc.parentDoc || (isRevisiRka ? null : detailRkaDoc);
 
-                                                    // RKA Revisions
-                                                    rkaHistory.forEach((rev: any) => {
+                                                    if (parentRka) {
+                                                        // 1a. PENGAJUAN RKA AWAL
                                                         events.push({
-                                                            date: new Date(rev.tanggal_revisi),
-                                                            title: "REVISI RKA",
-                                                            desc: `Catatan: "${rev.catatan_revisi || '-'}" | Total Nominal: Rp ${Number(rev.total_nominal || 0).toLocaleString('id-ID')}`,
-                                                            color: "amber",
-                                                            isPulse: true,
-                                                            isMain: false,
-                                                            dateStr: formatFullDate(rev.tanggal_revisi)
+                                                            date: new Date(parentRka.created_at),
+                                                            title: `PENGAJUAN RKA`,
+                                                            color: "emerald",
+                                                            isMain: true,
+                                                            dateStr: formatFullDate(parentRka.created_at)
                                                         });
-                                                    });
+
+                                                        // 1b. REVISI RKA AWAL
+                                                        const pHistory = parentRka.riwayat_revisi || [];
+                                                        pHistory.forEach((rev: any) => {
+                                                            events.push({
+                                                                date: new Date(rev.tanggal_revisi),
+                                                                title: "REVISI DIKEMBALIKAN OLEH BENDAHARA",
+                                                                desc: `"Catatan Penolakan: ${rev.catatan_revisi || '-'}"`,
+                                                                color: "amber",
+                                                                isPulse: true,
+                                                                isMain: false,
+                                                                dateStr: formatFullDate(rev.tanggal_revisi)
+                                                            });
+                                                            
+                                                            const resubDate = new Date(rev.tanggal_revisi);
+                                                            resubDate.setMinutes(resubDate.getMinutes() + 5);
+                                                            events.push({
+                                                                date: resubDate,
+                                                                title: "PENGAJUAN KEMBALI PROPOSAL RKA",
+                                                                color: "emerald",
+                                                                isMain: false,
+                                                                dateStr: formatFullDate(resubDate.toISOString())
+                                                            });
+                                                        });
+                                                    }
+
+                                                    if (isRevisiRka) {
+                                                        events.push({
+                                                            date: new Date(detailRkaDoc.created_at),
+                                                            title: `PENGAJUAN REVISI ANGGARAN (REVISI RKA)`,
+                                                            color: "emerald",
+                                                            isMain: true,
+                                                            dateStr: formatFullDate(detailRkaDoc.created_at)
+                                                        });
+
+                                                        const rHistory = detailRkaDoc.riwayat_revisi || [];
+                                                        rHistory.forEach((rev: any) => {
+                                                            events.push({
+                                                                date: new Date(rev.tanggal_revisi),
+                                                                title: "REVISI RKA DIKEMBALIKAN OLEH BENDAHARA",
+                                                                desc: `"Catatan Penolakan: ${rev.catatan_revisi || '-'}"`,
+                                                                color: "amber",
+                                                                isPulse: true,
+                                                                isMain: false,
+                                                                dateStr: formatFullDate(rev.tanggal_revisi)
+                                                            });
+                                                            
+                                                            const resubDate = new Date(rev.tanggal_revisi);
+                                                            resubDate.setMinutes(resubDate.getMinutes() + 5);
+                                                            events.push({
+                                                                date: resubDate,
+                                                                title: "PENGAJUAN KEMBALI REVISI RKA",
+                                                                color: "emerald",
+                                                                isMain: false,
+                                                                dateStr: formatFullDate(resubDate.toISOString())
+                                                            });
+                                                        });
+                                                    } else if (!parentRka) {
+                                                        // Fallback just in case
+                                                        events.push({
+                                                            date: new Date(detailRkaDoc.created_at),
+                                                            title: `PENGAJUAN RKA`,
+                                                            color: "emerald",
+                                                            isMain: true,
+                                                            dateStr: formatFullDate(detailRkaDoc.created_at)
+                                                        });
+                                                        const rHistory = detailRkaDoc.riwayat_revisi || [];
+                                                        rHistory.forEach((rev: any) => {
+                                                            events.push({
+                                                                date: new Date(rev.tanggal_revisi),
+                                                                title: "REVISI DIKEMBALIKAN OLEH BENDAHARA",
+                                                                desc: `"Catatan Penolakan: ${rev.catatan_revisi || '-'}"`,
+                                                                color: "amber",
+                                                                isPulse: true,
+                                                                isMain: false,
+                                                                dateStr: formatFullDate(rev.tanggal_revisi)
+                                                            });
+                                                        });
+                                                    }
 
                                                     let rkaApproveDate = new Date(detailRkaDoc.updated_at);
                                                     if (rkaApproveDate < new Date(detailRkaDoc.created_at)) rkaApproveDate = new Date(detailRkaDoc.created_at);
                                                     
+                                                    const otorisasiRkaDate = new Date(rkaApproveDate);
+                                                    otorisasiRkaDate.setMinutes(otorisasiRkaDate.getMinutes() - 2);
+
+                                                    const pencairanDate = new Date(rkaApproveDate);
+                                                    pencairanDate.setMinutes(pencairanDate.getMinutes() - 1);
+
+                                                    events.push({
+                                                        date: otorisasiRkaDate,
+                                                        title: `PENGAJUAN RKA DISETUJUI KEPALA UNIT`,
+                                                        color: "emerald",
+                                                        isMain: true,
+                                                        dateStr: formatFullDate(otorisasiRkaDate.toISOString())
+                                                    });
+
+                                                    events.push({
+                                                        date: pencairanDate,
+                                                        title: `PENCAIRAN DANA OLEH BENDAHARA PUSAT`,
+                                                        color: "emerald",
+                                                        isMain: true,
+                                                        dateStr: formatFullDate(pencairanDate.toISOString())
+                                                    });
+                                                    
                                                     events.push({
                                                         date: rkaApproveDate,
-                                                        title: `PENGAJUAN RKA DISETUJUI, PENCAIRAN DANA & DITERIMA`,
-                                                        desc: "RKA disetujui berjenjang. Dana telah dicairkan dan diterima.",
+                                                        title: `DANA TELAH DITERIMA OLEH BENDAHARA UNIT`,
                                                         color: "emerald",
                                                         isMain: true,
                                                         dateStr: formatFullDate(rkaApproveDate.toISOString())
@@ -1911,7 +2010,6 @@ export default function RiwayatDokumenPage() {
                                                 events.push({
                                                     date: new Date(lpjCreateDate),
                                                     title: `PENGAJUAN LAPORAN LPJ`,
-                                                    desc: "Laporan Pertanggungjawaban (LPJ) diajukan.",
                                                     color: "emerald",
                                                     isMain: true,
                                                     dateStr: formatFullDate(lpjCreateDate)
@@ -1934,7 +2032,6 @@ export default function RiwayatDokumenPage() {
                                                     events.push({
                                                         date: resubDate,
                                                         title: "PENGAJUAN KEMBALI LPJ",
-                                                        desc: "Berkas LPJ diperbaiki dan diajukan ulang.",
                                                         color: "emerald",
                                                         isMain: false,
                                                         dateStr: formatFullDate(resubDate.toISOString())
@@ -1949,7 +2046,6 @@ export default function RiwayatDokumenPage() {
                                                 events.push({
                                                     date: otorisasiDate,
                                                     title: `OTORISASI KEPALA UNIT/JENJANG`,
-                                                    desc: "LPJ diverifikasi dan disetujui Kepala Unit.",
                                                     color: "emerald",
                                                     isMain: true,
                                                     dateStr: formatFullDate(otorisasiDate.toISOString())
@@ -1960,7 +2056,6 @@ export default function RiwayatDokumenPage() {
                                                 events.push({
                                                     date: verifDate,
                                                     title: `VERIFIKASI AKHIR BENDAHARA PUSAT`,
-                                                    desc: "Pemeriksaan kelengkapan kuitansi dan bukti pengeluaran.",
                                                     color: "emerald",
                                                     isMain: true,
                                                     dateStr: formatFullDate(verifDate.toISOString())
@@ -1969,7 +2064,6 @@ export default function RiwayatDokumenPage() {
                                                 events.push({
                                                     date: finalDate,
                                                     title: `SELESAI & DIARSIPKAN`,
-                                                    desc: "Dokumen sah, saldo disesuaikan, arsip tersimpan.",
                                                     color: "emerald",
                                                     isMain: true,
                                                     isFinal: true,
