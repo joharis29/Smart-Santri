@@ -13,25 +13,7 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
   // Helper to determine visibility based on existing preferences
   const getVisibility = (name: string) => {
     if (!preferences) return true;
-    const lower = name.toLowerCase();
-    
-    if (lower.includes('spp')) return preferences.showSpp ?? true;
-    if (lower.includes('zakat')) return preferences.showZakat ?? true;
-    if (lower.includes('wakaf')) return preferences.showWakaf !== false;
-    if (lower.includes('infaq') || lower.includes('sedekah')) {
-      return preferences.showInfaqYayasan ?? preferences.showInfaq ?? true;
-    }
-    if (lower.includes('koperasi')) return preferences.showKoperasi ?? true;
-    if (lower.includes('poskestren')) return preferences.showPoskestren ?? true;
-    if (lower.includes('tabungan wajib')) return preferences.showTabungan ?? true;
-    if (lower.includes('tabungan')) return preferences.showTabunganSiswa !== false && (preferences.showTabungan ?? true);
-    if (lower.includes('uang saku')) return preferences.showUangSaku ?? true;
-    if (lower.includes('bos')) return preferences.showBos ?? true;
-    if (lower.includes('yayasan') || lower.includes('pesantren')) return preferences.showYayasan ?? true;
-    if (lower.includes('subsidi')) return preferences.showSubsidi ?? true;
-    if (lower.includes('antar jemput')) return preferences.showAntarJemput ?? true;
-    
-    return true; // Default to visible if it's a completely custom new fund
+    return preferences[name] !== false;
   };
 
   // Helper to determine the aesthetic properties of the widget

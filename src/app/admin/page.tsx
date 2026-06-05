@@ -141,14 +141,10 @@ export default function AdminDashboardPage() {
   const [exactBalances, setExactBalances] = useState<Record<string, number>>({});
   const [customSources, setCustomSources] = useState<{name: string}[]>([]);
 
-  const [prefs, setPrefs] = useState({
-    showSpp: true, showZakat: true, showInfaqYayasan: true, showKoperasi: true, showPoskestren: true, showTabungan: true, showUangSaku: true,
-    showBos: true, showYayasan: true, showAntarJemput: true, showSubsidi: true, showInfaq: true,
-    showKasInternal: true, showSaldo: true, showAkumulasi: true, showSupplier: true
-  });
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({});
 
   // --- ACTIONS ---
-  const togglePref = (key: keyof typeof prefs) => setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  const togglePref = (key: string) => setPrefs(prev => ({ ...prev, [key]: prev[key] === undefined ? false : !prev[key] }));
 
   const handleApprove = (id: number) => {
     setTransactions(prev => prev.map(t => {
@@ -639,31 +635,7 @@ export default function AdminDashboardPage() {
   };
   const activeCategory = category(activeUnit);
 
-  let activePrefsKeys: (keyof typeof prefs)[] = [];
-  const trimmedUnit = activeUnit.trim();
-
-  if (activeCategory === 'pusat') {
-    activePrefsKeys = ['showSpp', 'showZakat', 'showInfaqYayasan', 'showKoperasi', 'showPoskestren', 'showTabungan', 'showUangSaku'];
-  } else if (activeCategory === 'pendidikan') {
-    if (trimmedUnit === 'Diniyah') {
-        activePrefsKeys = ['showYayasan', 'showSubsidi', 'showInfaq'];
-    } else if (trimmedUnit === 'TK') {
-        activePrefsKeys = ['showBos', 'showYayasan', 'showTabungan', 'showAntarJemput'];
-    } else {
-        // SDIT 1, SDIT 2, MTs, MA
-        activePrefsKeys = ['showBos', 'showYayasan', 'showTabungan'];
-    }
-  } else if (activeCategory === 'asrama') {
-    activePrefsKeys = ['showYayasan', 'showUangSaku'];
-    if (trimmedUnit === 'THQ') {
-        activePrefsKeys.push('showTabungan');
-    } else {
-        activePrefsKeys.push('showKasInternal');
-    }
-  } else {
-    // Dapur
-    activePrefsKeys = ['showSaldo', 'showSupplier'];
-  }
+  const activePrefsKeys = customSources.map(s => s.name);
 
   const availableMonths = Array.from(new Set(
     transactions.map(t => t.month || 'Lainnya')
@@ -822,10 +794,14 @@ export default function AdminDashboardPage() {
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                 {activePrefsKeys.map(key => (
                                     <label key={key} className="flex items-center gap-2 cursor-pointer group">
-                                        <input type="checkbox" checked={prefs[key]} onChange={() => togglePref(key)} className="rounded text-emerald-600 focus:ring-emerald-500" />
-                                        <span className="text-[10px] font-bold text-slate-600 group-hover:text-emerald-700 uppercase tracking-tight">{key.replace('show', '').replace(/([A-Z])/g, ' $1').trim()}</span>
+                                        <input type="checkbox" checked={prefs[key] !== false} onChange={() => togglePref(key)} className="rounded text-emerald-600 focus:ring-emerald-500" />
+                                        <span className="text-[10px] font-bold text-slate-600 group-hover:text-emerald-700 uppercase tracking-tight">{key}</span>
                                     </label>
                                 ))}
+                                <label className="flex items-center gap-2 cursor-pointer group mt-2 pt-2 border-t border-slate-100">
+                                    <input type="checkbox" checked={prefs['UniversalAkumulasi'] !== false} onChange={() => togglePref('UniversalAkumulasi')} className="rounded text-emerald-600 focus:ring-emerald-500" />
+                                    <span className="text-[10px] font-black text-slate-700 group-hover:text-emerald-700 uppercase tracking-tight">Akumulasi Total</span>
+                                </label>
                             </div>
                         </div>
                     )}
@@ -861,7 +837,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* UNIVERSAL CASH FLOW WIDGETS */}
-      {userRole !== 'STAFF' && (
+      {userRole !== 'STAFF' && prefs['UniversalAkumulasi'] !== false && (
         <UniversalCashFlowWidgets balances={balances} />
       )}
 
