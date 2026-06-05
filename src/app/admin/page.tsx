@@ -28,6 +28,7 @@ import { YayasanWidgets } from '@/components/dashboard/YayasanWidgets';
 import { PendidikanWidgets } from '@/components/dashboard/PendidikanWidgets';
 import { AsramaWidgets } from '@/components/dashboard/AsramaWidgets';
 import { DapurWidgets } from '@/components/dashboard/DapurWidgets';
+import { DynamicWidgets } from '@/components/dashboard/DynamicWidgets';
 import { UniversalCashFlowWidgets } from '@/components/dashboard/UniversalCashFlowWidgets';
 import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
 import { switchActiveProfile } from './users/actions';
@@ -137,6 +138,8 @@ export default function AdminDashboardPage() {
     bos: 0,
     spp: 0,
   });
+  const [exactBalances, setExactBalances] = useState<Record<string, number>>({});
+  const [customSources, setCustomSources] = useState<{name: string}[]>([]);
 
   const [prefs, setPrefs] = useState({
     showSpp: true, showZakat: true, showInfaqYayasan: true, showKoperasi: true, showPoskestren: true, showTabungan: true, showUangSaku: true,
@@ -565,6 +568,43 @@ export default function AdminDashboardPage() {
           newBalances[cat] = Number(w.saldo);
         });
 
+        // Fetch all time exact balances for dynamic widgets
+        const { data: allTxOut } = await supabase
+          .from('transaksi_pengeluaran')
+          .select('nominal, sumber_dana')
+          .eq('unit', activeUnit.trim());
+          
+        const { data: allTxIn } = await supabase
+          .from('transaksi_pendapatan')
+          .select('nominal, sumber_dana')
+          .eq('unit', activeUnit.trim());
+
+        const exactBals: Record<string, number> = {};
+        
+        if (allTxIn) {
+          allTxIn.forEach((tx: any) => {
+            exactBals[tx.sumber_dana] = (exactBals[tx.sumber_dana] || 0) + Number(tx.nominal);
+          });
+        }
+        
+        if (allTxOut) {
+          allTxOut.forEach((tx: any) => {
+            exactBals[tx.sumber_dana] = (exactBals[tx.sumber_dana] || 0) - Number(tx.nominal);
+          });
+        }
+        setExactBalances(exactBals);
+
+        const { data: sourcesData } = await supabase
+          .from('pengaturan_sumber_dana')
+          .select('nama_sumber_dana')
+          .eq('unit_name', activeUnit.trim());
+          
+        if (sourcesData) {
+          setCustomSources(sourcesData.map((s: any) => ({ name: s.nama_sumber_dana })));
+        } else {
+          setCustomSources([]);
+        }
+
         setBalances(newBalances);
       }
     } catch (err) {
@@ -797,32 +837,11 @@ export default function AdminDashboardPage() {
       {/* Widgets Area */}
       {userRole !== 'STAFF' ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {activeCategory === 'pusat' && (
-              <YayasanWidgets 
-                  preferences={prefs} 
-                  balances={balances} 
-              />
-          )}
-          {activeCategory === 'pendidikan' && (
-              <PendidikanWidgets 
-                  unitType={activeUnit} 
-                  preferences={prefs} 
-                  balances={balances}
-              />
-          )}
-          {activeCategory === 'asrama' && (
-              <AsramaWidgets 
-                  unitType={activeUnit} 
-                  preferences={prefs} 
-                  balances={balances}
-              />
-          )}
-          {activeCategory === 'dapur' && (
-              <DapurWidgets 
-                  preferences={prefs} 
-                  balances={balances}
-              />
-          )}
+          <DynamicWidgets 
+              sources={customSources} 
+              exactBalances={exactBalances} 
+              preferences={prefs} 
+          />
         </div>
       ) : (
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
