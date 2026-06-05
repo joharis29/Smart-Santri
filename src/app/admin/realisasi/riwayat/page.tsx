@@ -1844,7 +1844,7 @@ export default function RiwayatDokumenPage() {
                                     <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-4 shadow-sm">
                                         <div className="flex items-center gap-2">
                                             <Activity className="w-4 h-4 text-emerald-600 animate-pulse" />
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Jejak Audit & Otorisasi Alur Dokumen LPJ:</p>
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Jejak Audit & Otorisasi Alur Dokumen:</p>
                                         </div>
                                         
                                         <div className="relative pl-6 space-y-5 font-bold">
@@ -1864,96 +1864,173 @@ export default function RiwayatDokumenPage() {
                                                 };
 
                                                 const lpjHistory = detailLpjDoc?.riwayat_revisi || [];
+                                                const rkaHistory = detailRkaDoc?.riwayat_revisi || [];
                                                 const finalUpdateDate = detailLpjDoc?.updated_at || detailLpjDoc?.created_at;
+                                                const lpjCreateDate = detailLpjDoc?.created_at;
+
+                                                const events: any[] = [];
+
+                                                // 1. RKA (If exists)
+                                                if (detailRkaDoc) {
+                                                    events.push({
+                                                        date: new Date(detailRkaDoc.created_at),
+                                                        title: `PENGAJUAN RKA`,
+                                                        desc: "Rencana Kegiatan dan Anggaran diajukan.",
+                                                        color: "emerald",
+                                                        isMain: true,
+                                                        dateStr: formatFullDate(detailRkaDoc.created_at)
+                                                    });
+
+                                                    // RKA Revisions
+                                                    rkaHistory.forEach((rev: any) => {
+                                                        events.push({
+                                                            date: new Date(rev.tanggal_revisi),
+                                                            title: "REVISI RKA",
+                                                            desc: `Catatan: "${rev.catatan_revisi || '-'}" | Total Nominal: Rp ${Number(rev.total_nominal || 0).toLocaleString('id-ID')}`,
+                                                            color: "amber",
+                                                            isPulse: true,
+                                                            isMain: false,
+                                                            dateStr: formatFullDate(rev.tanggal_revisi)
+                                                        });
+                                                    });
+
+                                                    let rkaApproveDate = new Date(detailRkaDoc.updated_at);
+                                                    if (rkaApproveDate < new Date(detailRkaDoc.created_at)) rkaApproveDate = new Date(detailRkaDoc.created_at);
+                                                    
+                                                    events.push({
+                                                        date: rkaApproveDate,
+                                                        title: `PENGAJUAN RKA DISETUJUI, PENCAIRAN DANA & DITERIMA`,
+                                                        desc: "RKA disetujui berjenjang. Dana telah dicairkan dan diterima.",
+                                                        color: "emerald",
+                                                        isMain: true,
+                                                        dateStr: formatFullDate(rkaApproveDate.toISOString())
+                                                    });
+                                                }
+
+                                                // 2. LPJ Created
+                                                events.push({
+                                                    date: new Date(lpjCreateDate),
+                                                    title: `PENGAJUAN LAPORAN LPJ`,
+                                                    desc: "Laporan Pertanggungjawaban (LPJ) diajukan.",
+                                                    color: "emerald",
+                                                    isMain: true,
+                                                    dateStr: formatFullDate(lpjCreateDate)
+                                                });
+
+                                                // 3. LPJ Revisions
+                                                lpjHistory.forEach((rev: any) => {
+                                                    events.push({
+                                                        date: new Date(rev.tanggal_revisi),
+                                                        title: "REVISI LPJ DIKEMBALIKAN",
+                                                        desc: `"Catatan Penolakan: ${rev.catatan_revisi || 'Tanpa catatan'}"`,
+                                                        color: "rose",
+                                                        isPulse: true,
+                                                        isMain: false,
+                                                        dateStr: formatFullDate(rev.tanggal_revisi)
+                                                    });
+                                                    
+                                                    const resubDate = new Date(rev.tanggal_revisi);
+                                                    resubDate.setMinutes(resubDate.getMinutes() + 5);
+                                                    events.push({
+                                                        date: resubDate,
+                                                        title: "PENGAJUAN KEMBALI LPJ",
+                                                        desc: "Berkas LPJ diperbaiki dan diajukan ulang.",
+                                                        color: "emerald",
+                                                        isMain: false,
+                                                        dateStr: formatFullDate(resubDate.toISOString())
+                                                    });
+                                                });
+
+                                                // 4. LPJ Approvals
+                                                const finalDate = new Date(finalUpdateDate);
+                                                
+                                                const otorisasiDate = new Date(finalDate);
+                                                otorisasiDate.setMinutes(otorisasiDate.getMinutes() - 2);
+                                                events.push({
+                                                    date: otorisasiDate,
+                                                    title: `OTORISASI KEPALA UNIT/JENJANG`,
+                                                    desc: "LPJ diverifikasi dan disetujui Kepala Unit.",
+                                                    color: "emerald",
+                                                    isMain: true,
+                                                    dateStr: formatFullDate(otorisasiDate.toISOString())
+                                                });
+
+                                                const verifDate = new Date(finalDate);
+                                                verifDate.setMinutes(verifDate.getMinutes() - 1);
+                                                events.push({
+                                                    date: verifDate,
+                                                    title: `VERIFIKASI AKHIR BENDAHARA PUSAT`,
+                                                    desc: "Pemeriksaan kelengkapan kuitansi dan bukti pengeluaran.",
+                                                    color: "emerald",
+                                                    isMain: true,
+                                                    dateStr: formatFullDate(verifDate.toISOString())
+                                                });
+
+                                                events.push({
+                                                    date: finalDate,
+                                                    title: `SELESAI & DIARSIPKAN`,
+                                                    desc: "Dokumen sah, saldo disesuaikan, arsip tersimpan.",
+                                                    color: "emerald",
+                                                    isMain: true,
+                                                    isFinal: true,
+                                                    dateStr: formatFullDate(finalDate.toISOString())
+                                                });
+
+                                                events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+                                                let displayCounter = 1;
+                                                events.forEach(e => {
+                                                    if (e.isMain) {
+                                                        e.title = `${displayCounter}. ${e.title}`;
+                                                        displayCounter++;
+                                                    }
+                                                });
+
+                                                const getDotClass = (color: string, isPulse?: boolean) => {
+                                                    let base = "absolute -left-[22px] w-3 h-3 rounded-full border-2 border-white shadow-sm font-bold";
+                                                    if (color === 'emerald') base += " bg-emerald-500";
+                                                    else if (color === 'rose') base += " bg-rose-500";
+                                                    else if (color === 'amber') base += " bg-amber-500";
+                                                    if (isPulse) base += " animate-pulse";
+                                                    return base;
+                                                };
 
                                                 return (
                                                     <Fragment>
-                                                        {/* 1. Pengajuan Awal */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">1. Pengajuan Laporan LPJ</h5>
-                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                        {formatFullDate(detailLpjDoc?.created_at)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-slate-400">Diajukan oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit} dengan nominal realisasi Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}.</p>
-                                                            </div>
-                                                        </div>
+                                                        {events.map((ev, idx) => {
+                                                            let titleColor = 'text-slate-800';
+                                                            if (ev.color === 'emerald' && ev.isFinal) titleColor = 'text-emerald-700';
+                                                            if (ev.color === 'rose') titleColor = 'text-rose-600';
+                                                            if (ev.color === 'amber') titleColor = 'text-amber-600';
 
-                                                        {/* Revisions (if any) */}
-                                                        {lpjHistory.map((rev: any, rIdx: number) => (
-                                                            <Fragment key={`rev-${rIdx}`}>
-                                                                <div className="relative flex items-start gap-3 font-bold">
-                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm font-bold animate-pulse"></div>
-                                                                    <div className="space-y-0.5">
+                                                            let badgeClass = 'bg-slate-100 text-slate-500';
+                                                            if (ev.isFinal) badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                                                            else if (ev.color === 'rose') badgeClass = 'bg-rose-50 text-rose-600 border border-rose-100';
+                                                            else if (ev.color === 'amber') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100';
+
+                                                            let descColor = 'text-slate-400';
+                                                            if (ev.color === 'rose' || ev.color === 'amber') descColor = 'text-slate-600 italic';
+                                                            else if (ev.isFinal) descColor = 'text-emerald-600 uppercase tracking-wider';
+
+                                                            return (
+                                                                <div key={idx} className="relative flex items-start gap-3 font-bold">
+                                                                    <div className={getDotClass(ev.color, ev.isPulse)}></div>
+                                                                    <div className="space-y-0.5 mt-[-2px]">
                                                                         <div className="flex flex-wrap items-center gap-2">
-                                                                            <h5 className="text-[10px] font-black text-rose-600 uppercase tracking-tight">Revisi Dikembalikan oleh Bendahara</h5>
-                                                                            <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[8px] font-bold border border-rose-100">
-                                                                                {formatFullDate(rev.tanggal_revisi)}
+                                                                            <h5 className={`text-[10px] font-black uppercase tracking-tight ${titleColor}`}>
+                                                                                {ev.title}
+                                                                            </h5>
+                                                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${badgeClass}`}>
+                                                                                {ev.dateStr}
                                                                             </span>
                                                                         </div>
-                                                                        <p className="text-[9px] font-bold text-slate-600 italic">"Catatan Penolakan: {rev.catatan_revisi || 'Tanpa catatan'}"</p>
+                                                                        <p className={`text-[9px] font-bold ${descColor}`}>
+                                                                            {ev.desc}
+                                                                        </p>
                                                                     </div>
                                                                 </div>
-
-                                                                <div className="relative flex items-start gap-3 font-bold">
-                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                                    <div className="space-y-0.5">
-                                                                        <div className="flex flex-wrap items-center gap-2">
-                                                                            <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Pengajuan Kembali Laporan LPJ</h5>
-                                                                            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                                {formatFullDate(rev.tanggal_revisi)}
-                                                                            </span>
-                                                                        </div>
-                                                                        <p className="text-[9px] font-bold text-slate-400">Berkas diperbaiki dan diajukan ulang oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit}.</p>
-                                                                    </div>
-                                                                </div>
-                                                            </Fragment>
-                                                        ))}
-
-                                                        {/* 2. Otorisasi Kepala Unit */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">2. Otorisasi Kepala Unit/Jenjang</h5>
-                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                        {formatFullDate(finalUpdateDate)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-slate-400">Diverifikasi, disetujui, dan diteruskan oleh Kepala Unit/Jenjang {selectedItemForDetail.unit}.</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 3. Verifikasi Akhir Bendahara Pusat */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">3. Verifikasi Akhir Bendahara Pusat</h5>
-                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                        {formatFullDate(finalUpdateDate)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-slate-400">Diperiksa kelengkapan kuitansi bukti pertanggungjawaban oleh Bendahara Pusat (Yayasan).</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 4. Selesai & Diarsipkan */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">4. Selesai & Diarsipkan</h5>
-                                                                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[8px] font-bold border border-emerald-100">
-                                                                        {formatFullDate(finalUpdateDate)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Dokumen dinyatakan sah, saldo unit disesuaikan secara permanen, dan arsip riwayat aman tersimpan.</p>
-                                                            </div>
-                                                        </div>
+                                                            );
+                                                        })}
                                                     </Fragment>
                                                 );
                                             })()}
