@@ -1491,6 +1491,8 @@ export default function RiwayatPengajuanPage() {
                                             <div className="absolute left-[9px] top-1.5 bottom-1.5 w-[1px] bg-slate-200 font-bold"></div>
                                             
                                             {(() => {
+                                                const events: any[] = [];
+                                                
                                                 const formatFullDate = (dateStr: string) => {
                                                     if (!dateStr) return '';
                                                     return new Date(dateStr).toLocaleString('id-ID', {
@@ -1503,83 +1505,165 @@ export default function RiwayatPengajuanPage() {
                                                     }) + ' WIB';
                                                 };
 
-                                                const rkaHistory = detailRkaDoc?.riwayat_revisi || [];
-                                                const finalUpdateDate = detailRkaDoc?.updated_at || detailRkaDoc?.created_at;
+                                                const isRevisiRka = detailLpjDoc?.jenis === 'REVISI_RKA';
+                                                const activeDoc = isRevisiRka ? detailLpjDoc : detailRkaDoc;
+                                                const parentRka = detailRkaDoc;
+
+                                                // 1. PENGAJUAN RKA AWAL (dari parentRka)
+                                                if (parentRka?.created_at) {
+                                                    events.push({
+                                                        date: new Date(parentRka.created_at),
+                                                        title: "PENGAJUAN ANGGARAN RKA",
+                                                        desc: `Diajukan oleh Bendahara Unit/Jenjang ${parentRka.unit || selectedItemForDetail?.unit || ''}.`,
+                                                        color: "emerald",
+                                                        dateStr: formatFullDate(parentRka.created_at)
+                                                    });
+                                                }
+
+                                                // 2. LOG REVISI RKA AWAL (dari parentRka)
+                                                const rkaHistory = parentRka?.riwayat_revisi || [];
+                                                rkaHistory.forEach((rev: any) => {
+                                                    if (rev.tanggal_revisi) {
+                                                        events.push({
+                                                            date: new Date(rev.tanggal_revisi),
+                                                            title: "REVISI DIKEMBALIKAN OLEH BENDAHARA",
+                                                            desc: `"Catatan Penolakan: ${rev.catatan_revisi || 'Tanpa catatan'}"`,
+                                                            color: "amber",
+                                                            isPulse: true,
+                                                            dateStr: formatFullDate(rev.tanggal_revisi)
+                                                        });
+                                                        
+                                                        // Asumsikan pengajuan kembali dilakukan sesaat setelahnya
+                                                        const resubDate = new Date(rev.tanggal_revisi);
+                                                        resubDate.setMinutes(resubDate.getMinutes() + 5);
+                                                        events.push({
+                                                            date: resubDate,
+                                                            title: "PENGAJUAN KEMBALI PROPOSAL RKA",
+                                                            desc: `Berkas diperbaiki dan diajukan ulang. Total nominal: Rp ${Number(rev.total_nominal || 0).toLocaleString('id-ID')}`,
+                                                            color: "emerald",
+                                                            dateStr: formatFullDate(resubDate.toISOString())
+                                                        });
+                                                    }
+                                                });
+
+                                                // 3. JIKA INI ADALAH DOKUMEN REVISI RKA
+                                                if (isRevisiRka && detailLpjDoc?.created_at) {
+                                                    events.push({
+                                                        date: new Date(detailLpjDoc.created_at),
+                                                        title: "PENGAJUAN REVISI ANGGARAN (REVISI RKA)",
+                                                        desc: `Dokumen revisi RKA diajukan oleh Bendahara Unit/Jenjang ${detailLpjDoc.unit || ''}.`,
+                                                        color: "emerald",
+                                                        dateStr: formatFullDate(detailLpjDoc.created_at)
+                                                    });
+
+                                                    // LOG REVISI DARI DOKUMEN REVISI ITU SENDIRI
+                                                    const revisiHistory = detailLpjDoc.riwayat_revisi || [];
+                                                    revisiHistory.forEach((rev: any) => {
+                                                        if (rev.tanggal_revisi) {
+                                                            events.push({
+                                                                date: new Date(rev.tanggal_revisi),
+                                                                title: "REVISI RKA DIKEMBALIKAN OLEH BENDAHARA",
+                                                                desc: `"Catatan Penolakan: ${rev.catatan_revisi || 'Tanpa catatan'}"`,
+                                                                color: "amber",
+                                                                isPulse: true,
+                                                                dateStr: formatFullDate(rev.tanggal_revisi)
+                                                            });
+                                                            
+                                                            const resubDate = new Date(rev.tanggal_revisi);
+                                                            resubDate.setMinutes(resubDate.getMinutes() + 5);
+                                                            events.push({
+                                                                date: resubDate,
+                                                                title: "PENGAJUAN KEMBALI REVISI RKA",
+                                                                desc: `Berkas revisi RKA diperbaiki dan diajukan ulang.`,
+                                                                color: "emerald",
+                                                                dateStr: formatFullDate(resubDate.toISOString())
+                                                            });
+                                                        }
+                                                    });
+                                                }
+
+                                                // 4. OTORISASI & PENCAIRAN (Dari dokumen aktif yang sedang berjalan)
+                                                if (activeDoc) {
+                                                    const finalUpdateDate = activeDoc.updated_at || activeDoc.created_at;
+                                                    
+                                                    // Otorisasi Kepala Unit (Mundur sedikit dari final date agar logis)
+                                                    const otorisasiDate = new Date(finalUpdateDate);
+                                                    otorisasiDate.setMinutes(otorisasiDate.getMinutes() - 2);
+                                                    events.push({
+                                                        date: otorisasiDate,
+                                                        title: "OTORISASI KEPALA UNIT/JENJANG",
+                                                        desc: `Diverifikasi dan disetujui secara resmi oleh Kepala Unit/Jenjang.`,
+                                                        color: "emerald",
+                                                        dateStr: formatFullDate(otorisasiDate.toISOString())
+                                                    });
+
+                                                    // Persetujuan Akhir
+                                                    const finalDate = new Date(finalUpdateDate);
+                                                    events.push({
+                                                        date: finalDate,
+                                                        title: "PERSETUJUAN AKHIR & PENCAIRAN",
+                                                        desc: "Telah disetujui, dana dicairkan secara resmi oleh Bendahara Pusat (Yayasan), dan siap dilaksanakan.",
+                                                        color: "emerald",
+                                                        isFinal: true,
+                                                        dateStr: formatFullDate(finalDate.toISOString())
+                                                    });
+                                                }
+
+                                                // Sortir kronologis
+                                                events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+                                                // Tambahkan penomoran
+                                                let counter = 1;
+                                                events.forEach(e => {
+                                                    e.title = `${counter}. ${e.title}`;
+                                                    counter++;
+                                                });
+
+                                                const getDotClass = (color: string, isPulse?: boolean) => {
+                                                    let base = "absolute -left-[22px] w-3 h-3 rounded-full border-2 border-white shadow-sm font-bold z-10";
+                                                    if (color === 'emerald') base += " bg-emerald-500";
+                                                    else if (color === 'rose') base += " bg-rose-500";
+                                                    else if (color === 'amber') base += " bg-amber-500";
+                                                    if (isPulse) base += " animate-pulse";
+                                                    return base;
+                                                };
 
                                                 return (
                                                     <Fragment>
-                                                        {/* 1. Pengajuan Awal */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">1. Pengajuan Anggaran RKA</h5>
-                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                        {formatFullDate(detailRkaDoc?.created_at)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-slate-400">Diajukan oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit} dengan nominal rencana Rp {selectedItemForDetail.nominal.toLocaleString('id-ID')}.</p>
-                                                            </div>
-                                                        </div>
+                                                        {events.map((ev, idx) => {
+                                                            let titleColor = 'text-slate-800';
+                                                            if (ev.color === 'emerald' && ev.isFinal) titleColor = 'text-emerald-700';
+                                                            if (ev.color === 'rose') titleColor = 'text-rose-600';
+                                                            if (ev.color === 'amber') titleColor = 'text-amber-600';
 
-                                                        {/* Revisions (if any) */}
-                                                        {rkaHistory.map((rev: any, rIdx: number) => (
-                                                            <Fragment key={`rev-${rIdx}`}>
-                                                                <div className="relative flex items-start gap-3 font-bold">
-                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm font-bold animate-pulse"></div>
-                                                                    <div className="space-y-0.5">
+                                                            let badgeClass = 'bg-slate-100 text-slate-500';
+                                                            if (ev.isFinal) badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                                                            else if (ev.color === 'rose') badgeClass = 'bg-rose-50 text-rose-600 border border-rose-100';
+                                                            else if (ev.color === 'amber') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100';
+
+                                                            let descColor = 'text-slate-400';
+                                                            if (ev.color === 'rose' || ev.color === 'amber') descColor = 'text-slate-600 italic';
+                                                            else if (ev.isFinal) descColor = 'text-emerald-600 uppercase tracking-wider';
+
+                                                            return (
+                                                                <div key={idx} className="relative flex items-start gap-3 font-bold">
+                                                                    <div className={getDotClass(ev.color, ev.isPulse)}></div>
+                                                                    <div className="space-y-0.5 mt-[-2px]">
                                                                         <div className="flex flex-wrap items-center gap-2">
-                                                                            <h5 className="text-[10px] font-black text-rose-600 uppercase tracking-tight">Revisi Dikembalikan oleh Bendahara</h5>
-                                                                            <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[8px] font-bold border border-rose-100">
-                                                                                {formatFullDate(rev.tanggal_revisi)}
+                                                                            <h5 className={`text-[10px] font-black uppercase tracking-tight ${titleColor}`}>
+                                                                                {ev.title}
+                                                                            </h5>
+                                                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${badgeClass}`}>
+                                                                                {ev.dateStr}
                                                                             </span>
                                                                         </div>
-                                                                        <p className="text-[9px] font-bold text-slate-600 italic">"Catatan Penolakan: {rev.catatan_revisi || 'Tanpa catatan'}"</p>
+                                                                        <p className={`text-[9px] font-bold ${descColor}`}>
+                                                                            {ev.desc}
+                                                                        </p>
                                                                     </div>
                                                                 </div>
-
-                                                                <div className="relative flex items-start gap-3 font-bold">
-                                                                    <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                                    <div className="space-y-0.5">
-                                                                        <div className="flex flex-wrap items-center gap-2">
-                                                                            <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Pengajuan Kembali Proposal RKA</h5>
-                                                                            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                                {formatFullDate(rev.tanggal_revisi)}
-                                                                            </span>
-                                                                        </div>
-                                                                        <p className="text-[9px] font-bold text-slate-400">Berkas diperbaiki dan diajukan ulang oleh Bendahara Unit/Jenjang {selectedItemForDetail.unit}.</p>
-                                                                    </div>
-                                                                </div>
-                                                            </Fragment>
-                                                        ))}
-
-                                                        {/* 2. Otorisasi Kepala Unit */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">2. Otorisasi Kepala Unit/Jenjang</h5>
-                                                                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[8px] font-bold">
-                                                                        {formatFullDate(finalUpdateDate)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-slate-400">Diverifikasi dan disetujui secara resmi oleh Kepala Unit/Jenjang {selectedItemForDetail.unit}.</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 3. Persetujuan Akhir & Pencairan */}
-                                                        <div className="relative flex items-start gap-3 font-bold">
-                                                            <div className="absolute -left-[22px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm font-bold"></div>
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-tight">3. Persetujuan Akhir & Pencairan</h5>
-                                                                    <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[8px] font-bold border border-emerald-100">
-                                                                        {formatFullDate(finalUpdateDate)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Telah disetujui, dana dicairkan secara resmi oleh Bendahara Pusat (Yayasan), dan siap dilaksanakan.</p>
-                                                            </div>
-                                                        </div>
+                                                            );
+                                                        })}
                                                     </Fragment>
                                                 );
                                             })()}
