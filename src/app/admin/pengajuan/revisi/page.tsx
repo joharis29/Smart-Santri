@@ -197,6 +197,10 @@ export default function RkaRevisiPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [draftId, setDraftId] = useState<string | null>(null)
 
+  // Gate Check States
+  const [isRevisiActive, setIsRevisiActive] = useState(true)
+  const [checkingActive, setCheckingActive] = useState(true)
+
   // Metadata States
   const [unit, setUnit] = useState('')
   const [bidang, setBidang] = useState('')
@@ -207,6 +211,56 @@ export default function RkaRevisiPage() {
 
   // State for the editable revision rows
   const [rows, setRows] = useState<any[]>([])
+
+  useEffect(() => {
+    const checkGate = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('active_unit')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const activeUnit = profile?.active_unit || 'Pusat (Yayasan)'
+
+        // 1. Check Global Gate
+        const { data: globalGate } = await supabase
+          .from('kontrol_pengajuan')
+          .select('revisi_rka_aktif')
+          .eq('unit_name', 'GLOBAL')
+          .maybeSingle()
+
+        if (globalGate && globalGate.revisi_rka_aktif === false) {
+          setIsRevisiActive(false)
+          setCheckingActive(false)
+          return
+        }
+
+        // 2. Check Unit Gate
+        const { data: unitGate } = await supabase
+          .from('kontrol_pengajuan')
+          .select('revisi_rka_aktif')
+          .eq('unit_name', activeUnit)
+          .maybeSingle()
+
+        if (unitGate && unitGate.revisi_rka_aktif === false) {
+          setIsRevisiActive(false)
+        } else {
+          setIsRevisiActive(true)
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setCheckingActive(false)
+      }
+    }
+
+    checkGate()
+  }, [])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -748,6 +802,38 @@ export default function RkaRevisiPage() {
 
   const availableTahunAjaranList = ['2024/2025', '2025/2026', '2026/2027'];
   const monthNamesList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+
+  if (checkingActive) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Memeriksa Akses...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isRevisiActive) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6">
+        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10" />
+          </div>
+          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">Akses Ditutup</h1>
+          <p className="text-sm font-bold text-slate-500 mb-8">Mohon maaf, pengisian Form Revisi RKA untuk unit Anda saat ini sedang dinonaktifkan oleh Pusat (Yayasan).</p>
+          <button 
+            onClick={() => router.push('/admin')}
+            className="w-full bg-slate-900 text-white font-black text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-slate-800 transition-colors"
+          >
+            Kembali ke Dasbor
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">

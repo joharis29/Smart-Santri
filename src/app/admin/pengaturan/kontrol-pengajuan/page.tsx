@@ -21,6 +21,7 @@ interface KontrolStatus {
     unit_name: string;
     rka_aktif: boolean;
     lpj_aktif: boolean;
+    revisi_rka_aktif: boolean;
     updated_at?: string;
 }
 
@@ -69,13 +70,13 @@ export default function KontrolPengajuanPage() {
                 
                 // Add default GLOBAL if missing
                 if (!mappedData.find(d => d.unit_name === 'GLOBAL')) {
-                    mappedData.push({ unit_name: 'GLOBAL', rka_aktif: true, lpj_aktif: true });
+                    mappedData.push({ unit_name: 'GLOBAL', rka_aktif: true, lpj_aktif: true, revisi_rka_aktif: true });
                 }
 
                 // Add default standard units if missing
                 STANDARDIZED_UNITS.forEach(unit => {
                     if (!mappedData.find(d => d.unit_name === unit)) {
-                        mappedData.push({ unit_name: unit, rka_aktif: true, lpj_aktif: true });
+                        mappedData.push({ unit_name: unit, rka_aktif: true, lpj_aktif: true, revisi_rka_aktif: true });
                     }
                 });
 
@@ -96,15 +97,18 @@ export default function KontrolPengajuanPage() {
         }
     };
 
-    const handleToggle = async (unitName: string, type: 'rka' | 'lpj', currentVal: boolean) => {
+    const handleToggle = async (unitName: string, type: 'rka' | 'lpj' | 'revisi', currentVal: boolean) => {
         setIsSaving(unitName);
         setErrorMessage(null);
         setSuccessMessage(null);
 
         const updatedVal = !currentVal;
+        
+        const fieldName = type === 'rka' ? 'rka_aktif' : type === 'lpj' ? 'lpj_aktif' : 'revisi_rka_aktif';
+        
         const payload = {
             unit_name: unitName,
-            [type === 'rka' ? 'rka_aktif' : 'lpj_aktif']: updatedVal,
+            [fieldName]: updatedVal,
             updated_at: new Date().toISOString()
         };
 
@@ -123,13 +127,13 @@ export default function KontrolPengajuanPage() {
                 if (item.unit_name === unitName) {
                     return {
                         ...item,
-                        [type === 'rka' ? 'rka_aktif' : 'lpj_aktif']: updatedVal
+                        [fieldName]: updatedVal
                     };
                 }
                 return item;
             }));
 
-            setSuccessMessage(`Berhasil memperbarui akses ${type === 'rka' ? 'RKA (Pengajuan)' : 'LPJ (Realisasi)'} untuk ${unitName === 'GLOBAL' ? 'Semua Unit' : unitName}`);
+            setSuccessMessage(`Berhasil memperbarui akses ${type === 'rka' ? 'RKA (Pengajuan)' : type === 'lpj' ? 'LPJ (Realisasi)' : 'Revisi RKA'} untuk ${unitName === 'GLOBAL' ? 'Semua Unit' : unitName}`);
             
             // Auto hide success toast
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -141,7 +145,7 @@ export default function KontrolPengajuanPage() {
         }
     };
 
-    const globalConfig = statusList.find(d => d.unit_name === 'GLOBAL') || { rka_aktif: true, lpj_aktif: true };
+    const globalConfig = statusList.find(d => d.unit_name === 'GLOBAL') || { rka_aktif: true, lpj_aktif: true, revisi_rka_aktif: true };
     const unitConfigs = statusList.filter(d => d.unit_name !== 'GLOBAL');
 
     if (isLoading) {
@@ -193,7 +197,7 @@ export default function KontrolPengajuanPage() {
             )}
 
             {/* 1. GLOBAL GATEWAYS PANEL (Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* GLOBAL RKA CARD */}
                 <div className={`p-6 rounded-[2.5rem] border transition-all ${
@@ -289,6 +293,53 @@ export default function KontrolPengajuanPage() {
                     </div>
                 </div>
 
+                {/* GLOBAL REVISI RKA CARD */}
+                <div className={`p-6 rounded-[2.5rem] border transition-all ${
+                    globalConfig.revisi_rka_aktif 
+                        ? 'bg-gradient-to-br from-emerald-50/50 to-white border-emerald-200 shadow-sm shadow-emerald-50' 
+                        : 'bg-gradient-to-br from-slate-100 to-white border-slate-200'
+                }`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-3 rounded-2xl ${
+                                globalConfig.revisi_rka_aktif ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                            }`}>
+                                <RefreshCw className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight leading-none mb-1">Global Revisi (RKA)</h3>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Status Pengajuan Revisi Seluruh Unit</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => handleToggle('GLOBAL', 'revisi', globalConfig.revisi_rka_aktif)}
+                            disabled={isSaving !== null}
+                            className="focus:outline-none disabled:opacity-50 transition-opacity"
+                        >
+                            {globalConfig.revisi_rka_aktif ? (
+                                <ToggleRight className="w-12 h-8 text-emerald-600 cursor-pointer" />
+                            ) : (
+                                <ToggleLeft className="w-12 h-8 text-slate-400 cursor-pointer" />
+                            )}
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed border-slate-100">
+                        {globalConfig.revisi_rka_aktif ? (
+                            <>
+                                <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">Akses Revisi RKA Terbuka Secara Global</span>
+                            </>
+                        ) : (
+                            <>
+                                <Lock className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-wider">Semua Pengisian Revisi Dikunci Sementara</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
             {/* 2. UNIT SPECIFIC GRID CONTROL */}
@@ -299,7 +350,7 @@ export default function KontrolPengajuanPage() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matriks Izin Pengisian Dokumen Anggaran Per Sekolah/Lembaga</p>
                     </div>
 
-                    {!globalConfig.rka_aktif || !globalConfig.lpj_aktif ? (
+                    {!globalConfig.rka_aktif || !globalConfig.lpj_aktif || !globalConfig.revisi_rka_aktif ? (
                         <div className="bg-amber-50 text-amber-800 border border-amber-200 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                             Catatan: Pengunci Global Sedang Aktif
@@ -312,15 +363,17 @@ export default function KontrolPengajuanPage() {
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider">Unit / Jenjang Pesantren</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/4">Form Buat Pengajuan (RKA)</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/4">Form Buat LPJ (Realisasi)</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/6">Indikator Status</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/5">Form Buat Pengajuan (RKA)</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/5">Form Buat LPJ (Realisasi)</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-1/5">Form Buat Revisi (RKA)</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-wider text-center w-[15%]">Indikator Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {unitConfigs.map((config) => {
                                 const isRkaAllowed = globalConfig.rka_aktif && config.rka_aktif;
                                 const isLpjAllowed = globalConfig.lpj_aktif && config.lpj_aktif;
+                                const isRevisiAllowed = globalConfig.revisi_rka_aktif && config.revisi_rka_aktif;
 
                                 return (
                                     <tr key={config.unit_name} className="hover:bg-slate-50/50 transition-colors group">
@@ -382,13 +435,35 @@ export default function KontrolPengajuanPage() {
                                             </div>
                                         </td>
 
+                                        {/* Revisi RKA Toggle Switch */}
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-3">
+                                                <button
+                                                    onClick={() => handleToggle(config.unit_name, 'revisi', config.revisi_rka_aktif)}
+                                                    disabled={isSaving !== null}
+                                                    className="focus:outline-none disabled:opacity-50 transition-all"
+                                                >
+                                                    {config.revisi_rka_aktif ? (
+                                                        <ToggleRight className="w-10 h-7 text-emerald-600 cursor-pointer" />
+                                                    ) : (
+                                                        <ToggleLeft className="w-10 h-7 text-slate-400 cursor-pointer" />
+                                                    )}
+                                                </button>
+                                                <span className={`text-[10px] font-black uppercase tracking-wider ${
+                                                    config.revisi_rka_aktif ? 'text-emerald-700' : 'text-slate-400'
+                                                }`}>
+                                                    {config.revisi_rka_aktif ? 'Aktif' : 'Nonaktif'}
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         {/* Cumulative Gated Indicator Badge */}
                                         <td className="px-6 py-4 text-center">
-                                            {isRkaAllowed && isLpjAllowed ? (
+                                            {isRkaAllowed && isLpjAllowed && isRevisiAllowed ? (
                                                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[8px] font-black uppercase tracking-wider rounded-lg border border-emerald-100">
                                                     Fully Open
                                                 </span>
-                                            ) : !isRkaAllowed && !isLpjAllowed ? (
+                                            ) : !isRkaAllowed && !isLpjAllowed && !isRevisiAllowed ? (
                                                 <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-[8px] font-black uppercase tracking-wider rounded-lg border border-rose-100">
                                                     Fully Locked
                                                 </span>
