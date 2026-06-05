@@ -1489,17 +1489,7 @@ export default function RkaRevisiPage() {
                         </svg>
                     </div>
 
-                    <div className="relative z-10 space-y-4 text-center">
-                        <div className="bg-slate-700/50 w-12 h-12 rounded-full flex items-center justify-center text-emerald-400 mb-2 mx-auto border border-slate-600">
-                            <Save size={20} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-black text-white uppercase tracking-widest">Kirim Revisi RKA</h3>
-                            <p className="text-[10px] font-medium text-slate-400 mt-1.5 px-4 leading-relaxed">
-                                Revisi RKA akan dikirim ke Bendahara Unit, lalu disetujui Kepala Unit, dan terakhir oleh Bendahara Pusat. Jika disimpan sebagai Draft, dokumen ini dapat Anda edit kembali nanti.
-                            </p>
-                        </div>
-                    </div>
+
 
                     <div className="relative z-10 grid grid-cols-2 gap-3 mt-6">
 
