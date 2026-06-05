@@ -1509,121 +1509,70 @@ export default function RiwayatPengajuanPage() {
                                                 const activeDoc = isRevisiRka ? detailLpjDoc : detailRkaDoc;
                                                 const parentRka = detailRkaDoc;
 
+                                                let lastTimestamp = 0;
+
+                                                const addEvent = (rawDate: string | Date, title: string, color: string, isPulse: boolean = false, isFinal: boolean = false, desc: string = '') => {
+                                                    let d = new Date(rawDate).getTime();
+                                                    if (d <= lastTimestamp) {
+                                                        d = lastTimestamp + 1000;
+                                                    }
+                                                    lastTimestamp = d;
+                                                    events.push({
+                                                        date: new Date(d),
+                                                        title, color, isPulse, isFinal, desc,
+                                                        dateStr: formatFullDate(new Date(d).toISOString())
+                                                    });
+                                                };
+
                                                 // 1. PENGAJUAN RKA AWAL (dari parentRka)
                                                 if (parentRka?.created_at) {
-                                                    events.push({
-                                                        date: new Date(parentRka.created_at),
-                                                        title: "PENGAJUAN RKA",
-                                                        color: "emerald",
-                                                        dateStr: formatFullDate(parentRka.created_at)
-                                                    });
+                                                    addEvent(parentRka.created_at, "PENGAJUAN RKA", "emerald");
                                                 }
 
                                                 // 2. LOG REVISI RKA AWAL (dari parentRka)
-                                                const rkaHistory = parentRka?.riwayat_revisi || [];
+                                                const rkaHistory = [...(parentRka?.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                 rkaHistory.forEach((rev: any) => {
                                                     if (rev.tanggal_revisi) {
-                                                        events.push({
-                                                            date: new Date(rev.tanggal_revisi),
-                                                            title: "PENGAJUAN RKA REVISI",
-                                                            desc: `Note: ${rev.catatan_revisi || '-'}`,
-                                                            color: "amber",
-                                                            isPulse: true,
-                                                            dateStr: formatFullDate(rev.tanggal_revisi)
-                                                        });
-                                                        
-                                                        // Asumsikan pengajuan kembali dilakukan sesaat setelahnya
-                                                        const resubDate = new Date(rev.tanggal_revisi);
-                                                        resubDate.setMinutes(resubDate.getMinutes() + 5);
-                                                        events.push({
-                                                            date: resubDate,
-                                                            title: "PENGAJUAN RKA",
-                                                            color: "emerald",
-                                                            dateStr: formatFullDate(resubDate.toISOString())
-                                                        });
+                                                        addEvent(rev.tanggal_revisi, "PENGAJUAN RKA REVISI", "amber", true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                        const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
+                                                        addEvent(new Date(resubDate), "PENGAJUAN RKA", "emerald");
                                                     }
                                                 });
 
                                                 if (parentRka) {
                                                     let pApproveDate = new Date(parentRka.updated_at);
-                                                    if (pApproveDate < new Date(parentRka.created_at)) pApproveDate = new Date(parentRka.created_at);
+                                                    if (pApproveDate.getTime() <= lastTimestamp) pApproveDate = new Date(lastTimestamp + 10000);
                                                     
-                                                    const pOtoBendahara = new Date(pApproveDate); pOtoBendahara.setMinutes(pOtoBendahara.getMinutes() - 4);
-                                                    const pOtoKepala = new Date(pApproveDate); pOtoKepala.setMinutes(pOtoKepala.getMinutes() - 3);
-                                                    const pOtoPusat = new Date(pApproveDate); pOtoPusat.setMinutes(pOtoPusat.getMinutes() - 2);
-                                                    const pCair = new Date(pApproveDate); pCair.setMinutes(pCair.getMinutes() - 1);
-
-                                                    events.push({
-                                                        date: pOtoBendahara, title: `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA UNIT`, color: "emerald", dateStr: formatFullDate(pOtoBendahara.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: pOtoKepala, title: `PENGAJUAN RKA DISETUJUI OLEH KEPALA UNIT`, color: "emerald", dateStr: formatFullDate(pOtoKepala.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: pOtoPusat, title: `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA PUSAT`, color: "emerald", dateStr: formatFullDate(pOtoPusat.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: pCair, title: `PENCAIRAN DANA OLEH BENDAHARA PUSAT`, color: "emerald", dateStr: formatFullDate(pCair.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: pApproveDate, title: `DANA TELAH DITERIMA OLEH BENDAHARA UNIT`, color: "emerald", isFinal: !isRevisiRka, dateStr: formatFullDate(pApproveDate.toISOString())
-                                                    });
+                                                    addEvent(new Date(pApproveDate.getTime() - 4000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                    addEvent(new Date(pApproveDate.getTime() - 3000), `PENGAJUAN RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                    addEvent(new Date(pApproveDate.getTime() - 2000), `PENGAJUAN RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald");
+                                                    addEvent(new Date(pApproveDate.getTime() - 1000), `PENCAIRAN DANA OLEH BENDAHARA PUSAT`, "emerald");
+                                                    addEvent(pApproveDate, `DANA TELAH DITERIMA OLEH BENDAHARA UNIT`, "emerald", false, !isRevisiRka);
                                                 }
 
                                                 // 3. JIKA INI ADALAH DOKUMEN REVISI RKA
                                                 if (isRevisiRka && detailLpjDoc?.created_at) {
-                                                    events.push({
-                                                        date: new Date(detailLpjDoc.created_at),
-                                                        title: "PENGAJUAN REVISI RKA",
-                                                        color: "emerald",
-                                                        dateStr: formatFullDate(detailLpjDoc.created_at)
-                                                    });
+                                                    addEvent(detailLpjDoc.created_at, "PENGAJUAN REVISI RKA", "emerald");
 
-                                                    // LOG REVISI DARI DOKUMEN REVISI ITU SENDIRI
-                                                    const revisiHistory = detailLpjDoc.riwayat_revisi || [];
+                                                    const revisiHistory = [...(detailLpjDoc.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                     revisiHistory.forEach((rev: any) => {
                                                         if (rev.tanggal_revisi) {
-                                                            events.push({
-                                                                date: new Date(rev.tanggal_revisi),
-                                                                title: "PENGAJUAN REVISI RKA REVISI",
-                                                                desc: `Note: ${rev.catatan_revisi || '-'}`,
-                                                                color: "amber",
-                                                                isPulse: true,
-                                                                dateStr: formatFullDate(rev.tanggal_revisi)
-                                                            });
-                                                            
-                                                            const resubDate = new Date(rev.tanggal_revisi);
-                                                            resubDate.setMinutes(resubDate.getMinutes() + 5);
-                                                            events.push({
-                                                                date: resubDate,
-                                                                title: "PENGAJUAN REVISI RKA",
-                                                                color: "emerald",
-                                                                dateStr: formatFullDate(resubDate.toISOString())
-                                                            });
+                                                            addEvent(rev.tanggal_revisi, "PENGAJUAN REVISI RKA REVISI", "amber", true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                            const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
+                                                            addEvent(new Date(resubDate), "PENGAJUAN REVISI RKA", "emerald");
                                                         }
                                                     });
                                                 }
 
                                                 // 4. OTORISASI & PENCAIRAN (Dari dokumen aktif yang sedang berjalan)
                                                 if (isRevisiRka && activeDoc) {
-                                                    const finalUpdateDate = activeDoc.updated_at || activeDoc.created_at;
+                                                    let finalUpdateDate = new Date(activeDoc.updated_at || activeDoc.created_at);
+                                                    if (finalUpdateDate.getTime() <= lastTimestamp) finalUpdateDate = new Date(lastTimestamp + 10000);
                                                     
-                                                    const rOtoBendahara = new Date(finalUpdateDate); rOtoBendahara.setMinutes(rOtoBendahara.getMinutes() - 2);
-                                                    const rOtoKepala = new Date(finalUpdateDate); rOtoKepala.setMinutes(rOtoKepala.getMinutes() - 1);
-
-                                                    events.push({
-                                                        date: rOtoBendahara, title: `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA UNIT`, color: "emerald", dateStr: formatFullDate(rOtoBendahara.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: rOtoKepala, title: `PENGAJUAN REVISI RKA DISETUJUI OLEH KEPALA UNIT`, color: "emerald", dateStr: formatFullDate(rOtoKepala.toISOString())
-                                                    });
-                                                    events.push({
-                                                        date: new Date(finalUpdateDate), title: `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA PUSAT`, color: "emerald", isFinal: true, dateStr: formatFullDate(finalUpdateDate.toISOString())
-                                                    });
+                                                    addEvent(new Date(finalUpdateDate.getTime() - 2000), `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                    addEvent(new Date(finalUpdateDate.getTime() - 1000), `PENGAJUAN REVISI RKA DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                    addEvent(finalUpdateDate, `PENGAJUAN REVISI RKA DISETUJUI OLEH BENDAHARA PUSAT`, "emerald", false, true);
                                                 }
-
-                                                // Sortir kronologis
-                                                events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
                                                 // Tambahkan penomoran
                                                 let counter = 1;
