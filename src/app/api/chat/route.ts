@@ -12,14 +12,14 @@ const supabase = createClient(
 const embeddings = new GoogleGenerativeAIEmbeddings({
   apiKey: process.env.GEMINI_API_KEY,
   modelName: 'gemini-embedding-001',
-  maxRetries: 0,
+  maxRetries: 3,
 });
 
 const llm = new ChatGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
   model: 'gemini-flash-latest', // Menggunakan alias terbaru
   temperature: 0.3, // Sedikit kreativitas untuk gaya bahasa asisten, tapi tetap faktual
-  maxRetries: 0,
+  maxRetries: 3,
 });
 
 export async function POST(req: NextRequest) {

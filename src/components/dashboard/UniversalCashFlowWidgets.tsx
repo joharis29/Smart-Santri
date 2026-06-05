@@ -17,6 +17,7 @@ export function UniversalCashFlowWidgets({
         colorType="emerald" 
         subtitle="Akumulasi Seluruh Dana Masuk"
         isVisible={true}
+        hideBadge={true}
       />
       <WidgetCard 
         title="Total Pengeluaran (Tahun Ajaran Ini)" 
@@ -26,6 +27,7 @@ export function UniversalCashFlowWidgets({
         colorType="accent" 
         subtitle="Akumulasi Seluruh Belanja / LPJ"
         isVisible={true}
+        hideBadge={true}
       />
     </div>
   );

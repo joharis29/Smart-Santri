@@ -107,6 +107,28 @@ export default function BukuBesarPage() {
         return `Kas Bank (Dompet SPP)`;
     };
 
+    const getExpenseAccountName = (item: LedgerEntry) => {
+        const coa = item.coa.toUpperCase();
+        
+        // Kewajiban / Titipan
+        if (coa.includes('TABUNGAN')) {
+            return `Penarikan ${item.coa}`;
+        }
+        
+        // Dana Terikat (Non-Operasional)
+        if (coa.includes('ZAKAT') || 
+            coa.includes('WAKAF') || 
+            coa.includes('QURBAN') || 
+            coa.includes('FIDYAH') || 
+            coa.includes('KAFARAT') || 
+            (coa.includes('INFAQ') && !coa.includes('BEBAS'))) {
+            return `Penyaluran ${item.coa}`;
+        }
+        
+        // Default (Operasional / Lainnya)
+        return `Beban Operasional ${item.coa}`;
+    };
+
     // Close menus when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -958,7 +980,7 @@ export default function BukuBesarPage() {
                                                 <>
                                                     <tr>
                                                         <td className="py-4 text-xs font-black text-slate-800">
-                                                            Beban Operasional {selectedJournalItem.coa}
+                                                            {getExpenseAccountName(selectedJournalItem)}
                                                         </td>
                                                         <td className="py-4 text-xs font-black text-rose-600 text-right">
                                                             {selectedJournalItem.nominal.toLocaleString('id-ID')}

@@ -4,21 +4,23 @@ import { LucideIcon } from 'lucide-react';
 interface WidgetCardProps {
   title: string;
   amount: string;
-  type: 'Restricted' | 'Unrestricted';
+  type?: 'Restricted' | 'Unrestricted';
   icon: LucideIcon;
   colorType?: 'primary' | 'accent' | 'slate' | 'emerald';
   subtitle?: string;
   isVisible?: boolean;
+  hideBadge?: boolean;
 }
 
 export function WidgetCard({ 
   title, 
   amount, 
-  type, 
+  type = 'Unrestricted', 
   icon: Icon, 
   colorType = 'primary', 
   subtitle,
-  isVisible = true 
+  isVisible = true,
+  hideBadge = false
 }: WidgetCardProps) {
   if (!isVisible) return null;
 
@@ -37,9 +39,13 @@ export function WidgetCard({
   return (
     <div className={`bg-white rounded-xl shadow-sm border-l-4 ${bgBorderMap[colorType]} p-3 hover:shadow-md transition-shadow`}>
       <div className="flex justify-between items-start mb-1.5">
-        <span className={`${typeBadgeMap[type]} text-[8px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider`}>
-          {type === 'Restricted' ? 'Dana Dengan Pembatasan' : 'Dana Tanpa Pembatasan'}
-        </span>
+        {!hideBadge ? (
+          <span className={`${typeBadgeMap[type]} text-[8px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider`}>
+            {type === 'Restricted' ? 'Dana Dengan Pembatasan' : 'Dana Tanpa Pembatasan'}
+          </span>
+        ) : (
+          <div className="h-4"></div>
+        )}
         <Icon className="text-slate-300 w-4 h-4" />
       </div>
       <p className="text-slate-500 text-xs font-semibold mb-0.5 truncate">{title}</p>
