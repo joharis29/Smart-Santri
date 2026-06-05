@@ -241,9 +241,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="flex flex-col h-full">
                     <div className="p-6">
                         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                            <div className="bg-[var(--color-accent)] p-2 rounded-xl">
-                                <ShieldCheck className="text-[var(--color-primary)] w-5 h-5" />
-                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/philosophy-logo.png" alt="Smart Santri Logo" className="w-10 h-10 rounded-xl object-cover border-2 border-[var(--color-accent)] bg-white" />
                             <span className="text-lg font-extrabold text-white tracking-tight">
                                 Smart <span className="text-[var(--color-accent)]">Santri</span>
                             </span>
