@@ -134,7 +134,12 @@ export default function InputPengeluaranPage() {
         if (lower.includes('bos')) return 'BOS';
         if (lower.includes('spp')) return 'SPP';
         if (lower.includes('zakat')) return 'ZAKAT';
-        if (lower.includes('infaq')) return 'INFAQ';
+        if (lower.includes('infaq')) {
+            if (lower.includes('terikat') || lower.includes('pembatasan')) {
+                return 'INFAQ_TERIKAT';
+            }
+            return 'INFAQ';
+        }
         if (lower.includes('koperasi')) return 'KOPERASI';
         if (lower.includes('poskestren')) return 'POSKESTREN';
         if (lower.includes('tabungan wajib')) return 'TABUNGAN_WAJIB';

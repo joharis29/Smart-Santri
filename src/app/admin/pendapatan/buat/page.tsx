@@ -608,7 +608,7 @@ export default function InputPendapatanPage() {
             </div>
 
             {/* Sumber Dana Tabs */}
-            <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200/80 overflow-x-auto scrollbar-none flex gap-1">
+            <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200/80 overflow-x-auto scrollbar-thin flex gap-1 pb-1.5">
                 {availableSources.map(source => (
                     <button 
                         key={source}

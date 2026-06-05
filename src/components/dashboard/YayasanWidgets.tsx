@@ -51,12 +51,21 @@ export function YayasanWidgets({
         isVisible={preferences.showWakaf !== false}
       />
       <WidgetCard 
-        title="Dana Infaq" 
+        title="Infaq & Sedekah Bebas" 
         amount={`Rp ${(balances['INFAQ'] || 0).toLocaleString('id-ID')}`} 
         type="Unrestricted" 
         icon={HandCoins} 
         colorType="emerald" 
         subtitle="Dana Bebas / Operasional Tambahan"
+        isVisible={preferences.showInfaqYayasan}
+      />
+      <WidgetCard 
+        title="Infaq & Sedekah Terikat" 
+        amount={`Rp ${(balances['INFAQ_TERIKAT'] || 0).toLocaleString('id-ID')}`} 
+        type="Restricted" 
+        icon={HandCoins} 
+        colorType="accent" 
+        subtitle="Dana Dengan Pembatasan"
         isVisible={preferences.showInfaqYayasan}
       />
       <WidgetCard 

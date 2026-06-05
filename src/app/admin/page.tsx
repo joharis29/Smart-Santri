@@ -490,26 +490,49 @@ export default function AdminDashboardPage() {
         const firstDay = `${startYear}-07-01`;
         const lastDay = `${endYear}-06-30`;
 
+        // Filter function for non-operational funds (ZISWAF & Titipan)
+        const isNonOperational = (sumberDana: string) => {
+          if (!sumberDana) return false;
+          const upper = sumberDana.toUpperCase();
+          
+          if (upper.includes('TABUNGAN')) return true;
+          if (upper.includes('UANG SAKU')) return true;
+          if (upper.includes('IURAN NON-WAJIB')) return true;
+          if (upper.includes('ZAKAT')) return true;
+          if (upper.includes('WAKAF')) return true;
+          
+          // Infaq/Sedekah Bebas are operational, only Terikat are excluded
+          if ((upper.includes('INFAQ') || upper.includes('SEDEKAH')) && upper.includes('TERIKAT')) return true;
+          
+          return false;
+        };
+
         const { data: txOutData, error: txOutError } = await supabase
           .from('transaksi_pengeluaran')
-          .select('nominal')
+          .select('nominal, sumber_dana')
           .eq('unit', activeUnit.trim())
           .gte('tanggal', firstDay)
           .lte('tanggal', lastDay);
 
         if (!txOutError && txOutData) {
-          newBalances['AKUMULASI_PENGELUARAN'] = txOutData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
+          newBalances['AKUMULASI_PENGELUARAN'] = txOutData.reduce((acc, tx) => {
+            if (isNonOperational(tx.sumber_dana)) return acc;
+            return acc + (Number(tx.nominal) || 0);
+          }, 0);
         }
 
         const { data: txInData, error: txInError } = await supabase
           .from('transaksi_pendapatan')
-          .select('nominal')
+          .select('nominal, sumber_dana')
           .eq('unit', activeUnit.trim())
           .gte('tanggal', firstDay)
           .lte('tanggal', lastDay);
 
         if (!txInError && txInData) {
-          newBalances['AKUMULASI_PEMASUKAN'] = txInData.reduce((acc, tx) => acc + (Number(tx.nominal) || 0), 0);
+          newBalances['AKUMULASI_PEMASUKAN'] = txInData.reduce((acc, tx) => {
+            if (isNonOperational(tx.sumber_dana)) return acc;
+            return acc + (Number(tx.nominal) || 0);
+          }, 0);
         }
 
         activeWallets.forEach((w: any) => {
@@ -526,7 +549,8 @@ export default function AdminDashboardPage() {
           if (catUP === 'DANA PESANTREN/YAYASAN' || catUP === 'DANA PESANTREN / YAYASAN' || catUP === 'YAYASAN' || catUP === 'DANA PESANTREN') newBalances['YAYASAN'] = Number(w.saldo);
           if (catUP === 'DANA ZAKAT' || catUP === 'ZAKAT') newBalances['ZAKAT'] = Number(w.saldo);
           if (catUP === 'DANA WAKAF' || catUP === 'WAKAF') newBalances['WAKAF'] = Number(w.saldo);
-          if (catUP === 'DANA INFAQ' || catUP === 'INFAQ') newBalances['INFAQ'] = Number(w.saldo);
+          if (catUP === 'DANA INFAQ' || catUP === 'INFAQ' || catUP === 'DANA INFAQ & SEDEKAH BEBAS' || catUP === 'INFAQ & SEDEKAH BEBAS') newBalances['INFAQ'] = Number(w.saldo);
+          if (catUP === 'DANA INFAQ TERIKAT' || catUP === 'INFAQ TERIKAT' || catUP === 'DANA INFAQ & SEDEKAH TERIKAT' || catUP === 'INFAQ & SEDEKAH TERIKAT') newBalances['INFAQ_TERIKAT'] = Number(w.saldo);
           if (catUP === 'LABA USAHA KOPERASI' || catUP === 'KOPERASI') newBalances['KOPERASI'] = Number(w.saldo);
           if (catUP === 'LABA USAHA POSKESTREN' || catUP === 'POSKESTREN') newBalances['POSKESTREN'] = Number(w.saldo);
           if (catUP === 'TABUNGAN WAJIB') newBalances['TABUNGAN_WAJIB'] = Number(w.saldo);
