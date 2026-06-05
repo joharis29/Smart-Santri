@@ -1478,7 +1478,7 @@ export default function RkaRevisiPage() {
                 </div>
 
                 {/* Submit Box */}
-                <div className="bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-700 flex flex-col justify-between h-full relative overflow-hidden">
+                <div className="bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-700 h-fit self-end relative overflow-hidden w-full">
                     {/* Background Pattern */}
                     <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
                         <svg width="120" height="120" viewBox="0 0 100 100">
@@ -1489,9 +1489,7 @@ export default function RkaRevisiPage() {
                         </svg>
                     </div>
 
-
-
-                    <div className="relative z-10 grid grid-cols-2 gap-3 mt-6">
+                    <div className="relative z-10 grid grid-cols-2 gap-3">
 
                         <button 
                             onClick={handleSaveDraft}
