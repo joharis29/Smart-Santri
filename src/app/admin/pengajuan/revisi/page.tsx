@@ -849,14 +849,28 @@ export default function RkaRevisiPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 border-b pb-4">
-        <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
-          <FileEdit size={24} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
+            <FileEdit size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Buat Revisi RKA</h1>
+            <p className="text-gray-500">Ajukan perubahan (realokasi) pagu dan item rincian dari RKA yang sudah cair.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Buat Revisi RKA</h1>
-          <p className="text-gray-500">Ajukan perubahan (realokasi) pagu dan item rincian dari RKA yang sudah cair.</p>
-        </div>
+
+        {selectedRka && (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleExportExcelProfessional}
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-extrabold px-4 py-2 rounded-xl text-xs transition-all shadow-sm whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Ekspor Excel
+            </button>
+          </div>
+        )}
       </div>
 
       {errorMsg && (
@@ -1488,13 +1502,6 @@ export default function RkaRevisiPage() {
                     </div>
 
                     <div className="relative z-10 grid grid-cols-2 gap-3 mt-6">
-                        <button 
-                            onClick={handleExportExcelProfessional}
-                            className="col-span-2 w-full py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 flex items-center justify-center gap-2"
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            Ekspor Excel
-                        </button>
 
                         <button 
                             onClick={handleSaveDraft}
