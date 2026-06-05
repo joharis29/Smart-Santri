@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info } from 'lucide-react';
+import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin } from './actions';
 import ExcelJS from 'exceljs';
@@ -147,6 +147,17 @@ export default function UserManagementPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: keyof UserData; direction: 'asc' | 'desc' } | null>(null);
+
+  const requestSort = (key: keyof UserData) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   // Filter users
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -162,9 +173,24 @@ export default function UserManagementPage() {
     return matchesSearch && matchesRole && matchesStatus && matchesUnit;
   });
 
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    
+    let aValue = a[key] || '';
+    let bValue = b[key] || '';
+    
+    if (typeof aValue === 'string') aValue = (aValue as string).toLowerCase();
+    if (typeof bValue === 'string') bValue = (bValue as string).toLowerCase();
+
+    if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   // Export users to Excel (.xlsx) with premium styling matching the user's reference
   const handleExportExcel = async () => {
-    if (filteredUsers.length === 0) {
+    if (sortedUsers.length === 0) {
       alert('Tidak ada data pengguna untuk diekspor!');
       return;
     }
@@ -185,8 +211,8 @@ export default function UserManagementPage() {
         { header: 'Tanggal Terdaftar', key: 'joinedAt', width: 18 }
       ];
 
-      // 3. Add rows from filteredUsers
-      filteredUsers.forEach((user, idx) => {
+      // 3. Add rows from sortedUsers
+      sortedUsers.forEach((user, idx) => {
         worksheet.addRow({
           no: idx + 1,
           name: user.name,
@@ -593,22 +619,30 @@ export default function UserManagementPage() {
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Pengguna</th>
-                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Peran (Role)</th>
-                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap">Unit Aktif</th>
-                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap text-center">Status</th>
+                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort('name')}>
+                  <div className="flex items-center gap-1">Pengguna {sortConfig?.key === 'name' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                </th>
+                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort('role')}>
+                  <div className="flex items-center gap-1">Peran (Role) {sortConfig?.key === 'role' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                </th>
+                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => requestSort('unit')}>
+                  <div className="flex items-center gap-1">Unit Aktif {sortConfig?.key === 'unit' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                </th>
+                <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors text-center" onClick={() => requestSort('status')}>
+                  <div className="flex items-center justify-center gap-1">Status {sortConfig?.key === 'status' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                </th>
                 <th className="px-6 py-4 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredUsers.length === 0 ? (
+              {sortedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <p className="text-slate-500 font-medium text-sm">Tidak ada pengguna yang cocok dengan pencarian Anda.</p>
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                sortedUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -713,7 +747,7 @@ export default function UserManagementPage() {
         
         {/* Pagination Dummy */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-slate-500 font-medium">Menampilkan <span className="font-bold text-slate-800">{filteredUsers.length}</span> dari <span className="font-bold text-slate-800">{users.length}</span> pengguna</p>
+          <p className="text-xs text-slate-500 font-medium">Menampilkan <span className="font-bold text-slate-800">{sortedUsers.length}</span> dari <span className="font-bold text-slate-800">{users.length}</span> pengguna</p>
           <div className="flex gap-1">
             <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Sebelumnya</button>
             <button className="px-3 py-1.5 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50">1</button>
