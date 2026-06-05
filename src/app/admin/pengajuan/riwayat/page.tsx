@@ -1524,6 +1524,23 @@ export default function RiwayatPengajuanPage() {
                                                     });
                                                 };
 
+                                                const injectApprovalsBeforeRevisi = (rev: any, typePrefix: string) => {
+                                                    const revTime = new Date(rev.tanggal_revisi).getTime();
+                                                    const status = rev.status_sebelumnya || '';
+                                                    const note = `Note: ${rev.catatan_revisi || '-'}`;
+
+                                                    if (status === 'MENUNGGU_KEPALA') {
+                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH KEPALA UNIT`, "rose", true, false, note);
+                                                    } else if (status === 'MENUNGGU_PUSAT' || status === 'MENUNGGU_VERIFIKASI_PUSAT') {
+                                                        addEvent(new Date(revTime - 4000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald");
+                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH KEPALA UNIT`, "emerald");
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA PUSAT`, "rose", true, false, note);
+                                                    } else {
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA UNIT`, "rose", true, false, note);
+                                                    }
+                                                };
+
                                                 // 1. PENGAJUAN RKA AWAL (dari parentRka)
                                                 if (parentRka?.created_at) {
                                                     addEvent(parentRka.created_at, "PENGAJUAN RKA", "emerald");
@@ -1533,7 +1550,7 @@ export default function RiwayatPengajuanPage() {
                                                 const rkaHistory = [...(parentRka?.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                 rkaHistory.forEach((rev: any) => {
                                                     if (rev.tanggal_revisi) {
-                                                        addEvent(rev.tanggal_revisi, "PENGAJUAN RKA REVISI", "amber", true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                        injectApprovalsBeforeRevisi(rev, "PENGAJUAN RKA");
                                                         const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
                                                         addEvent(new Date(resubDate), "PENGAJUAN RKA", "emerald");
                                                     }
@@ -1557,7 +1574,7 @@ export default function RiwayatPengajuanPage() {
                                                     const revisiHistory = [...(detailLpjDoc.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                     revisiHistory.forEach((rev: any) => {
                                                         if (rev.tanggal_revisi) {
-                                                            addEvent(rev.tanggal_revisi, "PENGAJUAN REVISI RKA REVISI", "amber", true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                            injectApprovalsBeforeRevisi(rev, "PENGAJUAN REVISI RKA");
                                                             const resubDate = new Date(rev.tanggal_revisi).getTime() + 60000;
                                                             addEvent(new Date(resubDate), "PENGAJUAN REVISI RKA", "emerald");
                                                         }

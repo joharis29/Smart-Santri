@@ -1892,6 +1892,23 @@ export default function RiwayatDokumenPage() {
                                                     });
                                                 };
 
+                                                const injectApprovalsBeforeRevisi = (rev: any, typePrefix: string) => {
+                                                    const revTime = new Date(rev.tanggal_revisi).getTime();
+                                                    const status = rev.status_sebelumnya || '';
+                                                    const note = `Note: ${rev.catatan_revisi || '-'}`;
+
+                                                    if (status === 'MENUNGGU_KEPALA') {
+                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald", true);
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH KEPALA UNIT`, "rose", true, true, false, note);
+                                                    } else if (status === 'MENUNGGU_PUSAT' || status === 'MENUNGGU_VERIFIKASI_PUSAT') {
+                                                        addEvent(new Date(revTime - 4000), `${typePrefix} DISETUJUI OLEH BENDAHARA UNIT`, "emerald", true);
+                                                        addEvent(new Date(revTime - 3000), `${typePrefix} DISETUJUI OLEH KEPALA UNIT`, "emerald", true);
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA PUSAT`, "rose", true, true, false, note);
+                                                    } else {
+                                                        addEvent(rev.tanggal_revisi, `${typePrefix} DIREVISI OLEH BENDAHARA UNIT`, "rose", true, true, false, note);
+                                                    }
+                                                };
+
                                                 // 1. RKA (If exists)
                                                 if (detailRkaDoc) {
                                                     const isRevisiRka = detailRkaDoc.jenis === 'REVISI_RKA';
@@ -1902,7 +1919,7 @@ export default function RiwayatDokumenPage() {
 
                                                         const pHistory = [...(parentRka.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                         pHistory.forEach((rev: any) => {
-                                                            addEvent(rev.tanggal_revisi, "PENGAJUAN RKA REVISI", "amber", true, true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                            injectApprovalsBeforeRevisi(rev, "PENGAJUAN RKA");
                                                             addEvent(new Date(new Date(rev.tanggal_revisi).getTime() + 60000), "PENGAJUAN RKA", "emerald", true);
                                                         });
 
@@ -1921,7 +1938,7 @@ export default function RiwayatDokumenPage() {
 
                                                         const rHistory = [...(detailRkaDoc.riwayat_revisi || [])].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                         rHistory.forEach((rev: any) => {
-                                                            addEvent(rev.tanggal_revisi, "PENGAJUAN REVISI RKA REVISI", "amber", true, true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                            injectApprovalsBeforeRevisi(rev, "PENGAJUAN REVISI RKA");
                                                             addEvent(new Date(new Date(rev.tanggal_revisi).getTime() + 60000), "PENGAJUAN REVISI RKA", "emerald", true);
                                                         });
 
@@ -1941,7 +1958,7 @@ export default function RiwayatDokumenPage() {
 
                                                 const sortedLpjHistory = [...lpjHistory].sort((a: any, b: any) => new Date(a.tanggal_revisi).getTime() - new Date(b.tanggal_revisi).getTime());
                                                 sortedLpjHistory.forEach((rev: any) => {
-                                                    addEvent(rev.tanggal_revisi, "PENGAJUAN LAPORAN LPJ REVISI", "rose", true, true, false, `Note: ${rev.catatan_revisi || '-'}`);
+                                                    injectApprovalsBeforeRevisi(rev, "PENGAJUAN LAPORAN LPJ");
                                                     addEvent(new Date(new Date(rev.tanggal_revisi).getTime() + 60000), "PENGAJUAN LAPORAN LPJ", "emerald", true);
                                                 });
 
