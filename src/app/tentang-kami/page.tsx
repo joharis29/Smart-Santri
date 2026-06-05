@@ -18,8 +18,9 @@ export default function TentangKamiPage() {
                         Kembali ke Beranda
                     </Link>
                     
-                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3">
-                        <ShieldCheck className="w-10 h-10 text-emerald-700 -rotate-3" />
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3 bg-white p-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/philosophy-logo.png" alt="Smart Santri Logo" className="w-full h-full object-cover rounded-xl -rotate-3" />
                     </div>
                     
                     <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4 tracking-tight">Tentang Smart Santri</h1>
