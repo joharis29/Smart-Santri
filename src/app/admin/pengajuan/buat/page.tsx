@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   PlusCircle,
@@ -303,6 +304,105 @@ const BIDANG_BY_UNIT: Record<string, string[]> = {
     'Pengadaan Bahan',
     'Operasional Dapur'
   ]
+};
+
+const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih Program --" }: { value: string, options: string[], onChange: (val: string) => void, placeholder?: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node) &&
+                !(dropdownRef.current && dropdownRef.current.contains(e.target as Node))) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (isOpen && wrapperRef.current) {
+            const rect = wrapperRef.current.getBoundingClientRect();
+            setDropdownStyle({
+                position: 'fixed',
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: Math.max(rect.width, 300),
+                zIndex: 99999
+            });
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handleScroll = (e: Event) => {
+            if (isOpen) {
+                if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) return;
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('scroll', handleScroll, true);
+        return () => window.removeEventListener('scroll', handleScroll, true);
+    }, [isOpen]);
+
+    const filteredOptions = useMemo(() => {
+        if (!search) return options;
+        return options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
+    }, [options, search]);
+
+    return (
+        <div ref={wrapperRef} className="relative w-full h-10">
+            <div 
+                onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
+                className={`w-full h-full px-3 pr-8 bg-white outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer flex items-center ${value === '' ? 'text-slate-400 italic' : 'text-black'}`}
+            >
+                <span className="truncate">{value || placeholder}</span>
+                <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
+            </div>
+            
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div ref={dropdownRef} style={dropdownStyle} className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-slate-100 bg-slate-50">
+                        <input
+                            type="text"
+                            autoFocus
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Ketik untuk mencari program..."
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:font-normal text-slate-700 shadow-inner"
+                        />
+                    </div>
+                    <ul className="max-h-56 overflow-y-auto p-1 bg-white">
+                        {!options.includes(value) && value !== '' && !search && (
+                            <li 
+                                onClick={() => { onChange(value); setIsOpen(false); }}
+                                className="px-3 py-2 text-[10px] font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-md cursor-pointer mb-1 bg-slate-50 border border-slate-100 italic"
+                            >
+                                {value} (Asli)
+                            </li>
+                        )}
+                        {filteredOptions.length === 0 ? (
+                            <li className="px-3 py-4 text-center text-[10px] text-slate-400 italic">Program tidak ditemukan</li>
+                        ) : (
+                            filteredOptions.map(opt => (
+                                <li 
+                                    key={opt}
+                                    onClick={() => { onChange(opt); setIsOpen(false); }}
+                                    className={`px-3 py-2 text-[10px] font-bold rounded-md cursor-pointer mb-0.5 transition-colors ${value === opt ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    {opt}
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
 };
 
 function BuatPengajuanContent() {
@@ -1728,20 +1828,13 @@ function BuatPengajuanContent() {
                       <td className="px-3 py-2 text-center text-xs font-bold text-slate-400">
                         {row.isFilled ? index + 1 : <span className="opacity-20 italic">auto</span>}
                       </td>
-                      <td className="p-0 relative group border-r border-slate-100">
-                        <input 
-                          list={`programs-${row.id}`}
+                      <td className="p-0 border-r border-slate-100">
+                        <SearchableCombobox 
                           value={row.program}
-                          onChange={(e) => updateRow(row.id, 'program', e.target.value)}
-                          className={`w-full h-10 px-3 pr-8 bg-white border border-slate-200 outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all ${row.program === '' ? 'text-slate-600 italic' : 'text-black'}`}
+                          options={availablePrograms}
+                          onChange={(val) => updateRow(row.id, 'program', val)}
                           placeholder="Pilih atau ketik program..."
                         />
-                        <datalist id={`programs-${row.id}`}>
-                          {availablePrograms.map(prog => (
-                            <option key={prog} value={prog} />
-                          ))}
-                        </datalist>
-                        <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                       </td>
                       <td className="p-0 border-r border-slate-100">
                         <input 
