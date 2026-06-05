@@ -66,9 +66,8 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2">
-                            <div className="bg-primary p-2 rounded-lg">
-                                <ShieldCheck className="text-accent w-6 h-6" />
-                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/philosophy-logo.png" alt="Smart Santri Logo" className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-100" />
                             <span className="font-serif text-2xl font-bold text-primary tracking-tight">Smart <span className="text-accent">Santri</span></span>
                         </div>
 
@@ -131,7 +130,8 @@ export default function LandingPage() {
                                     {/* Top Navigation Mock */}
                                     <div className="h-8 md:h-10 bg-white border-b border-slate-200 flex items-center px-4 justify-between z-10 shadow-sm">
                                         <div className="flex items-center gap-2">
-                                            <ShieldCheck className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src="/philosophy-logo.png" alt="Logo" className="w-4 h-4 md:w-5 md:h-5 rounded-[4px] object-cover shadow-sm border border-slate-200" />
                                             <span className="text-[10px] md:text-xs font-bold text-primary tracking-tight">Smart Santri</span>
                                         </div>
                                         <div className="flex items-center gap-3">
