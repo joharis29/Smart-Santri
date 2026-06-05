@@ -597,7 +597,7 @@ export async function revisiPengajuan(id: string, catatan: string, itemNotes?: R
   try {
     await appendAuditLog(id, {
         action: 'REVISI',
-        actor_id: user.id,
+        actor_id: user?.id || '',
         actor_name: userProfile?.full_name || 'Peninjau',
         actor_role: userProfile?.role || 'VERIFIKATOR',
         status_baru: 'REVISI',
@@ -755,7 +755,7 @@ export async function verifikasiPengajuan(id: string, nextStatus?: string, metod
 
     await appendAuditLog(id, {
         action: actionDesc,
-        actor_id: user.id,
+        actor_id: user?.id || '',
         actor_name: userProfile?.full_name || 'Verifikator',
         actor_role: userProfile?.role || 'VERIFIKATOR',
         status_baru: nextStatus || 'MENUNGGU_KEPALA',
@@ -1142,7 +1142,7 @@ export async function saveLPJ(payload: {
         if (payload.id && payload.status === 'MENUNGGU_VERIFIKASI') {
             notes = "Revisi LPJ dikirim.";
         }
-        await appendAuditLog(docId, {
+        await appendAuditLog(docId as string, {
             action: payload.id && payload.status === 'MENUNGGU_VERIFIKASI' ? 'SUBMIT_LPJ_REVISI' : 'SUBMIT_LPJ',
             actor_id: pembuat_id,
             actor_name: profile?.full_name || 'Staf',
