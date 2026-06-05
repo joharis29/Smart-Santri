@@ -40,7 +40,7 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
     
     // Default values
     let icon = Wallet;
-    let colorType: 'emerald' | 'accent' | 'blue' | 'amber' | 'rose' | 'slate' = 'emerald';
+    let colorType: 'emerald' | 'accent' | 'primary' | 'amber' | 'rose' | 'slate' = 'emerald';
     let type: 'Restricted' | 'Unrestricted' = 'Unrestricted';
     let subtitle = "Dana Operasional / Custom";
 
@@ -82,7 +82,7 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
       subtitle = "Uang Jajan Santri (Titipan)";
     } else if (lower.includes('bos') || lower.includes('bantuan')) {
       icon = Briefcase;
-      colorType = 'blue';
+      colorType = 'primary';
       subtitle = "Dana Bantuan Operasional";
     } else if (lower.includes('yayasan') || lower.includes('pesantren') || lower.includes('subsidi')) {
       icon = Landmark;
