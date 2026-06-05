@@ -10,6 +10,9 @@ interface WidgetCardProps {
   subtitle?: string;
   isVisible?: boolean;
   hideBadge?: boolean;
+  bgClass?: string;
+  titleClass?: string;
+  amountClass?: string;
 }
 
 export function WidgetCard({ 
@@ -20,7 +23,10 @@ export function WidgetCard({
   colorType = 'primary', 
   subtitle,
   isVisible = true,
-  hideBadge = false
+  hideBadge = false,
+  bgClass = 'bg-white',
+  titleClass = 'text-slate-500 text-xs font-semibold',
+  amountClass
 }: WidgetCardProps) {
   if (!isVisible) return null;
 
@@ -37,7 +43,7 @@ export function WidgetCard({
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border-l-4 ${bgBorderMap[colorType]} p-3 hover:shadow-md transition-shadow`}>
+    <div className={`${bgClass} rounded-xl shadow-sm border-l-4 ${bgBorderMap[colorType]} p-3 hover:shadow-md transition-shadow`}>
       <div className="flex justify-between items-start mb-1.5">
         {!hideBadge ? (
           <span className={`${typeBadgeMap[type]} text-[8px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider`}>
@@ -48,8 +54,8 @@ export function WidgetCard({
         )}
         <Icon className="text-slate-300 w-4 h-4" />
       </div>
-      <p className="text-slate-500 text-xs font-semibold mb-0.5 truncate">{title}</p>
-      <h3 className={`text-xl font-extrabold ${colorType === 'emerald' ? 'text-slate-900' : 'text-primary'} tracking-tight`}>
+      <p className={`${titleClass} mb-0.5 truncate`}>{title}</p>
+      <h3 className={`text-xl font-extrabold ${amountClass || (colorType === 'emerald' ? 'text-slate-900' : 'text-primary')} tracking-tight`}>
         {amount}
       </h3>
       {subtitle && (

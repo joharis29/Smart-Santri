@@ -18,6 +18,9 @@ export function UniversalCashFlowWidgets({
         subtitle="Akumulasi Seluruh Dana Masuk"
         isVisible={true}
         hideBadge={true}
+        bgClass="bg-emerald-100"
+        titleClass="text-emerald-900 text-xs font-black"
+        amountClass="text-emerald-900"
       />
       <WidgetCard 
         title="Total Pengeluaran (Tahun Ajaran Ini)" 
@@ -28,6 +31,9 @@ export function UniversalCashFlowWidgets({
         subtitle="Akumulasi Seluruh Belanja / LPJ"
         isVisible={true}
         hideBadge={true}
+        bgClass="bg-yellow-200"
+        titleClass="text-yellow-900 text-xs font-black"
+        amountClass="text-yellow-900"
       />
     </div>
   );
