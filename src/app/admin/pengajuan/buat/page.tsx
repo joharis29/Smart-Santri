@@ -672,12 +672,7 @@ function BuatPengajuanContent() {
     fetchCustomMetadata();
   }, [unit]);
 
-  // Reset bidang if it is no longer valid for the selected unit
-  useEffect(() => {
-    if (availableBidangs.length > 0 && bidang && !availableBidangs.includes(bidang)) {
-      setBidang('')
-    }
-  }, [availableBidangs, bidang])
+  // Remove problematic useEffect that resets bidang prematurely
 
   // Load Edit Data if ID present
   useEffect(() => {
@@ -1667,7 +1662,10 @@ function BuatPengajuanContent() {
                 </label>
                 <select 
                   value={unit} 
-                  onChange={(e) => setUnit(e.target.value)}
+                  onChange={(e) => {
+                      setUnit(e.target.value)
+                      setBidang('')
+                  }}
                   className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 disabled:bg-slate-100 disabled:text-slate-500"
                   disabled={!isCenter}
                 >

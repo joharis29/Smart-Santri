@@ -299,20 +299,7 @@ export default function BuatRealisasiPage() {
         fetchCustomMetadata();
     }, [unit]);
 
-    // Ensure the current RKA's bidang is available in the list so it doesn't get cleared incorrectly
-    useEffect(() => {
-        if (bidang && availableBidangs.length > 0) {
-            const exactMatch = availableBidangs.includes(bidang);
-            if (!exactMatch) {
-                const caseInsensitiveMatch = availableBidangs.find(b => b.toLowerCase() === bidang.toLowerCase());
-                if (caseInsensitiveMatch) {
-                    setBidang(caseInsensitiveMatch);
-                } else {
-                    setAvailableBidangs(prev => [...prev, bidang]);
-                }
-            }
-        }
-    }, [bidang, availableBidangs]);
+    // Remove problematic useEffect that resets bidang prematurely
 
     const [bulan, setBulan] = useState('');
     const [tahunAjaran, setTahunAjaran] = useState('');
