@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'STAFF' | 'BENDAHARA_UNIT' | 'KEPALA_UNIT' | 'BENDAHARA_PUSAT'>('BENDAHARA_PUSAT');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'RKA' | 'LPJ'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'RKA' | 'REVISI_RKA' | 'LPJ'>('ALL');
   const [userId, setUserId] = useState<string>('');
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
@@ -661,8 +661,8 @@ export default function AdminDashboardPage() {
       if (t.status === 'DRAFT' || t.status === 'REVISI') return false;
     }
     
-    // SEMUA ROLE: Sembunyikan status akhir (Sudah Diterima / Selesai) dan DRAFT dari Dasbor
-    if (['SUDAH DITERIMA', 'SELESAI', 'DRAFT'].includes(t.status)) return false;
+    // SEMUA ROLE: Sembunyikan status akhir (Sudah Diterima / Selesai) dari Dasbor KECUALI jika difilter eksplisit
+    if (selectedStatuses.length === 0 && ['SUDAH DITERIMA', 'SELESAI'].includes(t.status)) return false;
 
     return true;
   });
@@ -875,7 +875,7 @@ export default function AdminDashboardPage() {
                                 <div>
                                     <p className="text-[8px] font-black text-slate-300 uppercase mb-2">Berdasarkan Tipe</p>
                                     <div className="space-y-1.5">
-                                        {(['ALL', 'RKA', 'LPJ'] as const).map(tab => (
+                                        {(['ALL', 'RKA', 'REVISI_RKA', 'LPJ'] as const).map(tab => (
                                             <label key={tab} className="flex items-center gap-2 cursor-pointer group">
                                                 <input 
                                                     type="radio" 
@@ -885,7 +885,7 @@ export default function AdminDashboardPage() {
                                                     className="rounded-full text-emerald-600 w-3 h-3 border-slate-300 focus:ring-emerald-500" 
                                                 />
                                                 <span className="text-[10px] font-bold text-slate-600 group-hover:text-emerald-700 uppercase tracking-tighter">
-                                                    {tab === 'ALL' ? 'Semua Tipe' : tab}
+                                                    {tab === 'ALL' ? 'Semua Tipe' : tab.replace('_', ' ')}
                                                 </span>
                                             </label>
                                         ))}
@@ -894,7 +894,7 @@ export default function AdminDashboardPage() {
                                 <div>
                                     <p className="text-[8px] font-black text-slate-300 uppercase mb-2">Status Aktif Dasbor</p>
                                     <div className="space-y-1.5">
-                                        {AVAILABLE_STATUSES.filter(st => ['MENUNGGU KEPALA', 'MENUNGGU PUSAT', 'MENUNGGU CAIR', 'CAIR'].includes(st)).map(st => (
+                                        {AVAILABLE_STATUSES.filter(st => st !== 'DRAFT').map(st => (
                                             <label key={st} className="flex items-center gap-2 cursor-pointer group">
                                                 <input type="checkbox" checked={selectedStatuses.includes(st)} onChange={(e) => e.target.checked ? setSelectedStatuses([...selectedStatuses, st]) : setSelectedStatuses(selectedStatuses.filter(s => s !== st))} className="rounded text-emerald-600 w-3 h-3" />
                                                 <span className="text-[10px] font-bold text-slate-600 group-hover:text-emerald-700 uppercase tracking-tight">{st}</span>
