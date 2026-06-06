@@ -1899,13 +1899,31 @@ export default function RiwayatDokumenPage() {
                                                 const hasCctvRka = Array.isArray(rkaDoc?.audit_log) && rkaDoc.audit_log.length > 0;
                                                 const hasCctvRevisiRka = isRevisiRka && Array.isArray(activeRkaDoc?.audit_log) && activeRkaDoc.audit_log.length > 0;
                                                 const hasCctvLpj = Array.isArray(detailLpjDoc?.audit_log) && detailLpjDoc.audit_log.length > 0;
+                                                const isRevisiLpj = detailLpjDoc?.jenis === 'REVISI_LPJ';
 
                                                 if (hasCctvRka || hasCctvLpj) {
                                                     // CCTV Mode
+                                                    let activeLpjLogs = (hasCctvLpj) ? [...detailLpjDoc.audit_log] : [];
+
+                                                    // Jika dokumen ini adalah Revisi LPJ tetapi tidak memiliki log awal SUBMIT_LPJ_REVISI (karena disubmit sebelum CCTV diimplementasi),
+                                                    // kita buat log sintetis agar alurnya masuk akal di UI.
+                                                    if (isRevisiLpj && activeLpjLogs.length > 0) {
+                                                        const hasSubmitLog = activeLpjLogs.some((l: any) => l.action === 'SUBMIT_LPJ_REVISI' || l.action === 'SUBMIT_LPJ' || l.action === 'SUBMIT');
+                                                        if (!hasSubmitLog && detailLpjDoc.created_at) {
+                                                            activeLpjLogs.unshift({
+                                                                action: 'SUBMIT_LPJ_REVISI',
+                                                                actor_name: 'Pembuat Pengajuan (Sistem Lama)',
+                                                                actor_role: 'STAF',
+                                                                timestamp: detailLpjDoc.created_at,
+                                                                notes: 'Pengajuan Revisi LPJ dikirim.'
+                                                            });
+                                                        }
+                                                    }
+
                                                     const allLogs = [
                                                         ...(hasCctvRka ? rkaDoc.audit_log : []),
                                                         ...(hasCctvRevisiRka ? activeRkaDoc.audit_log : []),
-                                                        ...(hasCctvLpj ? detailLpjDoc.audit_log : [])
+                                                        ...activeLpjLogs
                                                     ];
 
                                                     allLogs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

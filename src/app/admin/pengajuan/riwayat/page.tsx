@@ -1529,9 +1529,26 @@ export default function RiwayatPengajuanPage() {
 
                                                 if (hasCctvParent || hasCctvActive) {
                                                     // CCTV Mode
+                                                    let activeLogs = (hasCctvActive && isRevisiRka) ? [...activeDoc.audit_log] : [];
+                                                    
+                                                    // Jika dokumen ini adalah Revisi RKA tetapi tidak memiliki log awal SUBMIT_REVISI (karena disubmit sebelum CCTV diimplementasi),
+                                                    // kita buat log sintetis agar alurnya masuk akal di UI.
+                                                    if (isRevisiRka && activeLogs.length > 0) {
+                                                        const hasSubmitLog = activeLogs.some(l => l.action === 'SUBMIT_REVISI' || l.action === 'SUBMIT');
+                                                        if (!hasSubmitLog && activeDoc.created_at) {
+                                                            activeLogs.unshift({
+                                                                action: 'SUBMIT_REVISI',
+                                                                actor_name: 'Pembuat Pengajuan (Sistem Lama)',
+                                                                actor_role: 'STAF',
+                                                                timestamp: activeDoc.created_at,
+                                                                notes: 'Pengajuan Revisi RKA dikirim.'
+                                                            });
+                                                        }
+                                                    }
+
                                                     const allLogs = [
                                                         ...(hasCctvParent ? parentRka.audit_log : []),
-                                                        ...(hasCctvActive && isRevisiRka ? activeDoc.audit_log : [])
+                                                        ...activeLogs
                                                     ];
 
                                                     allLogs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

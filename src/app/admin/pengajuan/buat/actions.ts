@@ -387,7 +387,7 @@ export async function submitPengajuan(id: string) {
   // 2. Fetch the document using standard client first to ensure RLS access
   const { data: doc, error: fetchError } = await supabase
     .from('dokumen_pengajuan')
-    .select('pembuat_id, status')
+    .select('pembuat_id, status, parent_id')
     .eq('id', id)
     .maybeSingle()
 
@@ -405,12 +405,12 @@ export async function submitPengajuan(id: string) {
   try {
     const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
     await appendAuditLog(id, {
-        action: 'SUBMIT',
+        action: doc.parent_id ? 'SUBMIT_REVISI' : 'SUBMIT',
         actor_id: user.id,
         actor_name: profile?.full_name || 'Staf',
         actor_role: profile?.role || 'STAF',
         status_baru: 'MENUNGGU_VERIFIKASI',
-        notes: "Pengajuan Draf dikirim."
+        notes: doc.parent_id ? "Pengajuan Revisi RKA dikirim." : "Pengajuan Draf dikirim."
     }, adminClient);
   } catch (e) {
     console.error("Audit log error", e);
