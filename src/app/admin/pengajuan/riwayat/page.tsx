@@ -1576,7 +1576,7 @@ export default function RiwayatPengajuanPage() {
 
                                                         let desc = '';
                                                         if (log.notes) desc = log.notes;
-                                                        if (log.actor_name && log.action !== 'SUBMIT' && log.action !== 'SUBMIT_REVISI' && log.action !== 'SUBMIT_LPJ' && log.action !== 'SUBMIT_LPJ_REVISI') {
+                                                        if (log.actor_name) {
                                                             desc += ` (Aktor: ${log.actor_name})`;
                                                         }
 
