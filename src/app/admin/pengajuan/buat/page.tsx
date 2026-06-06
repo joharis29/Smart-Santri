@@ -357,6 +357,9 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
         <div ref={wrapperRef} className="relative w-full h-10">
             <div 
                 onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsOpen(!isOpen); setSearch(''); e.preventDefault(); } }}
+                role="button"
+                tabIndex={0}
                 className={`w-full h-full px-3 pr-8 bg-white outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer flex items-center ${value === '' ? 'text-slate-400 italic' : 'text-black'}`}
             >
                 <span className="truncate">{value || placeholder}</span>
@@ -379,6 +382,9 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
                         {!options.includes(value) && value !== '' && !search && (
                             <li 
                                 onClick={() => { onChange(value); setIsOpen(false); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onChange(value); setIsOpen(false); e.preventDefault(); } }}
+                                role="button"
+                                tabIndex={0}
                                 className="px-3 py-2 text-[10px] font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-md cursor-pointer mb-1 bg-slate-50 border border-slate-100 italic"
                             >
                                 {value} (Asli)
@@ -391,6 +397,9 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
                                 <li 
                                     key={opt}
                                     onClick={() => { onChange(opt); setIsOpen(false); }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onChange(opt); setIsOpen(false); e.preventDefault(); } }}
+                                    role="button"
+                                    tabIndex={0}
                                     className={`px-3 py-2 text-[10px] font-bold rounded-md cursor-pointer mb-0.5 transition-colors ${value === opt ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {opt}
