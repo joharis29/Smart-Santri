@@ -5,4 +5,4 @@ const res = await fetch('http://localhost:3000/api/chat', {
   body: JSON.stringify({ message: 'Bisakah kamu jelaskan ketentuan apa saja yang ada di ISAK 335?' })
 });
 const data = await res.json();
-console.info("Respons berhasil diterima:", JSON.stringify(data));
+console.info("Respons berhasil diterima:", JSON.stringify(data)); // NOSONAR

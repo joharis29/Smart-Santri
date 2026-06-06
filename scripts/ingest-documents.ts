@@ -27,16 +27,11 @@ const supabase = createClient(
 
 const REGULASI_DIR = path.join(process.cwd(), 'docs', 'regulasi')
 
-async function ingest() {
+async function ingest(targetFiles: string[] = []) {
   console.log('Memulai proses ingestion dokumen regulasi...')
   
-  console.log('Menghapus data chunks lama dari database...')
-  const { error: deleteError } = await supabase.from('document_chunks').delete().not('id', 'is', null)
-  if (deleteError) {
-    console.error('Gagal menghapus data lama:', deleteError)
-    return
-  }
-  console.log('Data lama berhasil dihapus.\n')
+  // HAPUS bagian delete agar data lama tidak hilang
+  // const { error: deleteError } = await supabase.from('document_chunks').delete().not('id', 'is', null)
   
   // Baca semua folder di dalam docs/regulasi
   const sources = ['ISAK335', 'PAP', 'JUKNIS_BOS', 'SOP_PESANTREN']
@@ -45,24 +40,40 @@ async function ingest() {
     const sourcePath = path.join(REGULASI_DIR, source)
     
     if (!fs.existsSync(sourcePath)) {
-      console.warn(`\n⚠️ Folder tidak ditemukan: ${sourcePath}. Melewati...`)
       continue
     }
 
     const files = fs.readdirSync(sourcePath).filter(file => !file.startsWith('.'))
     
     if (files.length === 0) {
-      console.log(`\n📂 Folder ${source} kosong. Tidak ada file untuk di-ingest.`)
       continue
     }
 
     console.log(`\n📂 Menemukan ${files.length} file di folder ${source}:`)
     
     for (const file of files) {
+      // Jika targetFiles diberikan, lewati file yang tidak ada di target
+      if (targetFiles.length > 0 && !targetFiles.includes(file)) {
+          continue;
+      }
+
       const filePath = path.join(sourcePath, file)
-      console.log(`  Memproses file: ${file}...`)
+      console.log(`  Memeriksa file: ${file}...`)
+
+      // Cek apakah file sudah ada di database
+      const { data: existing, error: checkErr } = await supabase
+        .from('document_chunks')
+        .select('id')
+        .eq('metadata->>file_name', file)
+        .limit(1)
+
+      if (existing && existing.length > 0) {
+        console.log(`  ⏭️ File ${file} sudah diproses sebelumnya. Melewati...`)
+        continue
+      }
       
       try {
+        console.log(`  Sedang membaca file: ${file}...`)
         const buffer = fs.readFileSync(filePath)
         let text = ''
         
@@ -70,14 +81,17 @@ async function ingest() {
             const pdfData = await pdf(buffer)
             text = pdfData.text
         } else {
-            console.log(`  ⚠️ Peringatan: Saat ini skrip hanya membaca file .pdf (File ${file} dilewati). Harap "Save As PDF" dokumen Word Anda dan coba lagi.`)
+            console.log(`  ⚠️ File ${file} bukan PDF. Dilewati.`)
             continue
         }
         
         const chunks = await splitter.splitText(text)
         console.log(`    → Dokumen dipecah menjadi ${chunks.length} chunks`)
         
-        // Embedding satu per satu untuk menghindari bug empty array atau rate limit dari Gemini
+        // Estimasi waktu
+        const estimasiMenit = (chunks.length * 4.1) / 60
+        console.log(`    → Estimasi waktu proses: ${estimasiMenit.toFixed(2)} menit`)
+
         for (let i = 0; i < chunks.length; i++) {
           const content = chunks[i]
           console.log(`    → Embedding chunk ${i + 1}/${chunks.length}...`)
@@ -92,7 +106,7 @@ async function ingest() {
                 break; // Berhasil
               }
             } catch (err: any) {
-              console.log(`      [Retry] API Error:`, err)
+              console.log(`      [Retry] API Error:`, err.message)
             }
             
             console.warn(`    ⚠️ Gagal mendapatkan embedding. Menunggu 5 detik sebelum retry ke-${retries + 1}...`)
@@ -117,8 +131,8 @@ async function ingest() {
              console.error(`    ❌ Gagal insert chunk ${i}:`, error.message)
           }
 
-          // Delay 2 detik antar chunk agar aman dari rate limit (15 request per minute free tier = 4 detik, tapi kita coba 2 detik)
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          // Delay 4.1 detik antar chunk agar super aman dari rate limit (15 request per minute)
+          await new Promise(resolve => setTimeout(resolve, 4100))
         }
         console.log(`    ✅ File ${file} selesai diproses`)
       } catch (err: any) {
@@ -129,4 +143,6 @@ async function ingest() {
   console.log('\n🎉 Proses ingestion selesai!')
 }
 
-ingest().catch(console.error)
+// Ambil argument file dari command line jika ada
+const targetFilesArg = process.argv.slice(2)
+ingest(targetFilesArg).catch(console.error)
