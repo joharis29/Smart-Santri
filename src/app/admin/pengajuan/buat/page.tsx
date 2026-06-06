@@ -911,7 +911,12 @@ function BuatPengajuanContent() {
   const updateDetailItem = (index: number, field: keyof RkaDetailItem, value: any) => {
     setModalItems(prev => {
       const newItems = [...prev]
-      const item = { ...newItems[index], [field]: value }
+      let cleanVal = value;
+      if (field === 'price' || field === 'qty') {
+         cleanVal = value.toString().replace(/\D/g, "");
+         cleanVal = cleanVal ? Number(cleanVal) : 0;
+      }
+      const item = { ...newItems[index], [field]: cleanVal }
       if (field === 'price' || field === 'qty') {
         item.total = Number(item.price) * Number(item.qty)
       }
@@ -933,7 +938,8 @@ function BuatPengajuanContent() {
         split.percent = val;
         split.nominal = Math.round((val / 100) * modalTotal)
       } else if (field === 'nominal') {
-        let val = Number(value);
+        const cleanVal = value.toString().replace(/\D/g, "");
+        let val = Number(cleanVal);
         if (val < 0) val = 0;
         const otherTotalNominal = newSplits.reduce((acc, s, i) => i !== index ? acc + (Number(s.nominal) || 0) : acc, 0);
         if (otherTotalNominal + val > modalTotal) val = modalTotal - otherTotalNominal;
@@ -2200,8 +2206,8 @@ function BuatPengajuanContent() {
                             <div className="relative">
                               <span className="absolute left-2 top-2 text-[8px] font-bold text-slate-300">Rp</span>
                               <input 
-                                type="number" 
-                                value={item.price || ''}
+                                type="text" 
+                                value={item.price ? Number(item.price).toLocaleString('id-ID') : ''}
                                 onChange={(e) => updateDetailItem(idx, 'price', e.target.value)}
                                 className="w-full h-8 pl-6 pr-2 bg-transparent border-none outline-none text-xs font-bold text-right focus:bg-emerald-50/30 text-slate-800 placeholder:text-slate-300"
                                 placeholder="0"
@@ -2210,8 +2216,8 @@ function BuatPengajuanContent() {
                           </td>
                           <td className="p-0">
                             <input 
-                              type="number" 
-                              value={item.qty || ''}
+                              type="text" 
+                              value={item.qty ? Number(item.qty).toLocaleString('id-ID') : ''}
                               onChange={(e) => updateDetailItem(idx, 'qty', e.target.value)}
                               className="w-full h-8 px-2 bg-transparent border-none outline-none text-xs font-bold text-center focus:bg-emerald-50/30 text-slate-800 placeholder:text-slate-300"
                               placeholder="0"
@@ -2321,8 +2327,8 @@ function BuatPengajuanContent() {
                         <div className="w-40 relative">
                           <span className="absolute left-2 top-2 text-[10px] font-bold text-amber-400">Rp</span>
                           <input 
-                            type="number" 
-                            value={split.nominal || ''}
+                            type="text" 
+                            value={split.nominal ? Number(split.nominal).toLocaleString('id-ID') : ''}
                             onChange={(e) => updateSplit(idx, 'nominal', e.target.value)}
                             className="w-full pl-6 pr-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs font-black text-amber-800 outline-none focus:ring-2 focus:ring-amber-500 text-right"
                             placeholder="0"

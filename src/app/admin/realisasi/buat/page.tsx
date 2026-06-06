@@ -901,7 +901,14 @@ export default function BuatRealisasiPage() {
         setLpjRows(prev => prev.map(row => {
             if (row.id === rowId) {
                 const newItems = [...row.details.items];
-                newItems[itemIdx] = { ...newItems[itemIdx], [field]: value };
+                
+                let finalValue = value;
+                if (field === 'price' || field === 'qty') {
+                    finalValue = value.toString().replace(/\D/g, "");
+                    finalValue = finalValue ? Number(finalValue) : 0;
+                }
+                
+                newItems[itemIdx] = { ...newItems[itemIdx], [field]: finalValue };
                 
                 // Recalculate total for this item
                 if (field === 'price' || field === 'qty') {
@@ -1009,7 +1016,8 @@ export default function BuatRealisasiPage() {
         if (field === 'source') {
             item.source = value;
         } else if (field === 'amount') {
-            let amt = Math.max(0, Number(value));
+            const cleanVal = value.toString().replace(/\D/g, "");
+            let amt = Math.max(0, Number(cleanVal));
             const otherAmount = news.reduce((acc, curr, idx) => idx === index ? acc : acc + (curr.amount || 0), 0);
             if (selisih > 0 && otherAmount + amt > selisih) {
                 amt = Math.max(0, selisih - otherAmount);
@@ -2567,8 +2575,8 @@ export default function BuatRealisasiPage() {
                                                                     <div className="relative">
                                                                         <span className="absolute left-2 top-2 text-[8px] font-bold text-slate-300">Rp</span>
                                                                         <input 
-                                                                            type="number"
-                                                                            value={rin.price || ''}
+                                                                            type="text"
+                                                                            value={rin.price ? Number(rin.price).toLocaleString('id-ID') : ''}
                                                                             onChange={(e) => updateLpjItem(row.id, rIdx, 'price', e.target.value)}
                                                                             className="w-full h-8 pl-6 pr-2 bg-transparent border-none outline-none text-xs font-black text-right text-slate-800 focus:bg-emerald-50/10"
                                                                             placeholder="0"
@@ -2577,8 +2585,8 @@ export default function BuatRealisasiPage() {
                                                                 </td>
                                                                 <td className="p-0">
                                                                     <input 
-                                                                        type="number"
-                                                                        value={rin.qty || ''}
+                                                                        type="text"
+                                                                        value={rin.qty ? Number(rin.qty).toLocaleString('id-ID') : ''}
                                                                         onChange={(e) => updateLpjItem(row.id, rIdx, 'qty', e.target.value)}
                                                                         className="w-full h-8 px-2 bg-transparent border-none outline-none text-xs font-black text-center text-emerald-600 focus:bg-emerald-50/10"
                                                                         placeholder="0"
@@ -2825,8 +2833,8 @@ export default function BuatRealisasiPage() {
                                                             <div className="w-28 relative">
                                                                 <span className="absolute left-2 top-2.5 text-[9px] font-bold text-slate-400">Rp</span>
                                                                 <input
-                                                                    type="number"
-                                                                    value={sub.amount || ''}
+                                                                    type="text"
+                                                                    value={sub.amount ? Number(sub.amount).toLocaleString('id-ID') : ''}
                                                                     onChange={(e) => updateSubsidi(idx, 'amount', e.target.value)}
                                                                     className="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-rose-500 text-right"
                                                                     placeholder="0"

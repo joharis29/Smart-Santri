@@ -839,7 +839,7 @@ export default function InputPengeluaranPage() {
                                     <input 
                                         type="text"
                                         placeholder="0"
-                                        value={nominal}
+                                        value={nominal ? Number(nominal).toLocaleString('id-ID') : ''}
                                         onChange={handleNominalChange}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 text-xs font-black text-slate-800 focus:outline-none focus:border-rose-500 transition-all italic"
                                     />

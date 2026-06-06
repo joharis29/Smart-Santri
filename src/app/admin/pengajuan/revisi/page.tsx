@@ -456,10 +456,13 @@ export default function RkaRevisiPage() {
     setRows(rows.map(row => {
       if (row.id === rowId) {
         const newItems = [...(row.details?.items || [])]
-        const item = { ...newItems[itemIdx], [field]: value }
+        let cleanVal = value;
         if (field === 'price' || field === 'qty') {
-           item.price = field === 'price' ? Number(value) : Number(item.price || 0)
-           item.qty = field === 'qty' ? Number(value) : Number(item.qty || 0)
+           cleanVal = value.toString().replace(/\D/g, "");
+           cleanVal = cleanVal ? Number(cleanVal) : 0;
+        }
+        const item = { ...newItems[itemIdx], [field]: cleanVal }
+        if (field === 'price' || field === 'qty') {
            item.total = item.price * item.qty
         }
         newItems[itemIdx] = item
@@ -557,7 +560,8 @@ export default function RkaRevisiPage() {
             split.percent = val;
             split.nominal = (val / 100) * row.nominal;
         } else if (field === 'nominal') {
-            let val = Number(value);
+            const cleanVal = value.toString().replace(/\D/g, "");
+            let val = Number(cleanVal);
             if (val < 0) val = 0;
             const otherTotalNominal = newSplits.reduce((acc, s, i) => i !== splitIdx ? acc + (Number(s.nominal) || 0) : acc, 0);
             if (otherTotalNominal + val > row.nominal) val = row.nominal - otherTotalNominal;
@@ -1341,8 +1345,8 @@ export default function RkaRevisiPage() {
                                                             <div className="relative">
                                                                 <span className="absolute left-2 top-2 text-[8px] font-bold text-slate-300">Rp</span>
                                                                 <input 
-                                                                    type="number"
-                                                                    value={rin.price || ''}
+                                                                    type="text"
+                                                                    value={rin.price ? Number(rin.price).toLocaleString('id-ID') : ''}
                                                                     onChange={(e) => updateRincianItem(row.id, rIdx, 'price', e.target.value)}
                                                                     className="w-full h-8 pl-6 pr-2 bg-transparent border-none outline-none text-xs font-black text-right text-slate-800 focus:bg-emerald-50/10"
                                                                     placeholder="0"
@@ -1351,8 +1355,8 @@ export default function RkaRevisiPage() {
                                                         </td>
                                                         <td className="p-0">
                                                             <input 
-                                                                type="number"
-                                                                value={rin.qty || ''}
+                                                                type="text"
+                                                                value={rin.qty ? Number(rin.qty).toLocaleString('id-ID') : ''}
                                                                 onChange={(e) => updateRincianItem(row.id, rIdx, 'qty', e.target.value)}
                                                                 className="w-full h-8 px-2 bg-transparent border-none outline-none text-xs font-black text-center text-emerald-600 focus:bg-emerald-50/10"
                                                                 placeholder="0"
@@ -1439,8 +1443,8 @@ export default function RkaRevisiPage() {
                                                                 <div className="relative">
                                                                     <span className="absolute left-2 top-1.5 text-[8px] font-bold text-slate-300">Rp</span>
                                                                     <input 
-                                                                        type="number"
-                                                                        value={split.nominal || ''}
+                                                                        type="text"
+                                                                        value={split.nominal ? Number(split.nominal).toLocaleString('id-ID') : ''}
                                                                         onChange={(e) => updateFundingSplit(row.id, sIdx, 'nominal', e.target.value)}
                                                                         className="w-full h-8 pl-6 pr-2 bg-transparent text-right font-black text-emerald-900 outline-none"
                                                                     />
