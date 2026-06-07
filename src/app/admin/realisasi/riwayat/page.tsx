@@ -65,6 +65,7 @@ export default function RiwayatDokumenPage() {
     const [detailRkaDoc, setDetailRkaDoc] = useState<any>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [selectedRevisionSnapshot, setSelectedRevisionSnapshot] = useState<any>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
     
     // AI Audit States
     const [isAuditing, setIsAuditing] = useState(false);
@@ -1751,6 +1752,13 @@ export default function RiwayatDokumenPage() {
                                                                     href={att.base64 || att.url} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer" 
+                                                                    onClick={(e) => {
+                                                                        const url = att.base64 || att.url;
+                                                                        if (url && (url.startsWith('data:image/') || url.match(/\.(jpeg|jpg|gif|png|webp)/i) || (!url.startsWith('http') && !url.includes('.')))) {
+                                                                            e.preventDefault();
+                                                                            setPreviewImage(url);
+                                                                        }
+                                                                    }}
                                                                     className="group relative flex flex-col items-center bg-slate-50 border border-slate-200 rounded-xl p-2 hover:border-blue-400 hover:shadow-md transition-all overflow-hidden text-center cursor-pointer"
                                                                     title="Buka / Unduh Lampiran"
                                                                 >
@@ -2120,6 +2128,25 @@ export default function RiwayatDokumenPage() {
                                 </div>
                             </Fragment>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
+                    <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute -top-12 right-0 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white transition-all cursor-pointer z-[210] shadow-md"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <img 
+                            src={previewImage.startsWith('data:') || previewImage.startsWith('http') ? previewImage : `data:image/jpeg;base64,${previewImage}`} 
+                            alt="Preview Bukti Kwitansi" 
+                            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border-4 border-white/10"
+                        />
                     </div>
                 </div>
             )}
