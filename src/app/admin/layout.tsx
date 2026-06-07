@@ -501,7 +501,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                 localStorage.setItem(activeRoleKey, newRole);
                                                 const activeUnitKey = userId ? `activeUnit_${userId}` : 'activeUnit';
                                                 localStorage.setItem(activeUnitKey, newUnit);
-                                                window.location.reload();
+                                                window.location.href = '/admin/dashboard';
                                             } else {
                                                 alert(res.error || 'Gagal mengubah peran/unit aktif');
                                             }
