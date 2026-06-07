@@ -295,12 +295,12 @@ export async function switchActiveProfile(payload: { role: string; unitName: str
 
     // 2. Fetch Unit ID from DB
     let selectedUnitId: string | null = null;
-    if (payload.unitName && payload.unitName !== 'Pusat (Yayasan)') {
+    if (payload.unitName && payload.unitName !== 'Pusat (Yayasan)' && payload.unitName !== 'null' && payload.unitName !== 'undefined') {
       const { data: unitData } = await supabaseAdmin
         .from('unit')
         .select('id')
         .eq('name', payload.unitName)
-        .single();
+        .maybeSingle();
       if (unitData) selectedUnitId = unitData.id;
     }
 
@@ -334,13 +334,19 @@ export async function switchActiveProfile(payload: { role: string; unitName: str
 
     if (!isSuperUser) {
       // Check in profiles_multi_role
-      const { data: hasRole, error: mappingError } = await supabaseAdmin
+      let query = supabaseAdmin
         .from('profiles_multi_role')
         .select('id')
         .eq('user_id', user.id)
-        .eq('role', dbRole)
-        .eq('unit_id', selectedUnitId)
-        .maybeSingle();
+        .eq('role', dbRole);
+
+      if (selectedUnitId === null) {
+        query = query.is('unit_id', null);
+      } else {
+        query = query.eq('unit_id', selectedUnitId);
+      }
+
+      const { data: hasRole, error: mappingError } = await query.maybeSingle();
 
       if (mappingError || !hasRole) {
         throw new Error('Anda tidak memiliki otorisasi untuk peran dan unit kerja ini.');
