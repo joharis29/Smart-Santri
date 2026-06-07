@@ -158,6 +158,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         savedUnit = formatted[0].unit_name;
                         localStorage.setItem(activeRoleKey, savedRole);
                         localStorage.setItem(activeUnitKey, savedUnit);
+                        // Redirect to dashboard to prevent unauthorized views of the current page
+                        window.location.href = '/admin';
+                        return;
                     }
                 }
 
