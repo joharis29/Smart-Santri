@@ -2134,8 +2134,20 @@ export default function RiwayatDokumenPage() {
 
             {/* Image Preview Modal */}
             {previewImage && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
-                    <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                <div 
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200" 
+                    onClick={() => setPreviewImage(null)}
+                    onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setPreviewImage(null); }}
+                    role="button"
+                    tabIndex={0}
+                >
+                    <div 
+                        className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center" 
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                    >
                         <button 
                             onClick={() => setPreviewImage(null)}
                             className="absolute -top-12 right-0 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white transition-all cursor-pointer z-[210] shadow-md"
