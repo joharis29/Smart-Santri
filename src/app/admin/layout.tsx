@@ -249,7 +249,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </Link>
                     </div>
 
-                    <nav className="flex-1 px-4 space-y-1">
+                    <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-6">
                         {isProfileLoaded ? (
                             <>
                                 <Link href="/admin" className="flex items-center gap-3 px-3 py-2 hover:bg-emerald-800 hover:text-white rounded-lg transition-all group text-sm">
