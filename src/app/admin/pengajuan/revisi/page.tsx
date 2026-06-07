@@ -223,46 +223,47 @@ export default function RkaRevisiPage() {
 
   useEffect(() => {
     const checkGate = async () => {
+      setCheckingActive(true)
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('active_unit')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        const activeUnit = profile?.active_unit || 'Pusat (Yayasan)'
-
-        // 1. Check Global Gate
-        const { data: globalGate } = await supabase
-          .from('kontrol_pengajuan')
-          .select('revisi_rka_aktif')
-          .eq('unit_name', 'GLOBAL')
-          .maybeSingle()
-
-        if (globalGate && globalGate.revisi_rka_aktif === false) {
-          setIsRevisiActive(false)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
           setCheckingActive(false)
           return
         }
 
-        // 2. Check Unit Gate
-        const { data: unitGate } = await supabase
-          .from('kontrol_pengajuan')
-          .select('revisi_rka_aktif')
-          .eq('unit_name', activeUnit)
-          .maybeSingle()
+        const user = session.user
+        const activeRoleKey = `activeRole_${user.id}`
+        const roleName = localStorage.getItem(activeRoleKey) || localStorage.getItem('activeRole') || ''
+        
+        // Administrator and Central Treasurer bypass any gate checks
+        if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
+          setIsRevisiActive(true)
+          setCheckingActive(false)
+          return
+        }
 
-        if (unitGate && unitGate.revisi_rka_aktif === false) {
+        // Get the unit to check against (from localStorage or profile)
+        const activeUnitKey = `activeUnit_${user.id}`
+        const activeUnit = localStorage.getItem(activeUnitKey) || localStorage.getItem('activeUnit') || 'Pusat (Yayasan)'
+
+        const [globalRes, unitRes] = await Promise.all([
+          supabase.from('kontrol_pengajuan').select('revisi_rka_aktif').eq('unit_name', 'GLOBAL').maybeSingle(),
+          supabase.from('kontrol_pengajuan').select('revisi_rka_aktif').eq('unit_name', activeUnit).maybeSingle()
+        ])
+
+        if (globalRes.data && globalRes.data.revisi_rka_aktif === false) {
+          setIsRevisiActive(false)
+          return
+        }
+
+        if (unitRes.data && unitRes.data.revisi_rka_aktif === false) {
           setIsRevisiActive(false)
         } else {
           setIsRevisiActive(true)
         }
       } catch (e) {
-        console.error(e)
+        console.error("Error checking Revisi RKA gate status:", e)
       } finally {
         setCheckingActive(false)
       }
@@ -817,6 +818,42 @@ export default function RkaRevisiPage() {
     });
     return Object.entries(agg).map(([source, nominal]) => ({ source, nominal }));
   }, [rows]);
+
+  if (checkingActive) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Memeriksa Status Pembukuan...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isRevisiActive) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
+        <div className="bg-white max-w-md w-full p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-100 flex flex-col items-center text-center space-y-6">
+          <div className="bg-rose-50 p-6 rounded-[2rem] text-rose-600 shadow-inner">
+            <Lock className="w-12 h-12" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase leading-none">Pengisian Revisi Ditutup</h2>
+            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Jendela Revisi Anggaran Dibekukan</p>
+          </div>
+          <p className="text-xs font-bold text-slate-400 leading-relaxed">
+            Maaf, pengisian formulir **Buat Revisi RKA** saat ini sedang dinonaktifkan oleh Bendahara Pusat untuk unit Anda **({unit || 'Unit Anda'})**. Silakan hubungi Bendahara Pusat untuk informasi lebih lanjut mengenai jadwal pembukaan kembali.
+          </p>
+          <button 
+            onClick={() => router.push('/admin')}
+            className="w-full bg-slate-900 text-white text-[10px] font-black py-4 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all uppercase tracking-widest"
+          >
+            Kembali ke Dasbor
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
 
