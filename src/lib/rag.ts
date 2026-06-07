@@ -132,7 +132,7 @@ HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kura
       const alasanStr = alasanMatch ? alasanMatch[1].trim() : 'Sistem berhasil melakukan audit, namun format alasan gagal dibaca secara utuh.';
       
       let referensiArr: string[] = [];
-      const refMatch = jsonString.match(/"referensi"\s*:\s*\[([\s\S]*?)\]/is);
+      const refMatch = jsonString.match(/"referensi"\s*:\s*\[([\s\S]*?)\]/i);
       if (refMatch) {
           referensiArr = refMatch[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(Boolean);
       }
