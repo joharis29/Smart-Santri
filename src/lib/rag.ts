@@ -93,8 +93,8 @@ ${konteks}`
 Berikan output dalam bentuk JSON murni dengan format berikut:
 {
   "status": "AMAN" atau "ANOMALI",
-  "alasan": "berikan alasan singkat mengapa aman atau anomali. Anda WAJIB MENGAWALI kalimat dengan menyebutkan nama rujukan dari konteks (contoh: 'Menurut Pedoman [NAMA FILE]...'). PENTING: JANGAN gunakan tanda kutip ganda (\") atau baris baru (enter/newline) di dalam teks alasan ini agar JSON tidak rusak",
-  "referensi": ["tuliskan nama dokumen atau bab yang mendasari keputusan Anda dari konteks yang ada"],
+  "alasan": "berikan alasan singkat mengapa aman atau anomali. Anda WAJIB MENGUTIP sumbernya. JANGAN cantumkan nama file mentah (seperti '2. Juknis BOS.pdf'). Cari dan sebutkan JUDUL RESMI peraturan tersebut dari isi teks (misal: 'Menurut Keputusan Direktur Jenderal Pendidikan Islam Nomor...'). Jika judul tidak ada, gunakan nama umum (misal 'Menurut Petunjuk Teknis BOS...'). PENTING: JANGAN gunakan tanda kutip ganda (\") atau baris baru (enter/newline) di dalam teks alasan ini agar JSON tidak rusak",
+  "referensi": ["tuliskan JUDUL RESMI dokumen atau peraturan yang mendasari keputusan Anda, BUKAN nama file mentah"],
   "skor_kepatuhan": angka 0 sampai 100
 }
 HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kurawal { }.`
