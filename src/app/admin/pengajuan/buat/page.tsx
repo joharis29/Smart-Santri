@@ -877,7 +877,7 @@ function BuatPengajuanContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jenis: 'Rencana Kerja / RKA',
-          narasi: `${row.program} - ${row.operasional}`,
+          narasi: `Program: ${row.program} | Deskripsi: ${row.operasional} | Jml Kegiatan: ${row.jumlah} | Waktu: ${row.waktu} | Tempat: ${row.tempat} | PIC: ${row.pic} | Sasaran: ${row.sasaran}`,
           kategoriCoa: 'RKA',
           sumberDana: row.details.fundingSplits.filter(s => s.nominal > 0).map(s => s.source).join(', ') || 'Belum Ditentukan',
           nominal: row.nominal,

@@ -82,7 +82,7 @@ export default function RiwayatDokumenPage() {
         const payload = {
             id: selectedItemForDetail.itemId,
             jenis: 'LPJ',
-            narasi: lpjDetails.narasi || lpjItem?.judul_kegiatan || 'Realisasi anggaran',
+            narasi: `Kegiatan: ${lpjItem?.judul_kegiatan || 'Realisasi'} | Catatan: ${lpjDetails.narasi || '-'} | Tempat: ${lpjItem?.tempat || '-'} | Waktu: ${lpjItem?.waktu || '-'} | Sasaran: ${lpjItem?.sasaran || '-'} | PIC: ${lpjItem?.pic || '-'}`,
             kategoriCoa: lpjItem?.kategori_coa || selectedItemForDetail.bidang || 'Lainnya',
             sumberDana: lpjItem?.sumber_dana || selectedItemForDetail.sumber || 'Yayasan',
             nominal: Number(lpjItem?.nominal || selectedItemForDetail.nominal || 0),

@@ -70,9 +70,13 @@ export async function auditNarasi(
 Tugas Anda adalah memvalidasi dokumen ${jenis} (Rencana Kerja / Laporan Pertanggungjawaban) berikut berdasarkan konteks regulasi yang disediakan.
 
 ATURAN AUDIT:
-1. Anda HANYA boleh mengambil keputusan berdasarkan "Konteks Regulasi" di bawah. Jangan berasumsi di luar konteks.
-2. Jika dokumen tersebut sejalan atau tidak dilarang oleh konteks -> status "AMAN"
-3. Jika dokumen tersebut terindikasi melanggar konteks (misal: dana BOS dipakai untuk honor rutin padahal dilarang) -> status "ANOMALI"
+1. Anda HANYA boleh mengambil keputusan berdasarkan "Konteks Regulasi" di bawah. JANGAN berasumsi atau menggunakan pengetahuan di luar konteks.
+2. Status "AMAN" HANYA diberikan JIKA kegiatan atau pengeluaran tersebut secara EKSPLISIT diizinkan, atau wajar dan sangat relevan dengan operasional / pendidikan pesantren berdasarkan konteks regulasi.
+3. Status "ANOMALI" WAJIB diberikan jika:
+   - Kegiatan/pengeluaran secara eksplisit dilarang dalam konteks.
+   - Kegiatan/pengeluaran TIDAK ADA relevansinya dengan kegiatan pesantren, pendidikan, atau tidak memiliki dasar operasional yang kuat (contoh: menonton bioskop, jalan-jalan pribadi, pemborosan, pengeluaran fiktif).
+   - Sumber dana yang digunakan tidak sesuai dengan peruntukannya.
+   - Ketidaksesuaian antara sasaran/tempat dengan tujuan dari program pendidikan.
 4. Output ANDA HARUS BERUPA JSON VALID tanpa awalan/akhiran tambahan (seperti \`\`\`json).
 
 KONTEKS REGULASI:
