@@ -516,53 +516,38 @@ function BuatPengajuanContent() {
       setCheckingActive(true)
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        // Optimize: Use getSession (reads from local storage instantly) instead of getUser (network request)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
           setCheckingActive(false)
           return
         }
 
-        // Get user role to determine bypass
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
+        const user = session.user
+
+        // Optimize: Read role from localStorage directly to skip profile network request
+        const activeRoleKey = `activeRole_${user.id}`
+        const roleName = localStorage.getItem(activeRoleKey) || localStorage.getItem('activeRole') || ''
         
-        if (profile) {
-          const activeRoleKey = `activeRole_${user.id}`
-          const dbRoleName = typeof profile.role === 'string' ? profile.role : (profile.role?.name || '')
-          const roleName = localStorage.getItem(activeRoleKey) || dbRoleName
-          
-          // Administrator and Central Treasurer bypass any gate checks
-          if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
-            setIsRkaActive(true)
-            setCheckingActive(false)
-            return
-          }
-        }
-
-        // 1. Check Global Gate
-        const { data: globalGate } = await supabase
-          .from('kontrol_pengajuan')
-          .select('rka_aktif')
-          .eq('unit_name', 'GLOBAL')
-          .maybeSingle()
-
-        if (globalGate && globalGate.rka_aktif === false) {
-          setIsRkaActive(false)
+        // Administrator and Central Treasurer bypass any gate checks
+        if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
+          setIsRkaActive(true)
           setCheckingActive(false)
           return
         }
 
-        // 2. Check Unit Specific Gate
-        const { data: unitGate } = await supabase
-          .from('kontrol_pengajuan')
-          .select('rka_aktif')
-          .eq('unit_name', unit)
-          .maybeSingle()
+        // Optimize: Fetch global and unit gate concurrently
+        const [globalRes, unitRes] = await Promise.all([
+          supabase.from('kontrol_pengajuan').select('rka_aktif').eq('unit_name', 'GLOBAL').maybeSingle(),
+          supabase.from('kontrol_pengajuan').select('rka_aktif').eq('unit_name', unit).maybeSingle()
+        ])
 
-        if (unitGate && unitGate.rka_aktif === false) {
+        if (globalRes.data && globalRes.data.rka_aktif === false) {
+          setIsRkaActive(false)
+          return
+        }
+
+        if (unitRes.data && unitRes.data.rka_aktif === false) {
           setIsRkaActive(false)
         } else {
           setIsRkaActive(true)

@@ -354,58 +354,34 @@ export default function BuatRealisasiPage() {
             setCheckingActive(true);
             try {
                 const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
                     setCheckingActive(false);
                     return;
                 }
-
-                // Get user role to determine bypass
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .maybeSingle();
                 
-                if (profile) {
-                    const activeRoleKey = `activeRole_${user.id}`;
-                    const dbRoleName = typeof profile.role === 'string' ? profile.role : (profile.role?.name || '');
-                    const roleName = localStorage.getItem(activeRoleKey) || dbRoleName;
-                    
-                    // Administrator and Central Treasurer bypass any gate checks
-                    if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
-                        setIsLpjActive(true);
-                        setCheckingActive(false);
-                        return;
-                    }
-                }
-
-                // 1. Check Global Gate
-                const { data: globalGate } = await supabase
-                    .from('kontrol_pengajuan')
-                    .select('lpj_aktif')
-                    .eq('unit_name', 'GLOBAL')
-                    .maybeSingle();
-
-                if (globalGate && globalGate.lpj_aktif === false) {
-                    setIsLpjActive(false);
+                const user = session.user;
+                const activeRoleKey = `activeRole_${user.id}`;
+                const roleName = localStorage.getItem(activeRoleKey) || localStorage.getItem('activeRole') || '';
+                
+                if (['ADMINISTRATOR', 'BENDAHARA_PUSAT'].includes(roleName)) {
+                    setIsLpjActive(true);
                     setCheckingActive(false);
                     return;
                 }
 
-                // 2. Check Unit Specific Gate
-                if (unit) {
-                    const { data: unitGate } = await supabase
-                        .from('kontrol_pengajuan')
-                        .select('lpj_aktif')
-                        .eq('unit_name', unit)
-                        .maybeSingle();
+                const [globalRes, unitRes] = await Promise.all([
+                    supabase.from('kontrol_pengajuan').select('lpj_aktif').eq('unit_name', 'GLOBAL').maybeSingle(),
+                    unit ? supabase.from('kontrol_pengajuan').select('lpj_aktif').eq('unit_name', unit).maybeSingle() : Promise.resolve({ data: null })
+                ]);
 
-                    if (unitGate && unitGate.lpj_aktif === false) {
-                        setIsLpjActive(false);
-                    } else {
-                        setIsLpjActive(true);
-                    }
+                if (globalRes.data && globalRes.data.lpj_aktif === false) {
+                    setIsLpjActive(false);
+                    return;
+                }
+
+                if (unit && unitRes.data && unitRes.data.lpj_aktif === false) {
+                    setIsLpjActive(false);
                 } else {
                     setIsLpjActive(true);
                 }
