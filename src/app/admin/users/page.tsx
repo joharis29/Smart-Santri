@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Filter, Download, MoreVertical, Edit, Trash2, Mail, Building, Shield, Eye, EyeOff, User, Lock, X, AlertTriangle, KeyRound, Ban, Info, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin } from './actions';
+import { registerUserByAdmin, deleteUserByAdmin, resetUserPasswordByAdmin, toggleUserStatusByAdmin, updateUserByAdmin } from './actions';
 import ExcelJS from 'exceljs';
 
 type UserData = {
@@ -63,7 +63,14 @@ export default function UserManagementPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | string | null>(null);
   
   // Form states
-  const [formData, setFormData] = useState({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '' });
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    unit: string;
+    password?: string;
+    concurrentRoles: { role: string; unit: string }[];
+  }>({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '', concurrentRoles: [{ role: 'Staf Unit', unit: 'Pusat (Yayasan)' }] });
   
   // Delete Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -313,7 +320,7 @@ export default function UserManagementPage() {
   // Handlers
   const handleOpenAddModal = () => {
     setModalMode('add');
-    setFormData({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '' });
+    setFormData({ name: '', email: '', role: 'Staf Unit', unit: 'Pusat (Yayasan)', password: '', concurrentRoles: [{ role: 'Staf Unit', unit: 'Pusat (Yayasan)' }] });
     setSelectedUserId(null);
     setShowPassword(false);
     setIsModalOpen(true);
@@ -321,7 +328,14 @@ export default function UserManagementPage() {
 
   const handleOpenEditModal = (user: UserData) => {
     setModalMode('edit');
-    setFormData({ name: user.name, email: user.email, role: user.role, unit: user.unit, password: '' });
+    setFormData({ 
+      name: user.name, 
+      email: user.email, 
+      role: user.role, 
+      unit: user.unit, 
+      password: '',
+      concurrentRoles: user.concurrentRoles && user.concurrentRoles.length > 0 ? user.concurrentRoles : [{ role: user.role, unit: user.unit }]
+    });
     setSelectedUserId(user.id);
     setShowPassword(false);
     setIsModalOpen(true);
@@ -364,6 +378,28 @@ export default function UserManagementPage() {
     }
     setIsDeleteModalOpen(false);
     setUserToDelete(null);
+  };
+
+  const addRole = () => {
+    setFormData(prev => ({
+      ...prev,
+      concurrentRoles: [...prev.concurrentRoles, { role: 'Staf Unit', unit: 'Pusat (Yayasan)' }]
+    }));
+  };
+
+  const removeRole = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      concurrentRoles: prev.concurrentRoles.filter((_, idx) => idx !== index)
+    }));
+  };
+
+  const updateConcurrentRole = (index: number, field: 'role' | 'unit', value: string) => {
+    setFormData(prev => {
+      const newRoles = [...prev.concurrentRoles];
+      newRoles[index] = { ...newRoles[index], [field]: value };
+      return { ...prev, concurrentRoles: newRoles };
+    });
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -417,20 +453,29 @@ export default function UserManagementPage() {
           alert(`Berhasil: Akun login & profil untuk ${formData.name} berhasil dibuat!`);
         }
       } else {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            full_name: formData.name,
-            email: formData.email,
-            role: mapDropdownToEnum(formData.role),
-            unit_id: selectedUnitId
-          })
-          .eq('id', selectedUserId);
+        const res = await updateUserByAdmin(selectedUserId as string, {
+          name: formData.name,
+          email: formData.email,
+          concurrentRoles: formData.concurrentRoles
+        });
 
-        if (error) throw error;
+        if (!res.success) throw new Error(res.error);
 
-        setUsers(users.map(u => u.id === selectedUserId ? { ...u, ...formData } : u));
-        alert(`Berhasil: Data ${formData.name} berhasil diperbarui!`);
+        setUsers(users.map(u => {
+          if (u.id === selectedUserId) {
+            const firstRole = formData.concurrentRoles[0];
+            return {
+              ...u,
+              name: formData.name,
+              email: formData.email,
+              role: firstRole.role,
+              unit: firstRole.unit,
+              concurrentRoles: formData.concurrentRoles
+            };
+          }
+          return u;
+        }));
+        alert(`Berhasil: Data ${formData.name} beserta seluruh perannya berhasil diperbarui!`);
       }
       setIsModalOpen(false);
     } catch (err: any) {
@@ -874,60 +919,145 @@ export default function UserManagementPage() {
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-2">Otoritas & Akses</h4>
                   
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Peran (Role)</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Shield className="w-4 h-4 text-slate-400" />
+                  {modalMode === 'add' ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700">Peran (Role)</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Shield className="w-4 h-4 text-slate-400" />
+                          </div>
+                          <select 
+                            required 
+                            value={formData.role}
+                            onChange={(e) => setFormData({...formData, role: e.target.value})}
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white"
+                          >
+                            <option value="">Pilih peran akses...</option>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Yayasan/Pesantren (Pusat)</option>
+                            <option value="Pimpinan Pesantren">Pimpinan Pesantren</option>
+                            <option value="Bendahara Jenjang">Bendahara Jenjang</option>
+                            <option value="Kepala Jenjang">Kepala Jenjang</option>
+                            <option value="Kepala Unit">Kepala Unit</option>
+                            <option value="Bendahara Unit">Bendahara Unit</option>
+                            <option value="Staf Bidang">Staf Bidang</option>
+                            <option value="Staf Unit">Staf Unit</option>
+                          </select>
+                        </div>
                       </div>
-                      <select 
-                        required 
-                        value={formData.role}
-                        onChange={(e) => setFormData({...formData, role: e.target.value})}
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white"
-                      >
-                        <option value="">Pilih peran akses...</option>
-                        <option value="Administrator">Administrator</option>
-                        <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Yayasan/Pesantren (Pusat)</option>
-                        <option value="Pimpinan Pesantren">Pimpinan Pesantren</option>
-                        <option value="Bendahara Jenjang">Bendahara Jenjang</option>
-                        <option value="Kepala Jenjang">Kepala Jenjang</option>
-                        <option value="Kepala Unit">Kepala Unit</option>
-                        <option value="Bendahara Unit">Bendahara Unit</option>
-                        <option value="Staf Bidang">Staf Bidang</option>
-                        <option value="Staf Unit">Staf Unit</option>
-                      </select>
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Unit Aktif</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Building className="w-4 h-4 text-slate-400" />
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700">Unit Aktif</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Building className="w-4 h-4 text-slate-400" />
+                          </div>
+                          <select 
+                            required 
+                            value={formData.unit}
+                            onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white"
+                          >
+                            <option value="">Pilih unit kerja...</option>
+                            <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
+                            <option value="TK">TK</option>
+                            <option value="Diniyah">Diniyah</option>
+                            <option value="SDIT 1">SDIT 1</option>
+                            <option value="SDIT 2">SDIT 2</option>
+                            <option value="MTs">MTs</option>
+                            <option value="MA">MA</option>
+                            <option value="THQ">THQ</option>
+                            <option value="Asrama Putra">Asrama Putra</option>
+                            <option value="Asrama Putri">Asrama Putri</option>
+                            <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
+                            <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
+                          </select>
+                        </div>
                       </div>
-                      <select 
-                        required 
-                        value={formData.unit}
-                        onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white"
+                    </>
+                  ) : (
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {formData.concurrentRoles.map((r, idx) => (
+                        <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3 relative group transition-all hover:border-emerald-200">
+                          {formData.concurrentRoles.length > 1 && (
+                            <button 
+                              type="button" 
+                              onClick={() => removeRole(idx)} 
+                              className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white border border-rose-200 text-rose-500 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
+                              title="Hapus Peran"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                              Peran {idx === 0 ? '(Utama)' : `(Tambahan ${idx})`}
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Shield className="w-3.5 h-3.5 text-slate-400" />
+                              </div>
+                              <select 
+                                required 
+                                value={r.role}
+                                onChange={(e) => updateConcurrentRole(idx, 'role', e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white font-medium"
+                              >
+                                <option value="">Pilih peran akses...</option>
+                                <option value="Administrator">Administrator</option>
+                                <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Yayasan/Pesantren (Pusat)</option>
+                                <option value="Pimpinan Pesantren">Pimpinan Pesantren</option>
+                                <option value="Bendahara Jenjang">Bendahara Jenjang</option>
+                                <option value="Kepala Jenjang">Kepala Jenjang</option>
+                                <option value="Kepala Unit">Kepala Unit</option>
+                                <option value="Bendahara Unit">Bendahara Unit</option>
+                                <option value="Staf Bidang">Staf Bidang</option>
+                                <option value="Staf Unit">Staf Unit</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Kerja</label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Building className="w-3.5 h-3.5 text-slate-400" />
+                              </div>
+                              <select 
+                                required 
+                                value={r.unit}
+                                onChange={(e) => updateConcurrentRole(idx, 'unit', e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white font-medium"
+                              >
+                                <option value="">Pilih unit kerja...</option>
+                                <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
+                                <option value="TK">TK</option>
+                                <option value="Diniyah">Diniyah</option>
+                                <option value="SDIT 1">SDIT 1</option>
+                                <option value="SDIT 2">SDIT 2</option>
+                                <option value="MTs">MTs</option>
+                                <option value="MA">MA</option>
+                                <option value="THQ">THQ</option>
+                                <option value="Asrama Putra">Asrama Putra</option>
+                                <option value="Asrama Putri">Asrama Putri</option>
+                                <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
+                                <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <button 
+                        type="button" 
+                        onClick={addRole} 
+                        className="w-full py-2 border border-dashed border-emerald-300 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors"
                       >
-                        <option value="">Pilih unit kerja...</option>
-                        <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
-                        <option value="TK">TK</option>
-                        <option value="Diniyah">Diniyah</option>
-                        <option value="SDIT 1">SDIT 1</option>
-                        <option value="SDIT 2">SDIT 2</option>
-                        <option value="MTs">MTs</option>
-                        <option value="MA">MA</option>
-                        <option value="THQ">THQ</option>
-                        <option value="Asrama Putra">Asrama Putra</option>
-                        <option value="Asrama Putri">Asrama Putri</option>
-                        <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
-                        <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
-                      </select>
+                        <Plus className="w-3.5 h-3.5" /> Tambah Peran Lainnya
+                      </button>
                     </div>
-                  </div>
+                  )}
                   
                   <div className="pt-2">
                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 items-start">

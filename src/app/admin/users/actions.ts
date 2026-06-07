@@ -115,6 +115,109 @@ export async function registerUserByAdmin(userData: {
   }
 }
 
+export async function updateUserByAdmin(userId: string, userData: {
+  name: string;
+  email: string;
+  concurrentRoles: { role: string; unit: string }[];
+}) {
+  try {
+    const supabaseAdmin = createAdminClient();
+
+    // Map roles to DB enum values
+    const mapDropdownToEnum = (roleStr: string) => {
+      switch (roleStr) {
+        case 'Administrator': return 'ADMINISTRATOR';
+        case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+        case 'Pimpinan Pesantren': return 'PIMPINAN';
+        case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
+        case 'Kepala Jenjang': return 'KEPALA_JENJANG';
+        case 'Kepala Unit': return 'KEPALA_UNIT';
+        case 'Bendahara Unit': return 'BENDAHARA_UNIT';
+        case 'Staf Bidang': return 'STAFF_BIDANG';
+        case 'Staf Unit': return 'STAFF';
+        default: return 'STAFF';
+      }
+    };
+
+    if (!userData.concurrentRoles || userData.concurrentRoles.length === 0) {
+      throw new Error("Pengguna minimal harus memiliki satu peran.");
+    }
+
+    // 1. Resolve UUIDs for all units in concurrentRoles
+    const resolvedRoles = await Promise.all(userData.concurrentRoles.map(async (r) => {
+      let unitId: string | null = null;
+      if (r.unit && r.unit !== 'null' && r.unit !== 'undefined') {
+        const { data: unitData } = await supabaseAdmin
+          .from('unit')
+          .select('id')
+          .eq('name', r.unit)
+          .maybeSingle();
+        if (unitData) unitId = unitData.id;
+      }
+      return {
+        roleEnum: mapDropdownToEnum(r.role),
+        unitId,
+        rawRole: r.role,
+        rawUnit: r.unit
+      };
+    }));
+
+    // 2. Update primary profile using the FIRST role in the array
+    const primaryRole = resolvedRoles[0];
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        full_name: userData.name,
+        email: userData.email,
+        role: primaryRole.roleEnum,
+        unit_id: primaryRole.unitId
+      })
+      .eq('id', userId);
+
+    if (profileError) throw new Error(`Gagal memperbarui profil utama: ${profileError.message}`);
+
+    // 3. Fetch existing multi_roles for this user
+    const { data: existingRoles } = await supabaseAdmin
+      .from('profiles_multi_role')
+      .select('id, role, unit_id')
+      .eq('user_id', userId);
+
+    // 4. Determine roles to Add/Keep and roles to Delete
+    const rolesToUpsert = resolvedRoles.map(r => ({
+      user_id: userId,
+      role: r.roleEnum,
+      unit_id: r.unitId
+    }));
+
+    // Upsert all intended roles (Supabase will update or insert based on the unique constraint user_id, role, unit_id)
+    const { error: upsertError } = await supabaseAdmin
+      .from('profiles_multi_role')
+      .upsert(rolesToUpsert, { onConflict: 'user_id, role, unit_id' });
+
+    if (upsertError) throw new Error(`Gagal menyimpan data multi-peran: ${upsertError.message}`);
+
+    // Determine roles to delete (existing roles that are NOT in the new list)
+    if (existingRoles) {
+      const rolesToDelete = existingRoles.filter(existing => {
+        return !rolesToUpsert.some(newRole => 
+          newRole.role === existing.role && 
+          ((newRole.unit_id === null && existing.unit_id === null) || newRole.unit_id === existing.unit_id)
+        );
+      });
+
+      if (rolesToDelete.length > 0) {
+        const idsToDelete = rolesToDelete.map(r => r.id);
+        await supabaseAdmin.from('profiles_multi_role').delete().in('id', idsToDelete);
+      }
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error in updateUserByAdmin server action:', err);
+    return { success: false, error: err.message || 'Terjadi kesalahan sistem saat memperbarui' };
+  }
+}
+
 export async function deleteUserByAdmin(userId: string, roleName?: string, unitName?: string) {
   try {
     const supabaseAdmin = createAdminClient();
