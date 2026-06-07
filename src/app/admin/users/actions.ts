@@ -126,12 +126,12 @@ export async function deleteUserByAdmin(userId: string, roleName?: string, unitN
     if (roleName && unitName) {
       // 1. Fetch Unit ID if needed
       let selectedUnitId: string | null = null;
-      if (unitName && unitName !== 'Pusat (Yayasan)') {
+      if (unitName && unitName !== 'null' && unitName !== 'undefined') {
         const { data: unitData } = await supabaseAdmin
           .from('unit')
           .select('id')
           .eq('name', unitName)
-          .single();
+          .maybeSingle();
         if (unitData) selectedUnitId = unitData.id;
       }
 
@@ -295,7 +295,7 @@ export async function switchActiveProfile(payload: { role: string; unitName: str
 
     // 2. Fetch Unit ID from DB
     let selectedUnitId: string | null = null;
-    if (payload.unitName && payload.unitName !== 'Pusat (Yayasan)' && payload.unitName !== 'null' && payload.unitName !== 'undefined') {
+    if (payload.unitName && payload.unitName !== 'null' && payload.unitName !== 'undefined') {
       const { data: unitData } = await supabaseAdmin
         .from('unit')
         .select('id')
