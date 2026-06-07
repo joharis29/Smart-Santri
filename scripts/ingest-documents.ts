@@ -60,17 +60,13 @@ async function ingest(targetFiles: string[] = []) {
       const filePath = path.join(sourcePath, file)
       console.log(`  Memeriksa file: ${file}...`)
 
-      // Cek apakah file sudah ada di database
-      const { data: existing, error: checkErr } = await supabase
+      // Cek apakah file sudah ada di database dan hitung jumlah chunk-nya
+      const { count, error: checkErr } = await supabase
         .from('document_chunks')
-        .select('id')
+        .select('*', { count: 'exact', head: true })
         .eq('metadata->>file_name', file)
-        .limit(1)
 
-      if (existing && existing.length > 0) {
-        console.log(`  ⏭️ File ${file} sudah diproses sebelumnya. Melewati...`)
-        continue
-      }
+      const startIndex = count || 0;
       
       try {
         console.log(`  Sedang membaca file: ${file}...`)
@@ -87,12 +83,22 @@ async function ingest(targetFiles: string[] = []) {
         
         const chunks = await splitter.splitText(text)
         console.log(`    → Dokumen dipecah menjadi ${chunks.length} chunks`)
+
+        if (startIndex >= chunks.length) {
+          console.log(`  ⏭️ File ${file} sudah diproses sepenuhnya (${chunks.length} chunks). Melewati...`)
+          continue
+        }
+
+        if (startIndex > 0) {
+          console.log(`  🔄 Melanjutkan file ${file} mulai dari chunk ke-${startIndex + 1} dari total ${chunks.length}...`)
+        }
         
         // Estimasi waktu
-        const estimasiMenit = (chunks.length * 4.1) / 60
-        console.log(`    → Estimasi waktu proses: ${estimasiMenit.toFixed(2)} menit`)
+        const sisaChunks = chunks.length - startIndex;
+        const estimasiMenit = (sisaChunks * 4.1) / 60
+        console.log(`    → Estimasi waktu sisa proses: ${estimasiMenit.toFixed(2)} menit`)
 
-        for (let i = 0; i < chunks.length; i++) {
+        for (let i = startIndex; i < chunks.length; i++) {
           const content = chunks[i]
           console.log(`    → Embedding chunk ${i + 1}/${chunks.length}...`)
           

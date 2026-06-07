@@ -31,7 +31,7 @@ export async function auditNarasi(
       apiKey: process.env.GEMINI_API_KEY,
       model: 'gemini-2.5-flash',
       temperature: 0,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 4096,
     })
 
     // 1. Embed query (Ubah teks narasi menjadi angka vektor)
@@ -127,13 +127,20 @@ HANYA kembalikan JSON murni, jangan beri tambahan teks apa pun di luar blok kura
       const statusStr = statusMatch ? statusMatch[1].toUpperCase() : 'AMAN';
       const finalStatus = (statusStr === 'ANOMALI' || statusStr === 'AMAN') ? statusStr : 'AMAN';
       
-      const alasanMatch = jsonString.match(/"alasan"\s*:\s*"([^"]*)/i);
-      const alasanStr = alasanMatch ? alasanMatch[1] : 'Sistem berhasil melakukan audit, namun format alasan gagal dibaca.';
+      // Ambil semua teks di antara "alasan": " dan ", "referensi"
+      const alasanMatch = jsonString.match(/"alasan"\s*:\s*"([\s\S]*?)",\s*"referensi"/i);
+      const alasanStr = alasanMatch ? alasanMatch[1].trim() : 'Sistem berhasil melakukan audit, namun format alasan gagal dibaca secara utuh.';
+      
+      let referensiArr: string[] = [];
+      const refMatch = jsonString.match(/"referensi"\s*:\s*\[([\s\S]*?)\]/is);
+      if (refMatch) {
+          referensiArr = refMatch[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(Boolean);
+      }
       
       return {
         status: finalStatus,
         alasan: alasanStr,
-        referensi: [],
+        referensi: referensiArr,
         skor_kepatuhan: finalStatus === 'ANOMALI' ? 30 : 85
       };
     }

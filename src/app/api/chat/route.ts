@@ -17,9 +17,10 @@ const embeddings = new GoogleGenerativeAIEmbeddings({
 
 const llm = new ChatGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
-  model: 'gemini-flash-latest', // Menggunakan alias terbaru
+  model: 'gemini-2.5-flash', // Memakai model terbaru yang stabil
   temperature: 0.3, // Sedikit kreativitas untuk gaya bahasa asisten, tapi tetap faktual
   maxRetries: 3,
+  maxOutputTokens: 4096,
 });
 
 export async function POST(req: NextRequest) {
@@ -78,8 +79,9 @@ Tugas Anda adalah:
 1. Menjawab pertanyaan pengguna terkait operasional sistem atau aturan regulasi keuangan pesantren.
 2. JIKA pengguna bertanya hal terkait aturan keuangan, GUNAKAN referensi dokumen di bawah ini untuk menjawab secara akurat.
 3. SANGAT PENTING: JIKA dokumen referensi ("KONTEKS REGULASI DITEMUKAN" di bawah) KOSONG atau tidak mengandung informasi yang ditanyakan, ANDA DILARANG KERAS mengambil informasi dari luar sistem atau menggunakan pengetahuan umum. Anda WAJIB menjawab: "Maaf, informasi tersebut belum tersedia di dalam sistem Smart Santri" atau kalimat semacamnya. Jangan berhalusinasi.
-4. Gunakan bahasa Indonesia yang baik, ramah, dan ringkas. Gunakan Markdown (bold, italic, list) untuk membuat jawaban mudah dibaca.
-5. Anda bisa mengingat percakapan sebelumnya jika relevan.
+4. JIKA Anda memberikan jawaban berdasarkan konteks, Anda WAJIB MENYEBUTKAN referensi dari nama file yang tercantum pada teks konteks. Awali jawaban Anda dengan mengutip sumber tersebut (Contoh: "Berdasarkan peraturan pada file [NAMA FILE]...").
+5. Berikan jawaban yang lengkap dan tuntas, jangan sampai terpotong. Gunakan bahasa Indonesia yang baik, ramah, dan ringkas. Gunakan Markdown (bold, italic, list) untuk membuat jawaban mudah dibaca.
+6. Anda bisa mengingat percakapan sebelumnya jika relevan.
 
 --- KONTEKS REGULASI DITEMUKAN ---
 ${konteks || 'KOSONG (Tidak ada referensi dokumen yang ditemukan untuk pertanyaan ini).'}
