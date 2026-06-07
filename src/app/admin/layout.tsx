@@ -135,8 +135,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     .select('role, unit_id, unit(name)')
                     .eq('user_id', user.id);
 
+                let formatted: any[] = [];
                 if (multiRoles) {
-                    const formatted = multiRoles.map((r: any) => ({
+                    formatted = multiRoles.map((r: any) => ({
                         role: r.role,
                         unit_name: r.unit?.name || 'Pusat (Yayasan)'
                     }));
@@ -146,9 +147,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 // Load simulated role and unit from localStorage, or fallback to real database profile
                 const activeRoleKey = `activeRole_${user.id}`;
                 const activeUnitKey = `activeUnit_${user.id}`;
-                const savedRole = localStorage.getItem(activeRoleKey) || dbRole;
-                const savedUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
+                let savedRole = localStorage.getItem(activeRoleKey) || dbRole;
+                let savedUnit = localStorage.getItem(activeUnitKey) || 'Pusat (Yayasan)';
                 
+                // Validate if savedRole still exists in the user's assigned roles (in case it was deleted by an admin)
+                if (formatted.length > 0) {
+                    const isRoleValid = formatted.some(r => r.role === savedRole && r.unit_name === savedUnit);
+                    if (!isRoleValid && savedRole !== 'ADMINISTRATOR') {
+                        savedRole = formatted[0].role;
+                        savedUnit = formatted[0].unit_name;
+                        localStorage.setItem(activeRoleKey, savedRole);
+                        localStorage.setItem(activeUnitKey, savedUnit);
+                    }
+                }
+
                 setActiveRole(savedRole);
                 setActiveUnit(savedUnit);
 
