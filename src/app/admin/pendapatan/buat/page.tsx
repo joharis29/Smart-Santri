@@ -331,6 +331,11 @@ export default function InputPendapatanPage() {
             return;
         }
 
+        if (!availableSources.includes(sumberDana)) {
+            setMessage({ type: 'error', text: `SECURITY ALERT: Akses ditolak. Sumber dana "${sumberDana}" tidak diizinkan atau tidak terdaftar untuk unit ${currentUserUnit}.` });
+            return;
+        }
+
         setIsSubmitting(true);
         setMessage(null);
 
