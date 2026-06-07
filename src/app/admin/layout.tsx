@@ -217,7 +217,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             channel = supabase
                 .channel(`multi_role_changes_${userId}`)
                 .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'profiles_multi_role', filter: `user_id=eq.${userId}` }, 
+                    { event: '*', schema: 'public', table: 'profiles_multi_role' }, 
                     () => {
                         fetchProfile();
                     }
