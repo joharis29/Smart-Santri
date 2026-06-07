@@ -428,16 +428,12 @@ export default function LandingPage() {
 
                     <hr className="border-emerald-800 mb-8" />
 
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-emerald-300">
+                    <div className="flex justify-center items-center text-sm text-emerald-300">
                         <div className="flex items-center gap-2">
                             <div className="bg-accent p-1 rounded">
                                 <ShieldCheck className="text-primary w-4 h-4" />
                             </div>
                             <span className="font-bold text-white">Smart Santri © 2026</span>
-                        </div>
-                        <div className="text-center md:text-right">
-                            <p>Dikembangkan oleh: <span className="text-white font-semibold">Sidqi Alaudin Johari</span></p>
-                            <p className="text-xs opacity-70">Mahasiswa Akuntansi Syariah, Universitas Tazkia.</p>
                         </div>
                     </div>
                 </div>
