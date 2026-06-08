@@ -4,7 +4,7 @@ Dokumen ini berisi daftar tugas (*To-Do List*) dan *Product Backlog* yang disusu
 
 ---
 
-## 🏃‍♂️ Fase 1: Fondasi Arsitektur & Keamanan (Selesai/On-Going)
+## 🏃‍♂️ Fase 1: Fondasi Arsitektur & Keamanan (Selesai)
 Fokus pada penyiapan infrastruktur dasar, autentikasi, dan skema basis data yang aman.
 
 - [x] Inisialisasi Proyek (Next.js, TypeScript, Tailwind CSS v4)
@@ -22,10 +22,14 @@ Fokus pada penyiapan infrastruktur dasar, autentikasi, dan skema basis data yang
 - [x] Konfigurasi *Row-Level Security* (RLS) untuk perlindungan data RBAC
 - [x] **Fitur Lupa Kata Sandi**: Halaman `/lupa-kata-sandi` & `/reset-kata-sandi` terintegrasi dengan Supabase Auth email recovery.
 - [x] **Template Email Kustom**: Desain email Reset Password & Password Changed dengan branding Smart Santri (panduan konfigurasi SMTP kustom disediakan).
+- [x] **Sistem Manajemen Multi-Role**:
+  - [x] Implementasi struktur `profiles_multi_role` untuk mendukung satu pengguna dengan banyak jabatan.
+  - [x] *Switch role* dinamis antar-sesi tanpa *login* ulang.
+  - [x] Keamanan Otorisasi: Menerapkan *Supabase Realtime Channel* untuk memicu penendangan ke Dasbor secara *real-time* jika otorisasi pengguna dihapus oleh Admin.
 
 ---
 
-## 🏗️ Fase 2: Sistem Informasi Akuntansi (SIA) Inti (Prioritas Tinggi)
+## 🏗️ Fase 2: Sistem Informasi Akuntansi (SIA) Inti (Selesai)
 Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluaran kas.
 
 - [x] **Modul Pengajuan RKA (Rencana Kegiatan Anggaran)**
@@ -35,7 +39,7 @@ Fokus pada alur CRUD (Create, Read, Update, Delete) utama untuk siklus pengeluar
   - [x] **Smart Funding Split**: Kalkulasi pembagian sumber dana otomatis via persentase (%) dan nominal (Rp).
   - [x] Akumulasi otomatis rincian kegiatan ke total Rencana Anggaran utama.
   - [x] Pencegahan input untuk periode (Bulan & Tahun Ajaran) yang sudah lampau.
-  - [x] Fitur *Import* data RKA via Excel/CSV (Telah Berfungsi).
+  - [x] Fitur *Import* data RKA via Excel/CSV.
 - [x] **Modul Otorisasi Berjenjang**
   - [x] Fitur persetujuan tingkat 1: Kepala Unit / Jenjang (Review & Penolakan Bercatatan).
   - [x] Fitur otorisasi tingkat 2: Bendahara Pusat (Edit Penuh, Setujui, Tolak dengan catatan).
@@ -82,7 +86,7 @@ Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk valid
 
 - [x] Persiapan *Vector Database* (Supabase `pgvector`) — Tabel `document_chunks` + fungsi `match_documents` RPC.
 - [x] Ekstraksi dan *Chunking* 4 Pilar Regulasi (ISAK 335, PAP, Juknis BOS, SOP Pesantren) — 893 chunks dari 17 PDF (`scripts/prepare_documents.ts`).
-- [/] *Embedding* chunks ke database vektor — Menggunakan model *embedding* dari *provider* alternatif (Google Gemini / HuggingFace).
+- [x] *Embedding* chunks ke database vektor — Menggunakan skrip *resumable chunking* (`ingest-documents.ts`) dan model *embedding* dari *provider* alternatif (Google Gemini).
 - [x] Pengembangan *Pipeline* LangChain.js (Retrieval & Prompt Engineering) — `src/lib/rag.ts` terintegrasi dengan LLM alternatif (Gemini).
 - [x] Pembuatan *API Route* Next.js untuk menghubungkan narasi transaksi dengan LLM alternatif — `POST /api/audit`.
 - [x] Integrasi UI: Menampilkan bendera peringatan (*Flag*) anomali audit (Kepatuhan Syariah) di tabel pengajuan.
@@ -91,13 +95,18 @@ Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk valid
 
 ---
 
-## ⚙️ Fase 4: Fitur Lanjutan & Otomatisasi (Prioritas Menengah)
+## ⚙️ Fase 4: Fitur Lanjutan & Otomatisasi (Selesai/On-Going)
 Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 
-- [x] **Sistem Blokir RKA**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** (`/pengaturan/kontrol-pengajuan`) — Bendahara Pusat dapat mengunci/membuka akses RKA & LPJ secara manual per unit, memberikan fleksibilitas untuk kondisi nyata di mana jadwal kegiatan dapat mundur meskipun dana sudah cair.
+- [x] **Sistem Blokir Akses Finansial**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** (`/pengaturan/kontrol-pengajuan`) — Bendahara Pusat dapat mengunci/membuka akses secara manual per unit.
+  - [x] Optimasi Performa UI Blokir: Menggunakan `Promise.all` dan `getSession` untuk verifikasi otorisasi halaman di bawah 100 milidetik, menghilangkan *loading flash*.
 - [x] **Tracking System**: UI interaktif untuk melacak status pengajuan (Pop-up "Lacak" di Dasbor dengan Step Indicator).
-- [x] **Notifikasi Email**: Pengiriman email otomatis via **Resend** untuk 6 event trigger: RKA/LPJ disubmit → Bendahara Unit; diteruskan → Kepala Unit; disetujui Kepala → Bendahara Pusat; dana CAIR / SUDAH_DITERIMA → Bendahara Unit + Staf; revisi diminta → Staf Pembuat. Template HTML berbranding Smart Santri.
-- [x] **Manajemen Penjadwalan Ulang (*Reschedule*)**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** — Bendahara Pusat dapat mentoleransi kegiatan yang belum terlaksana dengan mengatur akses pengajuan secara fleksibel per unit. Staf/Bendahara Unit cukup konfirmasi ke Bendahara Pusat tanpa alur digital yang rumit.
+- [x] **Notifikasi Email**: Pengiriman email otomatis via **Resend** untuk 6 event trigger.
+- [x] **Modul Revisi RKA & LPJ**:
+  - [x] Form pengajuan ulang anggaran (*Revisi RKA*) dan realisasi (*Revisi LPJ*) dengan *Dual-Pane UI*.
+  - [x] Ekspor *Excel Professional* khusus dokumen revisi.
+  - [x] Integrasi status *Frozen* (Dibekukan) untuk menutup jendela revisi secara *real-time*.
+- [x] **Manajemen Penjadwalan Ulang (*Reschedule*)**: Bendahara Pusat dapat mentoleransi keterlambatan kegiatan dengan mengatur akses fleksibel per unit via *Kontrol Pengajuan*.
 - [x] **Audit Trail Log UI**: Tampilan riwayat aktivitas (*read-only*) terintegrasi (RKA & LPJ) melalui detail pelacakan untuk transparansi mutasi data.
 - [x] **Ultra Compact Dashboard**: Optimalisasi kepadatan informasi untuk monitoring keuangan efisien.
 - [x] **Filter Dasbor Interaktif**: Filter berdasarkan unit & jenis dana dengan penutupan otomatis saat klik di luar komponen.
@@ -107,13 +116,14 @@ Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
   - [x] Optimasi antarmuka (UI/UX) dengan pemisahan kolom spesifik dan *Sticky Action Column* untuk layar kecil.
 - [x] **Akses Konsolidasi Pimpinan (Super Viewer)**: Hak akses penuh ke Buku Besar terpusat dengan perbaikan Row-Level Security (`transaksi_pendapatan`).
 - [x] **Nomenklatur Otomatis Jurnal**: Label pencatatan (Penerimaan RKA & Realisasi LPJ) otomatis untuk mencegah kebingungan double-entry di Buku Besar.
+
 ---
 
-## 🚀 Fase 5: Pengujian & Peluncuran (Penyelesaian)
+## 🚀 Fase 5: Pengujian & Peluncuran (On-Going)
 Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 
 - [ ] *Unit Testing* & *Integration Testing* (Terutama kalkulasi nominal saldo).
-- [ ] Pemindaian keamanan kode (*Static Code Analysis*) dengan SonarCloud.
+- [/] Pemindaian keamanan kode (*Static Code Analysis*) dengan SonarCloud. (Sistem sudah mematuhi _Quality Gate_ secara bertahap, perbaikan *bug accessibility/reliability* telah diselesaikan).
 - [ ] Simulasi dan Pengujian Kotak Hitam (*Black Box Testing*).
 - [/] *User Acceptance Testing* (UAT) bersama Bendahara Pesantren.
   - [x] Penyiapan dokumen formal skenario UAT berbasis kerangka metodologi DSRM yang disesuaikan dengan peran (*Role-Based*).
@@ -121,4 +131,4 @@ Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 
 ---
 *Catatan: Centang kotak `[ ]` menjadi `[x]` seiring berjalannya progres pengembangan aplikasi.*
-*Terakhir diperbarui: 01 Juni 2026*
+*Terakhir diperbarui: 09 Juni 2026*
