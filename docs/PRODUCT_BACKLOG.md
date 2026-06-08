@@ -95,7 +95,7 @@ Fokus pada pengembangan mesin *Retrieval-Augmented Generation* (RAG) untuk valid
 
 ---
 
-## ⚙️ Fase 4: Fitur Lanjutan & Otomatisasi (Selesai/On-Going)
+## ⚙️ Fase 4: Fitur Lanjutan & Otomatisasi (Selesai)
 Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 
 - [x] **Sistem Blokir Akses Finansial**: Diselesaikan melalui fitur **Kontrol Pengajuan & LPJ** (`/pengaturan/kontrol-pengajuan`) — Bendahara Pusat dapat mengunci/membuka akses secara manual per unit.
