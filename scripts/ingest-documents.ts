@@ -25,7 +25,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // Gunakan service role key untuk insert
 )
 
-const REGULASI_DIR = path.join(process.cwd(), 'docs', 'regulasi')
+const REGULASI_DIR = path.resolve(__dirname, '../../docs/regulasi')
 
 async function ingest(targetFiles: string[] = []) {
   console.log('Memulai proses ingestion dokumen regulasi...')
