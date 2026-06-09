@@ -1846,16 +1846,6 @@ function BuatPengajuanContent() {
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <textarea 
-                          value={row.operasional}
-                          onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
-                          rows={2}
-                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-y break-words whitespace-normal"
-                          placeholder="Ketikan deskripsi..."
-                        />
-                      </td>
-                      <td className="p-0 border-r border-slate-100">
-                      <td className="p-0 border-r border-slate-100">
                         <AutoResizeTextarea 
                           value={row.operasional}
                           onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
