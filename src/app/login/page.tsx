@@ -6,6 +6,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ [key: s
   const searchParams = await props.searchParams;
   const errorMsg = searchParams?.error as string | undefined;
   const verified = searchParams?.verified === 'true';
+  const expired = searchParams?.expired === 'true';
 
   return (
     <div className="font-sans antialiased bg-primary min-h-screen flex flex-col justify-center relative overflow-hidden">
@@ -52,6 +53,14 @@ export default async function LoginPage(props: { searchParams: Promise<{ [key: s
               <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-red-600">{errorMsg}</p>
+              </div>
+            )}
+
+            {/* Expired Session Message */}
+            {expired && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700">Sesi Anda telah berakhir karena tidak ada aktivitas selama 30 menit. Silakan login kembali demi keamanan.</p>
               </div>
             )}
 

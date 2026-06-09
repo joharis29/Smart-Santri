@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -92,6 +92,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [assignedRoles, setAssignedRoles] = useState<{ role: string; unit_name: string }[]>([]);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+
+    // Timeout states
+    const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+    const [timeoutCountdown, setTimeoutCountdown] = useState(60);
+    const warningActiveRef = useRef(false);
+    const resetTimerRef = useRef<() => void>(() => {});
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -235,6 +241,82 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         };
     }, [activeRole, activeUnit, userId]);
 
+    // --- Auto Logout due to Inactivity ---
+    useEffect(() => {
+        if (!userId) return; // Only apply if user is logged in
+        
+        let warningTimeoutId: NodeJS.Timeout;
+        let countdownIntervalId: NodeJS.Timeout;
+
+        const WARNING_TIME = 29 * 60 * 1000; // 29 minutes in ms
+        const COUNTDOWN_SECONDS = 60; // 1 minute warning
+        
+        const forceLogout = async () => {
+            try {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                localStorage.removeItem(`activeRole_${userId}`);
+                localStorage.removeItem(`activeUnit_${userId}`);
+                localStorage.removeItem('activeRole');
+                localStorage.removeItem('activeUnit');
+                window.location.href = '/login?expired=true';
+            } catch (err) {
+                console.error("Logout on inactivity failed", err);
+            }
+        };
+
+        const showWarning = () => {
+            warningActiveRef.current = true;
+            setShowTimeoutWarning(true);
+            setTimeoutCountdown(COUNTDOWN_SECONDS);
+            
+            // Start countdown
+            countdownIntervalId = setInterval(() => {
+                setTimeoutCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(countdownIntervalId);
+                        forceLogout();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        };
+
+        const resetTimer = () => {
+            clearTimeout(warningTimeoutId);
+            clearInterval(countdownIntervalId);
+            warningActiveRef.current = false;
+            setShowTimeoutWarning(false);
+            
+            warningTimeoutId = setTimeout(showWarning, WARNING_TIME);
+        };
+
+        resetTimerRef.current = resetTimer;
+
+        let throttled = false;
+        const handleActivity = () => {
+            // Do not reset automatically if the warning is actively showing.
+            // The user MUST click the "Tetap Login" button to dismiss the popup.
+            if (!throttled && !warningActiveRef.current) {
+                resetTimer();
+                throttled = true;
+                setTimeout(() => { throttled = false; }, 1000); // Throttle activity checks to once per second
+            }
+        };
+
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+        events.forEach(event => document.addEventListener(event, handleActivity));
+
+        resetTimer(); // Initialize timer
+
+        return () => {
+            clearTimeout(warningTimeoutId);
+            clearInterval(countdownIntervalId);
+            events.forEach(event => document.removeEventListener(event, handleActivity));
+        };
+    }, [userId]);
+
     const handleLogout = async () => {
         try {
             const supabase = createClient();
@@ -254,6 +336,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen">
+            {/* Modal Session Timeout Warning */}
+            {showTimeoutWarning && (
+                <div className="fixed inset-0 z-[99999] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-amber-200 animate-in fade-in zoom-in duration-300">
+                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-amber-50">
+                            <ShieldAlert className="w-8 h-8 text-amber-600 animate-pulse" />
+                        </div>
+                        <h3 className="text-lg font-black text-slate-800 mb-2">Sesi Hampir Berakhir</h3>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
+                            Karena tidak ada aktivitas, sistem akan mengeluarkan Anda dalam <strong className="text-rose-600 text-sm">{timeoutCountdown} detik</strong> untuk mengamankan akun.
+                        </p>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={handleLogout}
+                                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                            >
+                                Keluar
+                            </button>
+                            <button 
+                                onClick={() => resetTimerRef.current()}
+                                className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-200 transition-colors"
+                            >
+                                Tetap Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
