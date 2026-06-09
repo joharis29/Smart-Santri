@@ -258,6 +258,31 @@ interface LPJRow {
     isFilled: boolean;
 }
 
+const AutoResizeTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+    
+    React.useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [props.value]);
+
+    return (
+        <textarea
+            {...props}
+            ref={textareaRef}
+            style={{ overflow: 'hidden', ...props.style }}
+            onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = target.scrollHeight + 'px';
+                if (props.onInput) props.onInput(e);
+            }}
+        />
+    );
+};
+
 export default function BuatRealisasiPage() {
     const [approvedRkas, setApprovedRkas] = useState<any[]>([]);
     const [selectedRkaId, setSelectedRkaId] = useState('');
@@ -2402,66 +2427,59 @@ export default function BuatRealisasiPage() {
                                             <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                                 <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
                                                 <td className="p-0 relative group border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.program}
                                                         readOnly
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 pr-8 bg-slate-50/70 border border-slate-100 outline-none text-[11px] font-black text-slate-500 cursor-not-allowed resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 pr-8 bg-slate-50/70 border border-slate-100 outline-none text-[11px] font-black text-slate-500 cursor-not-allowed resize-none break-words whitespace-normal"
                                                         placeholder="Program dari RKA"
                                                     />
                                                     <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.operasional}
                                                         onChange={(e) => updateLpjRow(row.id, 'operasional', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-none break-words whitespace-normal"
                                                         placeholder="Ketikan deskripsi..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.jumlah}
                                                         onChange={(e) => updateLpjRow(row.id, 'jumlah', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-2 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-2 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                                         placeholder="1x"
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.waktu}
                                                         onChange={(e) => updateLpjRow(row.id, 'waktu', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.tempat}
                                                         onChange={(e) => updateLpjRow(row.id, 'tempat', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.pic}
                                                         onChange={(e) => updateLpjRow(row.id, 'pic', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <textarea 
+                                                    <AutoResizeTextarea 
                                                         value={row.sasaran}
                                                         onChange={(e) => updateLpjRow(row.id, 'sasaran', e.target.value)}
-                                                        rows={2}
-                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>

@@ -197,6 +197,31 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
     );
 };
 
+const AutoResizeTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+    
+    React.useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [props.value]);
+
+    return (
+        <textarea
+            {...props}
+            ref={textareaRef}
+            style={{ overflow: 'hidden', ...props.style }}
+            onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = target.scrollHeight + 'px';
+                if (props.onInput) props.onInput(e);
+            }}
+        />
+    );
+};
+
 export default function RkaRevisiPage() {
   const router = useRouter()
   const [rkaList, setRkaList] = useState<any[]>([])
@@ -1255,56 +1280,50 @@ export default function RkaRevisiPage() {
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.operasional}
                                             onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-none break-words whitespace-normal"
                                             placeholder="Deskripsi kegiatan..."
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.jumlah}
                                             onChange={(e) => updateRow(row.id, 'jumlah', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-2 py-2 bg-white border-none outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-2 py-2 bg-white border-none outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                             placeholder="1x"
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.waktu}
                                             onChange={(e) => updateRow(row.id, 'waktu', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                             placeholder="..."
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.tempat}
                                             onChange={(e) => updateRow(row.id, 'tempat', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                             placeholder="..."
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.pic}
                                             onChange={(e) => updateRow(row.id, 'pic', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                             placeholder="..."
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <textarea 
+                                        <AutoResizeTextarea 
                                             value={row.sasaran}
                                             onChange={(e) => updateRow(row.id, 'sasaran', e.target.value)}
-                                            rows={2}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
+                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
                                             placeholder="..."
                                         />
                                     </td>
