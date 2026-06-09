@@ -354,15 +354,15 @@ const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih 
     }, [options, search]);
 
     return (
-        <div ref={wrapperRef} className="relative w-full h-10">
+        <div ref={wrapperRef} className="relative w-full h-full min-h-[40px]">
             <div 
                 onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsOpen(!isOpen); setSearch(''); e.preventDefault(); } }}
                 role="button"
                 tabIndex={0}
-                className={`w-full h-full px-3 pr-8 bg-white outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer flex items-center ${value === '' ? 'text-slate-400 italic' : 'text-black'}`}
+                className={`w-full h-full min-h-[40px] px-3 py-2 pr-8 bg-white outline-none text-[11px] font-black focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer flex items-start ${value === '' ? 'text-slate-400 italic' : 'text-black'}`}
             >
-                <span className="truncate">{value || placeholder}</span>
+                <span className="whitespace-normal break-words leading-snug w-full">{value || placeholder}</span>
                 <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
             </div>
             
@@ -1846,56 +1846,56 @@ function BuatPengajuanContent() {
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.operasional}
                           onChange={(e) => updateRow(row.id, 'operasional', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-y break-words whitespace-normal"
                           placeholder="Ketikan deskripsi..."
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.jumlah}
                           onChange={(e) => updateRow(row.id, 'jumlah', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-center text-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-center text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-y break-words whitespace-normal"
                           placeholder="0"
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.waktu}
                           onChange={(e) => updateRow(row.id, 'waktu', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-y break-words whitespace-normal"
                           placeholder="-"
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.tempat}
                           onChange={(e) => updateRow(row.id, 'tempat', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-y break-words whitespace-normal"
                           placeholder="-"
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.pic}
                           onChange={(e) => updateRow(row.id, 'pic', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-y break-words whitespace-normal"
                           placeholder="-"
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={row.sasaran}
                           onChange={(e) => updateRow(row.id, 'sasaran', e.target.value)}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                          rows={2}
+                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-y break-words whitespace-normal"
                           placeholder="-"
                         />
                       </td>

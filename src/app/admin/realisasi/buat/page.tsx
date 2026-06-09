@@ -2402,69 +2402,66 @@ export default function BuatRealisasiPage() {
                                             <tr key={row.id} className="divide-x divide-slate-100 bg-white hover:bg-emerald-50/10 transition-colors group">
                                                 <td className="px-3 py-2 text-center font-black text-slate-300">{idx + 1}</td>
                                                 <td className="p-0 relative group border-r border-slate-100">
-                                                    <input 
-                                                        list={`lpj-programs-${row.id}`}
+                                                    <textarea 
                                                         value={row.program}
                                                         readOnly
-                                                        className="w-full h-10 px-3 pr-8 bg-slate-50/70 border border-slate-100 outline-none text-[11px] font-black text-slate-500 cursor-not-allowed"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 pr-8 bg-slate-50/70 border border-slate-100 outline-none text-[11px] font-black text-slate-500 cursor-not-allowed resize-y break-words whitespace-normal"
                                                         placeholder="Program dari RKA"
                                                     />
-                                                    <datalist id={`lpj-programs-${row.id}`}>
-                                                        {availablePrograms.map(prog => <option key={prog} value={prog} />)}
-                                                    </datalist>
                                                     <ChevronDown className="absolute right-2 top-3 w-3 h-3 text-slate-300 pointer-events-none group-hover:text-emerald-500" />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text" 
+                                                    <textarea 
                                                         value={row.operasional}
                                                         onChange={(e) => updateLpjRow(row.id, 'operasional', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 transition-all placeholder-slate-400 resize-y break-words whitespace-normal"
                                                         placeholder="Ketikan deskripsi..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text"
+                                                    <textarea 
                                                         value={row.jumlah}
                                                         onChange={(e) => updateLpjRow(row.id, 'jumlah', e.target.value)}
-                                                        className="w-full h-10 px-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-2 py-2 bg-white border border-slate-100 outline-none text-[11px] font-black text-center focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
                                                         placeholder="1x"
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text"
+                                                    <textarea 
                                                         value={row.waktu}
                                                         onChange={(e) => updateLpjRow(row.id, 'waktu', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text"
+                                                    <textarea 
                                                         value={row.tempat}
                                                         onChange={(e) => updateLpjRow(row.id, 'tempat', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text"
+                                                    <textarea 
                                                         value={row.pic}
                                                         onChange={(e) => updateLpjRow(row.id, 'pic', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
                                                 <td className="p-0 border-r border-slate-100">
-                                                    <input 
-                                                        type="text"
+                                                    <textarea 
                                                         value={row.sasaran}
                                                         onChange={(e) => updateLpjRow(row.id, 'sasaran', e.target.value)}
-                                                        className="w-full h-10 px-3 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                                        rows={2}
+                                                        className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-100 outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-y break-words whitespace-normal"
                                                         placeholder="..."
                                                     />
                                                 </td>
