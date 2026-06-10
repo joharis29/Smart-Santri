@@ -887,32 +887,6 @@ export default function UserManagementPage() {
                     </div>
                   </div>
 
-                  {modalMode === 'add' && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Kata Sandi (Default)</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Lock className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <input 
-                          type={showPassword ? "text" : "password"} 
-                          required={modalMode === 'add'} 
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          placeholder="Masukkan kata sandi awal" 
-                          className="w-full pl-9 pr-10 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-medium leading-tight">Berikan password sementara yang mudah diingat, contoh: <span className="font-bold text-emerald-600">SmartSantri123!</span></p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Kanan: Akses */}

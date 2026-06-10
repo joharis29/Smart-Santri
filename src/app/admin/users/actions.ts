@@ -28,25 +28,8 @@ export async function registerUserByAdmin(userData: {
       // Jika akun sudah ada di Auth, gunakan ID yang sudah ada
       userId = existingUser.id;
     } else {
-      // Jika email belum ada di Auth, buat akun baru (auto confirms email)
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password || crypto.randomUUID(),
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.name
-        }
-      });
-
-      if (authError) {
-        throw new Error(`Gagal mendaftarkan akun baru di Supabase Auth: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error('Gagal mendapatkan data akun setelah pendaftaran.');
-      }
-
-      userId = authData.user.id;
+      // Sesuai SOP: Staf wajib registrasi mandiri. Admin tidak boleh membuatkan akun dari nol.
+      throw new Error(`Email ${userData.email} belum terdaftar di sistem. Staf wajib melakukan registrasi mandiri terlebih dahulu.`);
     }
 
     // 2. Fetch Unit ID from DB
