@@ -18,7 +18,7 @@ export async function getDashboardBalances(activeUnit: string, activeTahunAjaran
     // 2. Fetch Pengaturan Sumber Dana
     const { data: sourcesData } = await adminClient
         .from('pengaturan_sumber_dana')
-        .select('nama_sumber_dana')
+        .select('nama_sumber_dana, kategori_pembatasan')
         .eq('unit_name', activeUnit.trim());
 
     // 3. Fetch Transaksi (Tahun Ajaran Aktif)

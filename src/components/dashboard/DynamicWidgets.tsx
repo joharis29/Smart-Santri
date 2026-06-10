@@ -3,7 +3,7 @@ import { Vault, HandCoins, Store, Activity, PiggyBank, Wallet, Landmark, Coins, 
 import { WidgetCard } from './WidgetCard';
 
 interface DynamicWidgetsProps {
-  sources: { name: string }[];
+  sources: { name: string; kategori_pembatasan?: string }[];
   exactBalances: Record<string, number>;
   preferences: any;
 }
@@ -17,7 +17,8 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
   };
 
   // Helper to determine the aesthetic properties of the widget
-  const getWidgetProps = (name: string) => {
+  const getWidgetProps = (source: { name: string; kategori_pembatasan?: string }) => {
+    const { name, kategori_pembatasan } = source;
     const lower = name.toLowerCase();
     
     // Default values
@@ -26,7 +27,26 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
     let type: 'Restricted' | 'Unrestricted' = 'Unrestricted';
     let subtitle = "Dana Operasional / Custom";
 
-    // Infer properties based on keywords
+    // 1. Explicit Database Categorization
+    if (kategori_pembatasan === 'Dengan Pembatasan') {
+      type = 'Restricted';
+      colorType = 'accent';
+      subtitle = "Dana Dengan Pembatasan Khusus";
+      if (lower.includes('zakat') || lower.includes('infaq') || lower.includes('sedekah')) icon = HandCoins;
+      else if (lower.includes('wakaf')) icon = Landmark;
+      else if (lower.includes('tabungan') || lower.includes('saku')) icon = PiggyBank;
+      else icon = Wallet;
+      return { icon, colorType, type, subtitle };
+    } else if (kategori_pembatasan === 'Tanpa Pembatasan') {
+      type = 'Unrestricted';
+      if (lower.includes('spp')) { icon = Vault; subtitle = "Dana Utama Operasional"; }
+      else if (lower.includes('koperasi') || lower.includes('usaha') || lower.includes('poskestren')) { icon = lower.includes('poskestren') ? Activity : Store; subtitle = "Pendapatan Unit Usaha"; }
+      else if (lower.includes('bos') || lower.includes('bantuan')) { icon = Briefcase; colorType = 'primary'; subtitle = "Dana Bantuan Operasional"; }
+      else if (lower.includes('yayasan') || lower.includes('pesantren') || lower.includes('subsidi')) { icon = Landmark; subtitle = "Dana Induk / Subsidi"; }
+      return { icon, colorType, type, subtitle };
+    }
+
+    // 2. Fallback Heuristics (If DB value is missing / hardcoded)
     if (lower.includes('spp')) {
       icon = Vault;
       subtitle = "Dana Utama Operasional";
@@ -86,7 +106,7 @@ export function DynamicWidgets({ sources, exactBalances, preferences }: DynamicW
   return (
     <>
       {sources.map((source, idx) => {
-        const props = getWidgetProps(source.name);
+        const props = getWidgetProps(source);
         // Use exact calculated balance for this specific string
         const balance = exactBalances[source.name] || 0;
         

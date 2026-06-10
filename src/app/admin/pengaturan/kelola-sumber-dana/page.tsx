@@ -26,6 +26,7 @@ interface SumberDanaItem {
     id: string;
     unit_name: string;
     nama_sumber_dana: string;
+    kategori_pembatasan?: string;
 }
 
 const ALL_UNITS = [
@@ -93,6 +94,7 @@ export default function KelolaSumberDanaPage() {
     // Form inputs
     const [newBidangName, setNewBidangName] = useState('');
     const [newSourceName, setNewSourceName] = useState('');
+    const [newSourceKategori, setNewSourceKategori] = useState('Tanpa Pembatasan');
 
     // Messages
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -237,7 +239,8 @@ export default function KelolaSumberDanaPage() {
                 .from('pengaturan_sumber_dana')
                 .insert({
                     unit_name: selectedUnit,
-                    nama_sumber_dana: name
+                    nama_sumber_dana: name,
+                    kategori_pembatasan: newSourceKategori
                 })
                 .select()
                 .single();
@@ -246,6 +249,7 @@ export default function KelolaSumberDanaPage() {
 
             setSources(prev => [...prev, data]);
             setNewSourceName('');
+            setNewSourceKategori('Tanpa Pembatasan');
             showToast(`Sumber dana "${name}" berhasil ditambahkan!`);
         } catch (err: any) {
             console.error("Error adding source:", err);
@@ -492,7 +496,7 @@ export default function KelolaSumberDanaPage() {
 
                     {/* Inline Form to Add Source */}
                     <form onSubmit={handleAddSource} className="p-2.5 px-4 border-b border-slate-100 bg-slate-50/20">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <input 
                                 type="text"
                                 value={newSourceName}
@@ -501,6 +505,15 @@ export default function KelolaSumberDanaPage() {
                                 className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 placeholder-slate-350 focus:outline-none focus:border-emerald-600 transition-colors"
                                 disabled={isSavingSource}
                             />
+                            <select
+                                value={newSourceKategori}
+                                onChange={(e) => setNewSourceKategori(e.target.value)}
+                                className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-600 transition-colors w-full sm:w-auto"
+                                disabled={isSavingSource}
+                            >
+                                <option value="Tanpa Pembatasan">Tanpa Pembatasan</option>
+                                <option value="Dengan Pembatasan">Dengan Pembatasan</option>
+                            </select>
                             <button
                                 type="submit"
                                 disabled={isSavingSource || !newSourceName.trim()}
@@ -536,7 +549,14 @@ export default function KelolaSumberDanaPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-1.5">
                                 {sources.map((s) => (
                                     <div key={s.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 p-2 px-3 rounded-xl group hover:border-slate-355 transition-colors">
-                                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate mr-2" title={s.nama_sumber_dana}>{s.nama_sumber_dana}</span>
+                                        <div className="flex flex-col overflow-hidden mr-2">
+                                            <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate" title={s.nama_sumber_dana}>{s.nama_sumber_dana}</span>
+                                            {s.kategori_pembatasan && (
+                                                <span className={`text-[8px] font-black uppercase tracking-widest mt-0.5 w-fit px-1.5 py-0.5 rounded ${s.kategori_pembatasan === 'Dengan Pembatasan' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                                    {s.kategori_pembatasan}
+                                                </span>
+                                            )}
+                                        </div>
                                         <button
                                             onClick={() => handleDeleteSource(s.id, s.nama_sumber_dana)}
                                             disabled={deletingId === s.id}
