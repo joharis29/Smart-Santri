@@ -38,7 +38,7 @@ interface SendEmailParams {
   jenis?: 'RKA' | 'LPJ'
 }
 
-const APP_URL = 'https://smart-santri-eight.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://smart-santri-eight.vercel.app'
 
 export async function sendNotifikasiEmail(params: SendEmailParams): Promise<void> {
   const {
@@ -139,7 +139,7 @@ export async function sendNotifikasiEmail(params: SendEmailParams): Promise<void
     }
     
     await resend.emails.send({
-      from: 'Smart Santri <onboarding@resend.dev>',
+      from: process.env.NEXT_PUBLIC_FROM_EMAIL || 'Smart Santri <onboarding@resend.dev>',
       to: toEmail,
       subject: subjects[event],
       html
