@@ -25,9 +25,15 @@ export async function login(formData: FormData) {
       u => u.email?.toLowerCase() === email.toLowerCase()
     )
 
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_active')
+      .eq('email', email)
+      .maybeSingle()
+
     if (!authUser) {
       redirect('/login?error=Mohon maaf, akun tidak terdaftar di sistem.')
-    } else if (authUser.banned_until && new Date(authUser.banned_until) > new Date()) {
+    } else if (profile && profile.is_active === false) {
       redirect('/login?error=Akun Anda dinonaktifkan, hubungi admin untuk mengaktifkan kembali akun.')
     } else {
       redirect('/login?error=Kata sandi yang Anda masukkan salah.')
