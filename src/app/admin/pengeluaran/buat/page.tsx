@@ -853,7 +853,7 @@ export default function InputPengeluaranPage() {
 
                             {/* 1. Tanggal */}
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Tanggal Transaksi *</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3 h-3" /> Tanggal Transaksi <span className="text-rose-500">*</span></label>
                                 <input 
                                     type="date"
                                     value={tanggal}
@@ -864,7 +864,7 @@ export default function InputPengeluaranPage() {
 
                             {/* 2. Sumber Dana */}
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><DollarSign className="w-3 h-3" /> Sumber Dana / Kategori *</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><DollarSign className="w-3 h-3" /> Sumber Dana / Kategori <span className="text-rose-500">*</span></label>
                                 <select
                                     value={sumberDana}
                                     onChange={(e) => setSumberDana(e.target.value)}
@@ -877,7 +877,7 @@ export default function InputPengeluaranPage() {
 
                             {/* 3. Nominal */}
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><DollarSign className="w-3 h-3" /> Nominal Pengeluaran (Rp) *</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><DollarSign className="w-3 h-3" /> Nominal Pengeluaran (Rp) <span className="text-rose-500">*</span></label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-3.5 text-xs font-black text-slate-400">Rp</span>
                                     <input 
@@ -892,7 +892,7 @@ export default function InputPengeluaranPage() {
 
                             {/* 4. Metode Pencairan */}
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><CreditCard className="w-3 h-3" /> Metode Pencairan *</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><CreditCard className="w-3 h-3" /> Metode Pencairan <span className="text-rose-500">*</span></label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
@@ -914,7 +914,7 @@ export default function InputPengeluaranPage() {
                             {/* 5. Nama Bank */}
                             {metodePencairan === 'Transfer' && (
                                 <div className="space-y-1 animate-in fade-in duration-300">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><Banknote className="w-3 h-3" /> Nama Bank Operasional *</label>
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><Banknote className="w-3 h-3" /> Nama Bank Operasional <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="text"
                                         placeholder="Contoh: Bank Syariah Indonesia (BSI), BNI, dll."
@@ -939,7 +939,7 @@ export default function InputPengeluaranPage() {
 
                             {/* 7. Upload Bukti (Mandatory) */}
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><FileText className="w-3 h-3" /> Bukti Transaksi (Wajib) *</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><FileText className="w-3 h-3" /> Bukti Transaksi <span className="text-rose-500">*</span></label>
                                 <div className="relative group p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
                                     <input 
                                         type="file" 
@@ -989,8 +989,15 @@ export default function InputPengeluaranPage() {
                             <button
                                 type="button"
                                 onClick={handleSave}
-                                disabled={isSubmitting}
-                                className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-rose-100 disabled:opacity-50"
+                                disabled={
+                                    isSubmitting || 
+                                    !tanggal || 
+                                    !sumberDana || 
+                                    !nominal || Number(nominal) <= 0 || 
+                                    (metodePencairan === 'Transfer' && (!namaBank || namaBank === '-')) || 
+                                    (!editingId && !buktiFile)
+                                }
+                                className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-rose-100 disabled:shadow-none"
                             >
                                 {isSubmitting ? 'Menyimpan...' : (editingId ? 'Perbarui Transaksi' : 'Simpan Transaksi')}
                             </button>

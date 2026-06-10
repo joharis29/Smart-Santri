@@ -937,7 +937,7 @@ export default function InputPendapatanPage() {
 
                             {/* Tanggal */}
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Penerimaan</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Penerimaan <span className="text-rose-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-3.5 top-2.5 flex items-center justify-center pointer-events-none">
                                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -953,7 +953,7 @@ export default function InputPendapatanPage() {
 
                             {/* Sumber Dana */}
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Sumber Dana</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Sumber Dana <span className="text-rose-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-3.5 top-2.5 flex items-center justify-center pointer-events-none">
                                         <DollarSign className="w-3.5 h-3.5 text-slate-400" />
@@ -974,7 +974,7 @@ export default function InputPendapatanPage() {
 
                             {/* Nominal */}
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nominal Penerimaan</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nominal Penerimaan <span className="text-rose-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-3 top-2 w-7 h-7 bg-emerald-600 rounded-md shadow-sm flex items-center justify-center text-white font-black text-[10px] pointer-events-none">Rp</div>
                                     <input 
@@ -989,7 +989,7 @@ export default function InputPendapatanPage() {
 
                             {/* Metode Penerimaan */}
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penerimaan</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penerimaan <span className="text-rose-500">*</span></label>
                                 <div className="flex gap-1.5 p-1 bg-slate-50 rounded-lg border border-slate-100 h-[44px]">
                                     <button 
                                         onClick={() => setJenisPenerimaan('Cash')}
@@ -1009,7 +1009,7 @@ export default function InputPendapatanPage() {
                             {/* Nama Bank (Conditionally Shown) */}
                             {jenisPenerimaan === 'Transfer' && (
                                 <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Bank / Tujuan Transfer</label>
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Bank / Tujuan Transfer <span className="text-rose-500">*</span></label>
                                     <div className="relative group">
                                         <div className="absolute left-3.5 top-2.5 flex items-center justify-center pointer-events-none">
                                             <Building2 className="w-3.5 h-3.5 text-slate-400" />
@@ -1044,7 +1044,7 @@ export default function InputPendapatanPage() {
 
                             {/* Upload Bukti (Mandatory) */}
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Bukti Transaksi (Wajib)</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Bukti Transaksi <span className="text-rose-500">*</span></label>
                                 <div className="relative group p-3 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
                                     <input 
                                         type="file" 
@@ -1086,8 +1086,15 @@ export default function InputPendapatanPage() {
                         <div className="p-4 px-6 bg-slate-50/50 border-t border-slate-100">
                             <button 
                                 onClick={handleSave}
-                                disabled={isSubmitting}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 text-white font-black py-3 rounded-xl shadow-md shadow-emerald-200/30 transition-all flex items-center justify-center gap-2 group active:scale-[0.97]"
+                                disabled={
+                                    isSubmitting || 
+                                    !tanggal || 
+                                    !sumberDana || 
+                                    !nominal || Number(nominal) <= 0 || 
+                                    (jenisPenerimaan === 'Transfer' && (!namaBank || namaBank === '-')) || 
+                                    (!editingId && !buktiFile)
+                                }
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl shadow-md shadow-emerald-200/30 transition-all flex items-center justify-center gap-2 group active:scale-[0.97]"
                             >
                                 {isSubmitting ? (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
