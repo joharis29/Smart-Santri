@@ -16,27 +16,43 @@ export default function ResetKataSandiPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [isSessionReady, setIsSessionReady] = useState(false)
 
-  // Supabase mengirim token via URL hash — kita perlu menunggu sesi terbentuk
+  // Supabase mengirim token via URL hash (Implicit) atau query parameter 'code' (PKCE)
   useEffect(() => {
     const supabase = createClient()
 
-    // Dengarkan perubahan auth state (Supabase akan set session dari URL hash secara otomatis)
+    // 1. Cek apakah menggunakan PKCE Flow (URL mengandung ?code=...)
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    
+    if (code) {
+      // Tukarkan code dengan session
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error || !data.session) {
+          setStatus('invalid')
+        } else {
+          setIsSessionReady(true)
+          setStatus('idle')
+          // Bersihkan URL agar code tidak muncul lagi
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
+      })
+    }
+
+    // 2. Dengarkan perubahan auth state (untuk Implicit Flow dari URL hash)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' && session) {
         setIsSessionReady(true)
         setStatus('idle')
       } else if (event === 'SIGNED_IN' && session) {
-        // Mungkin sudah redirect dari email dengan session aktif
         setIsSessionReady(true)
       }
     })
 
-    // Cek apakah sudah ada session aktif (recovery)
+    // 3. Cek apakah sudah ada session aktif
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsSessionReady(true)
-      } else {
-        // Tunggu sebentar, URL hash mungkin belum diproses
+      } else if (!code) { // Hanya fallback jika bukan PKCE
         setTimeout(() => {
           supabase.auth.getSession().then(({ data: { session: s } }) => {
             if (!s) {
