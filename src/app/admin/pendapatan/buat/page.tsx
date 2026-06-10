@@ -358,7 +358,7 @@ export default function InputPendapatanPage() {
 
             if (buktiFile) {
                 const fileExt = buktiFile.name.split('.').pop();
-                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const fileName = `${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
                 const filePath = `pendapatan/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage
