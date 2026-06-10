@@ -27,6 +27,8 @@ export async function login(formData: FormData) {
 
     if (!authUser) {
       redirect('/login?error=Mohon maaf, akun tidak terdaftar di sistem.')
+    } else if (authUser.banned_until && new Date(authUser.banned_until) > new Date()) {
+      redirect('/login?error=Akun Anda dinonaktifkan, hubungi admin untuk mengaktifkan kembali akun.')
     } else {
       redirect('/login?error=Kata sandi yang Anda masukkan salah.')
     }
