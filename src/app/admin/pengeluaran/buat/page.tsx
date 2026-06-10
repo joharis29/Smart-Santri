@@ -122,6 +122,8 @@ export default function InputPengeluaranPage() {
     const [metodePencairan, setMetodePencairan] = useState<'Cash' | 'Transfer'>('Cash');
     const [namaBank, setNamaBank] = useState('-');
     const [keterangan, setKeterangan] = useState('');
+    const [buktiFile, setBuktiFile] = useState<File | null>(null);
+    const [buktiPreview, setBuktiPreview] = useState<string | null>(null);
     
     // Transaction History
     const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
@@ -330,6 +332,8 @@ export default function InputPengeluaranPage() {
         setMetodePencairan('Cash');
         setNamaBank('-');
         setKeterangan('');
+        setBuktiFile(null);
+        setBuktiPreview(null);
         setMessage(null);
         setIsModalOpen(true);
     };
@@ -342,6 +346,8 @@ export default function InputPengeluaranPage() {
         setMetodePencairan(tx.metode_pencairan);
         setNamaBank(tx.nama_bank);
         setKeterangan(tx.keterangan || '');
+        setBuktiFile(null);
+        setBuktiPreview(tx.bukti_url || null);
         setMessage(null);
         setIsModalOpen(true);
     };
@@ -379,6 +385,11 @@ export default function InputPengeluaranPage() {
             return;
         }
 
+        if (!editingId && !buktiFile) {
+            setMessage({ type: 'error', text: 'Mohon unggah bukti transaksi (Wajib).' });
+            return;
+        }
+
         if (!availableSources.includes(sumberDana)) {
             setMessage({ type: 'error', text: `SECURITY ALERT: Akses ditolak. Sumber dana "${sumberDana}" tidak diizinkan atau tidak terdaftar untuk unit ${currentUserUnit}.` });
             return;
@@ -408,7 +419,27 @@ export default function InputPengeluaranPage() {
 
             const { data: { user } } = await supabase.auth.getUser();
 
-            const txData = {
+            let buktiUrl = undefined;
+
+            if (buktiFile) {
+                const fileExt = buktiFile.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `pengeluaran/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('bukti_transaksi')
+                    .upload(filePath, buktiFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: publicUrlData } = supabase.storage
+                    .from('bukti_transaksi')
+                    .getPublicUrl(filePath);
+                
+                buktiUrl = publicUrlData.publicUrl;
+            }
+
+            const txData: any = {
                 tanggal,
                 unit: currentUserUnit,
                 sumber_dana: sumberDana,
@@ -419,20 +450,17 @@ export default function InputPengeluaranPage() {
                 created_by: user?.id
             };
 
+            if (buktiUrl) {
+                txData.bukti_url = buktiUrl;
+            }
+
             let data: any;
             let error: any;
 
             if (editingId) {
                 const { data: updatedData, error: updateError } = await supabase
                     .from('transaksi_pengeluaran')
-                    .update({
-                        tanggal,
-                        sumber_dana: sumberDana,
-                        nominal: inputNominal,
-                        metode_pencairan: metodePencairan,
-                        nama_bank: namaBank,
-                        keterangan
-                    })
+                    .update(txData)
                     .eq('id', editingId)
                     .select()
                     .single();
@@ -762,6 +790,17 @@ export default function InputPengeluaranPage() {
                                                 >
                                                     <Pencil className="w-3.5 h-3.5" />
                                                 </button>
+                                                {tx.bukti_url && (
+                                                    <a 
+                                                        href={tx.bukti_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1.5 bg-slate-100 hover:bg-sky-600 hover:text-white rounded-lg transition-all text-sky-600"
+                                                        title="Lihat Bukti Transaksi"
+                                                    >
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                    </a>
+                                                )}
                                                 <button
                                                     onClick={() => handleDeleteClick(tx.id)}
                                                     className="p-1.5 bg-slate-150 hover:bg-rose-600 hover:text-white rounded-lg transition-all text-rose-600"
@@ -896,6 +935,45 @@ export default function InputPengeluaranPage() {
                                     rows={3}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:border-rose-500 transition-all resize-none"
                                 />
+                            </div>
+
+                            {/* 7. Upload Bukti (Mandatory) */}
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><FileText className="w-3 h-3" /> Bukti Transaksi (Wajib) *</label>
+                                <div className="relative group p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                                    <input 
+                                        type="file" 
+                                        accept="image/jpeg, image/png, image/jpg"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    alert("Ukuran file maksimal 2MB!");
+                                                    e.target.value = "";
+                                                    return;
+                                                }
+                                                setBuktiFile(file);
+                                                setBuktiPreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:uppercase file:tracking-widest file:bg-rose-100 file:text-rose-700 hover:file:bg-rose-200 transition-all outline-none cursor-pointer"
+                                    />
+                                    {buktiPreview && (
+                                        <div className="mt-4 relative inline-block">
+                                            <img src={buktiPreview} alt="Preview Bukti" className="h-32 w-auto rounded-xl border border-slate-200 object-cover shadow-sm" />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => { setBuktiFile(null); setBuktiPreview(null); }}
+                                                className="absolute -top-3 -right-3 bg-rose-500 text-white rounded-full p-1.5 shadow-md hover:bg-rose-600 transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    {editingId && !buktiFile && buktiPreview && (
+                                        <p className="text-[10px] text-rose-600 mt-2 font-bold italic tracking-wide">Gambar saat ini. Unggah file baru untuk menimpa.</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
