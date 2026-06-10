@@ -39,6 +39,7 @@ interface RiwayatDokumen {
     kegiatan: string;
     program?: string;
     sumber: string;
+    splits?: any[];
     nominal: number;
     status: string;
 }
@@ -249,6 +250,13 @@ export default function RiwayatDokumenPage() {
                                         .map((s: any) => s.source);
                                     const uniqueSources = Array.from(new Set(sources));
                                     return uniqueSources.length > 0 ? uniqueSources.join(' & ') : (it.sumber_dana || 'Dana Yayasan');
+                                })(),
+                                splits: (() => {
+                                    const splits = it.rincian_json?.fundingSplits || [];
+                                    const subSplits = it.rincian_json?.subsidiSources || [];
+                                    const allSplits = [...splits, ...subSplits].filter((s: any) => s.source && s.nominal > 0);
+                                    if (allSplits.length > 0) return allSplits;
+                                    return [{ source: it.sumber_dana || 'Dana Yayasan', nominal: it.nominal || 0 }];
                                 })(),
                                 nominal: it.nominal || 0,
                                 status: doc.status
@@ -781,7 +789,7 @@ export default function RiwayatDokumenPage() {
             'Unit', 
             'Bidang', 
             'Program / Kegiatan', 
-            'Sumber Dana', 
+            'Alokasi Sumber Dana', 
             'Total Realisasi (Rp)', 
             'Status'
         ];
@@ -805,6 +813,7 @@ export default function RiwayatDokumenPage() {
 
         // Add Data Rows
         filteredRiwayat.forEach((row, index) => {
+            const alokasiStr = (row.splits || [{source: row.sumber || 'Dana Yayasan', nominal: row.nominal || 0}]).map((s: any) => `${s.source}: Rp ${Number(s.nominal || 0).toLocaleString('id-ID')}`).join('\n');
             const dataRow = worksheet.addRow([
                 index + 1,
                 row.tanggal || '-',
@@ -813,7 +822,7 @@ export default function RiwayatDokumenPage() {
                 row.unit || '-',
                 row.bidang || '-',
                 row.kegiatan || '-',
-                row.sumber || '-',
+                alokasiStr,
                 Number(row.nominal || 0),
                 row.status || '-'
             ]);
@@ -836,6 +845,8 @@ export default function RiwayatDokumenPage() {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 } else if (colNum === 9) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                } else if (colNum === 8) {
+                    cell.alignment = { wrapText: true, horizontal: 'left', vertical: 'middle' };
                 } else {
                     cell.alignment = { horizontal: 'left', vertical: 'middle' };
                 }
@@ -1187,9 +1198,19 @@ export default function RiwayatDokumenPage() {
  
                                         {/* 4. Sumber Dana */}
                                         <td className="px-3 py-2.5 align-middle whitespace-nowrap">
-                                            <span className="inline-flex px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter truncate max-w-[150px]" title={item.sumber}>
-                                                {(item.sumber || '').replace(/Dana\s+/gi, '')}
-                                            </span>
+                                            <div className="flex flex-col gap-1 items-start">
+                                                {item.splits && item.splits.length > 0 ? (
+                                                    item.splits.map((split: any, sIdx: number) => (
+                                                        <span key={sIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 uppercase tracking-tighter max-w-[200px] truncate" title={`${split.source}: Rp ${Number(split.nominal || 0).toLocaleString('id-ID')}`}>
+                                                            {split.source.replace(/Dana\s+/gi, '')}: Rp {Number(split.nominal || 0).toLocaleString('id-ID')}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="inline-flex px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter truncate max-w-[150px]" title={item.sumber}>
+                                                        {(item.sumber || '').replace(/Dana\s+/gi, '')}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
  
                                         {/* 5. Nominal */}
