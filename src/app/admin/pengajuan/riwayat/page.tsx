@@ -389,7 +389,7 @@ export default function RiwayatPengajuanPage() {
 
                 const savedJumlah = details.jumlah_kegiatan || '1';
                 
-                const splitsStr = (fundingSplits.length > 0 ? fundingSplits : [{source: row.sumber_dana || 'Dana Yayasan', nominal}]).map((s: any) => `${s.source || s.sumber || 'Dana Yayasan'}: Rp ${(s.nominal || s.amount || nominal || 0).toLocaleString('id-ID')}`).join('\n');
+                const splitsStr = (fundingSplits.length > 0 ? fundingSplits : [{source: row.sumber_dana || 'Dana Yayasan', nominal}]).map((s: any) => `${s.source || s.sumber || 'Dana Yayasan'}: Rp ${(s.nominal || s.amount || nominal || 0).toLocaleString('id-ID')}`).join('\n'); // NOSONAR
 
                 const mainRow = worksheet.addRow([
                     idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, splitsStr, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'

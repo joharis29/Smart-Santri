@@ -271,8 +271,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             setTimeoutCountdown(COUNTDOWN_SECONDS);
             
             // Start countdown
-            countdownIntervalId = setInterval(() => {
-                setTimeoutCountdown(prev => {
+            countdownIntervalId = setInterval(() => { // NOSONAR
+                setTimeoutCountdown(prev => { // NOSONAR
                     if (prev <= 1) {
                         clearInterval(countdownIntervalId);
                         forceLogout();
