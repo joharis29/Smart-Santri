@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ShieldCheck, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
-import { sendPasswordResetLink } from './actions'
+import { checkEmailExists } from './actions'
+import { createClient } from '@/utils/supabase/client'
 
 export default function LupaKataSandiPage() {
   const [email, setEmail] = useState('')
@@ -18,11 +19,22 @@ export default function LupaKataSandiPage() {
     setErrorMsg('')
 
     try {
-      const origin = window.location.origin
-      const res = await sendPasswordResetLink(email, origin)
+      // 1. Cek dulu apakah email ada di database
+      const checkRes = await checkEmailExists(email)
+      if (!checkRes.exists) {
+        setErrorMsg('Mohon maaf, akun tidak terdaftar di sistem.')
+        setStatus('error')
+        return
+      }
 
-      if (!res.success) {
-        setErrorMsg(res.error || 'Gagal mengirim email. Pastikan email yang Anda masukkan terdaftar di sistem.')
+      // 2. Jika ada, panggil reset dari browser client agar PKCE code_verifier tersimpan di browser
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-kata-sandi`,
+      })
+
+      if (error) {
+        setErrorMsg(error.message || 'Gagal mengirim email reset. Pastikan layanan email aktif.')
         setStatus('error')
       } else {
         setStatus('success')
