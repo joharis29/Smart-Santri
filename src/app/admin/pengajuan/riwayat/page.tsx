@@ -221,11 +221,17 @@ export default function RiwayatPengajuanPage() {
                                 bidang: doc.bidang || 'Tanpa Bidang',
                                 kegiatan: it.judul_kegiatan || it.kegiatan || 'Pengajuan Dana',
                                 sumber: (() => {
-                                    const splits = it.rincian_json?.fundingSplits || [];
+                                    const splits = it.rincian_json?.fundingSplits || it.rincian_json?.subsidiSources || [];
                                     const sources = splits
                                         .filter((s: any) => s.source && s.nominal > 0)
                                         .map((s: any) => s.source);
                                     return sources.length > 0 ? sources.join(' & ') : (it.sumber_dana || 'Dana Yayasan');
+                                })(),
+                                splits: (() => {
+                                    const splits = it.rincian_json?.fundingSplits || it.rincian_json?.subsidiSources || [];
+                                    const validSplits = splits.filter((s: any) => s.source && s.nominal > 0);
+                                    if (validSplits.length > 0) return validSplits;
+                                    return [{ source: it.sumber_dana || 'Dana Yayasan', nominal: it.nominal || 0 }];
                                 })(),
                                 nominal: it.nominal || 0,
                                 metode_pencairan: doc.metode_pencairan || '-',
@@ -346,7 +352,7 @@ export default function RiwayatPengajuanPage() {
 
             let tableHeader = [
                 'No', 'Nama Program/ Kegiatan', 'Operasional', 'Jumlah Kegiatan', 'Satuan', 'Harga Satuan', 'Qty', 
-                isOriginal ? 'Rencana Anggaran' : 'Nominal Revisi', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran'
+                isOriginal ? 'Rencana Anggaran' : 'Nominal Revisi', 'Alokasi Sumber Dana', 'Waktu', 'Tempat', 'Penanggung Jawab', 'Sasaran'
             ];
 
             const headerRow = worksheet.addRow(tableHeader);
@@ -382,10 +388,14 @@ export default function RiwayatPengajuanPage() {
                 }
 
                 const savedJumlah = details.jumlah_kegiatan || '1';
+                
+                const splitsStr = (fundingSplits.length > 0 ? fundingSplits : [{source: row.sumber_dana || 'Dana Yayasan', nominal}]).map((s: any) => `${s.source || s.sumber || 'Dana Yayasan'}: Rp ${(s.nominal || s.amount || nominal || 0).toLocaleString('id-ID')}`).join('\n');
+
                 const mainRow = worksheet.addRow([
-                    idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'
+                    idx + 1, row.judul_kegiatan, row.kategori_coa, savedJumlah, '', '', '', nominal, splitsStr, row.waktu || '-', row.tempat || '-', row.pic || '-', row.sasaran || '-'
                 ]);
                 mainRow.getCell(8).numFmt = '"Rp "#,##0';
+                mainRow.getCell(9).alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
                 mainRow.eachCell(cell => { // NOSONAR
                     cell.font = { bold: true, name: 'Times New Roman' };
                     cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
@@ -397,7 +407,7 @@ export default function RiwayatPengajuanPage() {
                     rincianLabelRow.getCell(2).font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
                     rincianItems.forEach((item) => { // NOSONAR
                         if (item.name || item.total > 0) {
-                            const subRow = worksheet.addRow(['', `   • ${item.name || '(Tanpa Nama)'}`, '', '', item.unit || item.satuan || '-', Number(item.price || item.harga_satuan || 0), Number(item.qty || item.kuantitas || 1), Number(item.total || 0), '', '', '', '']);
+                            const subRow = worksheet.addRow(['', `   • ${item.name || '(Tanpa Nama)'}`, '', '', item.unit || item.satuan || '-', Number(item.price || item.harga_satuan || 0), Number(item.qty || item.kuantitas || 1), Number(item.total || 0), '', '', '', '', '']);
                             subRow.getCell(6).numFmt = '"Rp "#,##0';
                             subRow.getCell(8).numFmt = '"Rp "#,##0';
                             subRow.eachCell(cell => {
@@ -519,7 +529,7 @@ export default function RiwayatPengajuanPage() {
             'Unit', 
             'Bidang', 
             'Program / Kegiatan', 
-            'Sumber Dana', 
+            'Alokasi Sumber Dana', 
             'Rencana Anggaran (Rp)', 
             'Metode Pencairan'
         ];
@@ -543,6 +553,7 @@ export default function RiwayatPengajuanPage() {
 
         // Add Data Rows
         filteredRiwayat.forEach((row, index) => {
+            const alokasiStr = (row.splits || [{source: row.sumber || 'Dana Yayasan', nominal: row.nominal || 0}]).map((s: any) => `${s.source}: Rp ${Number(s.nominal || 0).toLocaleString('id-ID')}`).join('\n');
             const dataRow = worksheet.addRow([
                 index + 1,
                 row.tanggal || '-',
@@ -551,7 +562,7 @@ export default function RiwayatPengajuanPage() {
                 row.unit || '-',
                 row.bidang || '-',
                 row.kegiatan || '-',
-                row.sumber || '-',
+                alokasiStr,
                 Number(row.nominal || 0),
                 row.metode_pencairan || '-'
             ]);
@@ -574,6 +585,8 @@ export default function RiwayatPengajuanPage() {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 } else if (colNum === 9) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                } else if (colNum === 8) {
+                    cell.alignment = { wrapText: true, horizontal: 'left', vertical: 'middle' };
                 } else {
                     cell.alignment = { horizontal: 'left', vertical: 'middle' };
                 }
@@ -933,9 +946,17 @@ export default function RiwayatPengajuanPage() {
                                         {/* 4. Sumber & Metode */}
                                         <td className="px-3 py-2.5 align-middle whitespace-nowrap">
                                             <div className="flex flex-col gap-1 items-start">
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 uppercase tracking-tighter max-w-[150px] truncate" title={item.sumber || 'Dana Yayasan'}>
-                                                    {(item.sumber || 'Dana Yayasan').replace(/Dana\s+/gi, '')}
-                                                </span>
+                                                {item.splits && item.splits.length > 0 ? (
+                                                    item.splits.map((split: any, sIdx: number) => (
+                                                        <span key={sIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 uppercase tracking-tighter max-w-[200px] truncate" title={`${split.source}: Rp ${Number(split.nominal || 0).toLocaleString('id-ID')}`}>
+                                                            {split.source.replace(/Dana\s+/gi, '')}: Rp {Number(split.nominal || 0).toLocaleString('id-ID')}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-600 uppercase tracking-tighter max-w-[150px] truncate" title={item.sumber || 'Dana Yayasan'}>
+                                                        {(item.sumber || 'Dana Yayasan').replace(/Dana\s+/gi, '')}
+                                                    </span>
+                                                )}
                                                 {item.metode_pencairan === 'Transfer' ? (
                                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-tight">
                                                         Transfer
