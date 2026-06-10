@@ -2,12 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ShieldCheck, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, ShieldCheck, Mail, KeyRound, AlertCircle, Loader2 } from 'lucide-react'
 import { checkEmailExists } from './actions'
 import { createClient } from '@/utils/supabase/client'
 
 export default function LupaKataSandiPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
+  const [step, setStep] = useState<'email' | 'otp'>('email')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -27,17 +31,44 @@ export default function LupaKataSandiPage() {
         return
       }
 
-      // 2. Jika ada, panggil reset dari browser client agar PKCE code_verifier tersimpan di browser
+      // 2. Jika ada, panggil reset
       const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-kata-sandi`,
+      const { error } = await supabase.auth.resetPasswordForEmail(email)
+
+      if (error) {
+        setErrorMsg(error.message || 'Gagal mengirim kode OTP. Pastikan layanan email aktif.')
+        setStatus('error')
+      } else {
+        setStep('otp')
+        setStatus('idle')
+      }
+    } catch {
+      setErrorMsg('Terjadi kesalahan. Silakan coba lagi.')
+      setStatus('error')
+    }
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otp) return
+
+    setStatus('loading')
+    setErrorMsg('')
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'recovery'
       })
 
       if (error) {
-        setErrorMsg(error.message || 'Gagal mengirim email reset. Pastikan layanan email aktif.')
+        setErrorMsg('Kode OTP tidak valid atau sudah kadaluarsa.')
         setStatus('error')
       } else {
         setStatus('success')
+        router.push('/reset-kata-sandi')
       }
     } catch {
       setErrorMsg('Terjadi kesalahan. Silakan coba lagi.')
@@ -73,32 +104,9 @@ export default function LupaKataSandiPage() {
               <p className="text-slate-500 text-xs mt-1">Masukkan email Anda dan kami akan mengirim link reset kata sandi</p>
             </div>
 
-            {/* Success State */}
-            {status === 'success' ? (
-              <div className="text-center space-y-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-full border-2 border-emerald-200 mx-auto">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-base">Email Terkirim!</h3>
-                  <p className="text-slate-500 text-xs mt-2 leading-relaxed">
-                    Link reset kata sandi telah dikirim ke <span className="font-bold text-emerald-700">{email}</span>.
-                    Periksa kotak masuk email Anda dan ikuti petunjuk di dalamnya.
-                  </p>
-                  <p className="text-slate-400 text-[10px] mt-2">
-                    Tidak menerima email? Periksa folder spam atau coba lagi.
-                  </p>
-                </div>
-                <button
-                  onClick={() => { setStatus('idle'); setEmail('') }}
-                  className="text-xs text-emerald-700 font-bold hover:underline"
-                >
-                  Kirim ulang ke email lain
-                </button>
-              </div>
-            ) : (
+            {/* Step 1: Input Email */}
+            {step === 'email' && (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error Message */}
                 {status === 'error' && (
                   <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
                     <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -106,7 +114,6 @@ export default function LupaKataSandiPage() {
                   </div>
                 )}
 
-                {/* Email Input */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Email Pesantren
@@ -127,16 +134,15 @@ export default function LupaKataSandiPage() {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={status === 'loading'}
                   className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-lg shadow-amber-200/50 text-sm font-bold text-emerald-900 bg-amber-400 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {status === 'loading' ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim Email...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim OTP...</>
                   ) : (
-                    'Kirim Link Reset Kata Sandi'
+                    'Kirim Kode OTP'
                   )}
                 </button>
 
@@ -144,6 +150,68 @@ export default function LupaKataSandiPage() {
                   <Link href="/login" className="text-xs text-slate-500 hover:text-emerald-700 transition-colors">
                     Ingat kata sandi? <span className="font-bold text-emerald-700">Masuk di sini</span>
                   </Link>
+                </div>
+              </form>
+            )}
+
+            {/* Step 2: Input OTP */}
+            {step === 'otp' && (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Kode 6 digit telah dikirim ke <span className="font-bold text-emerald-700">{email}</span>.
+                    Periksa kotak masuk email Anda (atau folder spam).
+                  </p>
+                </div>
+
+                {status === 'error' && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-600">{errorMsg}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="otp" className="block text-sm font-semibold text-slate-700 mb-1.5 text-center">
+                    Masukkan Kode OTP
+                  </label>
+                  <div className="relative group max-w-[200px] mx-auto">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-600 transition-colors">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="text"
+                      id="otp"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      required
+                      maxLength={6}
+                      className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white transition-all text-xl text-center font-bold tracking-widest text-slate-900"
+                      placeholder="000000"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={status === 'loading' || otp.length !== 6}
+                  className="w-full mt-2 flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-lg shadow-amber-200/50 text-sm font-bold text-emerald-900 bg-amber-400 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {status === 'loading' ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Memverifikasi...</>
+                  ) : (
+                    'Verifikasi OTP'
+                  )}
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setStep('email'); setStatus('idle'); setOtp('') }}
+                    className="text-xs text-slate-500 hover:text-emerald-700 transition-colors"
+                  >
+                    Ganti email atau <span className="font-bold text-emerald-700">Kirim Ulang Kode</span>
+                  </button>
                 </div>
               </form>
             )}

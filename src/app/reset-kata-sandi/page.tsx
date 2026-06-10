@@ -16,56 +16,18 @@ export default function ResetKataSandiPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [isSessionReady, setIsSessionReady] = useState(false)
 
-  // Supabase mengirim token via URL hash (Implicit) atau query parameter 'code' (PKCE)
   useEffect(() => {
     const supabase = createClient()
 
-    // 1. Cek apakah menggunakan PKCE Flow (URL mengandung ?code=...)
-    const params = new URLSearchParams(window.location.search)
-    const code = params.get('code')
-    
-    if (code) {
-      // Tukarkan code dengan session
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error || !data.session) {
-          setStatus('invalid')
-        } else {
-          setIsSessionReady(true)
-          setStatus('idle')
-          // Bersihkan URL agar code tidak muncul lagi
-          window.history.replaceState({}, document.title, window.location.pathname)
-        }
-      })
-    }
-
-    // 2. Dengarkan perubahan auth state (untuk Implicit Flow dari URL hash)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session) {
-        setIsSessionReady(true)
-        setStatus('idle')
-      } else if (event === 'SIGNED_IN' && session) {
-        setIsSessionReady(true)
-      }
-    })
-
-    // 3. Cek apakah sudah ada session aktif
+    // Cek apakah session sudah terbentuk dari verifikasi OTP di halaman sebelumnya
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsSessionReady(true)
-      } else if (!code) { // Hanya fallback jika bukan PKCE
-        setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session: s } }) => {
-            if (!s) {
-              setStatus('invalid')
-            } else {
-              setIsSessionReady(true)
-            }
-          })
-        }, 1500)
+        setStatus('idle')
+      } else {
+        setStatus('invalid')
       }
     })
-
-    return () => subscription.unsubscribe()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
