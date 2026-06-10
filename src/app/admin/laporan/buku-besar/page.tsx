@@ -413,27 +413,28 @@ export default function BukuBesarPage() {
             { key: 'Bidang', width: 18 },
             { key: 'Tahun Ajaran', width: 15 },
             { key: 'COA', width: 18 },
+            { key: 'Metode', width: 15 },
             { key: 'Debet', width: 16 },
             { key: 'Kredit', width: 16 },
             { key: 'Saldo', width: 18 }
         ];
 
         // 1. LAPORAN BUKU BESAR
-        worksheet.mergeCells('A1:K1');
+        worksheet.mergeCells('A1:L1');
         const title1 = worksheet.getCell('A1');
         title1.value = 'LAPORAN BUKU BESAR';
         title1.font = { name: 'Times New Roman', size: 14, bold: true };
         title1.alignment = { vertical: 'middle', horizontal: 'center' };
 
         // 2. KONSOLIDASI JURNAL & MUTASI KEUANGAN
-        worksheet.mergeCells('A2:K2');
+        worksheet.mergeCells('A2:L2');
         const title2 = worksheet.getCell('A2');
         title2.value = 'KONSOLIDASI JURNAL & MUTASI KEUANGAN';
         title2.font = { name: 'Times New Roman', size: 12, bold: true };
         title2.alignment = { vertical: 'middle', horizontal: 'center' };
 
         // 3. Unit & Periode Info
-        worksheet.mergeCells('A3:K3');
+        worksheet.mergeCells('A3:L3');
         const title3 = worksheet.getCell('A3');
         const monthLabel = filterMonth 
             ? MONTHS.find(m => m.value === Number(filterMonth))?.label 
@@ -455,6 +456,7 @@ export default function BukuBesarPage() {
             'Bidang',
             'Tahun Ajaran',
             'Akun (COA)',
+            'Metode',
             'Debet (Rp)',
             'Kredit (Rp)',
             'Saldo (Rp)'
@@ -488,15 +490,16 @@ export default function BukuBesarPage() {
                 item.bidang || '-',
                 item.tahunAjaran || '-',
                 item.coa,
+                item.metode || '-',
                 item.tipe === 'DEBET' ? item.nominal : 0,
                 item.tipe === 'KREDIT' ? item.nominal : 0,
                 item.saldo
             ]);
 
             // Number formats
-            dataRow.getCell(9).numFmt = '#,##0';
             dataRow.getCell(10).numFmt = '#,##0';
             dataRow.getCell(11).numFmt = '#,##0';
+            dataRow.getCell(12).numFmt = '#,##0';
 
             dataRow.eachCell((cell, colNum) => {
                 cell.font = { name: 'Times New Roman', size: 10 };
@@ -508,9 +511,9 @@ export default function BukuBesarPage() {
                 };
 
                 // Alignment matching
-                if (colNum === 1 || colNum === 2 || colNum === 3 || colNum === 5 || colNum === 6 || colNum === 7 || colNum === 8) {
+                if (colNum === 1 || colNum === 2 || colNum === 3 || colNum === 5 || colNum === 6 || colNum === 7 || colNum === 8 || colNum === 9) {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                } else if (colNum === 9 || colNum === 10 || colNum === 11) {
+                } else if (colNum === 10 || colNum === 11 || colNum === 12) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
                 } else {
                     cell.alignment = { horizontal: 'left', vertical: 'middle' };
@@ -780,6 +783,7 @@ export default function BukuBesarPage() {
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider w-1/4">Keterangan Transaksi</th>
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Unit & Bidang</th>
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Akun (COA) & TA</th>
+                                <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Metode</th>
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right">Debet (Rp)</th>
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right">Kredit (Rp)</th>
                                 <th className="px-2 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right bg-slate-50/50">Saldo (Rp)</th>
@@ -798,7 +802,7 @@ export default function BukuBesarPage() {
                                 </tr>
                             ) : processedLedger.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="py-24 text-center">
+                                    <td colSpan={9} className="py-24 text-center">
                                         <div className="flex flex-col items-center gap-2 opacity-20">
                                             <FileText className="w-16 h-16" />
                                             <p className="text-xs font-black uppercase tracking-[0.3em]">Tidak ada entri Buku Besar</p>
@@ -822,6 +826,11 @@ export default function BukuBesarPage() {
                                         <td className="px-2 py-2.5">
                                             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">{item.coa}</p>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-normal mt-0.5">{item.tahunAjaran || '-'}</p>
+                                        </td>
+                                        <td className="px-2 py-2.5">
+                                            <p className="text-[9px] font-black text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-lg inline-block uppercase tracking-tighter">
+                                                {item.metode || '-'}
+                                            </p>
                                         </td>
                                         <td className="px-2 py-2.5 text-right whitespace-nowrap">
                                             <p className={`text-[11px] font-black ${item.tipe === 'DEBET' ? 'text-emerald-600' : 'text-slate-200'}`}>
