@@ -629,6 +629,7 @@ export default function UserManagementPage() {
                     <option value="SMAIT">SMAIT</option>
                     <option value="MADIN">MADIN</option>
                     <option value="PONDOK">PONDOK</option>
+                    <option value="Dapur Umum">Dapur Umum</option>
                   </select>
                 </div>
 
@@ -946,6 +947,7 @@ export default function UserManagementPage() {
                             <option value="Asrama Putri">Asrama Putri</option>
                             <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
                             <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
+                            <option value="Dapur Umum">Dapur Umum</option>
                           </select>
                         </div>
                       </div>
@@ -1017,6 +1019,7 @@ export default function UserManagementPage() {
                                 <option value="Asrama Putri">Asrama Putri</option>
                                 <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
                                 <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
+                                <option value="Dapur Umum">Dapur Umum</option>
                               </select>
                             </div>
                           </div>
