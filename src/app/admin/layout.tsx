@@ -30,7 +30,7 @@ import {
 
 const UNITS = [
     'Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 
-    'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri'
+    'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri', 'Dapur Umum'
 ];
 
 function hasMenuAccess(role: string, path: string): boolean {

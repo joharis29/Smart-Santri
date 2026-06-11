@@ -71,6 +71,9 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
   ],
   'Dapur Asrama Putri': [
     'Kas Internal'
+  ],
+  'Dapur Umum': [
+    'Kas Internal'
   ]
 };
 
@@ -86,7 +89,8 @@ const BIDANG_BY_UNIT: Record<string, string[]> = {
   'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
   'THQ': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
   'Dapur Asrama Putra': ['Pengadaan Bahan', 'Operasional Dapur'],
-  'Dapur Asrama Putri': ['Pengadaan Bahan', 'Operasional Dapur']
+  'Dapur Asrama Putri': ['Pengadaan Bahan', 'Operasional Dapur'],
+  'Dapur Umum': ['Pengadaan Bahan', 'Operasional Dapur']
 };
 
 const SearchableCombobox = ({ value, options, onChange, placeholder = "-- Pilih Program --" }: { value: string, options: string[], onChange: (val: string) => void, placeholder?: string }) => {
@@ -1053,7 +1057,7 @@ export default function RkaRevisiPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Calendar size={16} className="text-emerald-600" />
                     </div>
-                    {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? (
+                    {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' || unit === 'Dapur Umum' ? (
                       <input
                           type="date"
                           value={bulan}

@@ -167,6 +167,9 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
   ],
   'Dapur Asrama Putri': [
     'Kas Internal'
+  ],
+  'Dapur Umum': [
+    'Kas Internal'
   ]
 };
 
@@ -182,7 +185,8 @@ const ALL_UNITS = [
   'Asrama Putri',
   'THQ',
   'Dapur Asrama Putra',
-  'Dapur Asrama Putri'
+  'Dapur Asrama Putri',
+  'Dapur Umum'
 ];
 
 const BIDANG_BY_UNIT: Record<string, string[]> = {
@@ -301,6 +305,10 @@ const BIDANG_BY_UNIT: Record<string, string[]> = {
     'Operasional Dapur'
   ],
   'Dapur Asrama Putri': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ],
+  'Dapur Umum': [
     'Pengadaan Bahan',
     'Operasional Dapur'
   ]
@@ -1692,9 +1700,9 @@ function BuatPengajuanContent() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3 text-emerald-600" /> {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? 'Tanggal' : 'Bulan'} <span className="text-rose-600">*</span>
+                  <Calendar className="w-3 h-3 text-emerald-600" /> {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' || unit === 'Dapur Umum' ? 'Tanggal' : 'Bulan'} <span className="text-rose-600">*</span>
                 </label>
-                {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' ? (
+                {unit === 'Dapur Asrama Putra' || unit === 'Dapur Asrama Putri' || unit === 'Dapur Umum' ? (
                   <input 
                     type="date"
                     value={bulan}

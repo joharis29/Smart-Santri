@@ -41,7 +41,8 @@ const ALL_UNITS = [
     'Asrama Putra',
     'Asrama Putri',
     'Dapur Asrama Putra',
-    'Dapur Asrama Putri'
+    'Dapur Asrama Putri',
+    'Dapur Umum'
 ];
 
 // Fallback defaults to show when database has no customized records yet
@@ -57,7 +58,8 @@ const DEFAULT_BIDANG: Record<string, string[]> = {
     'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
     'THQ': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
     'Dapur Asrama Putra': ['Pengadaan Bahan', 'Operasional Dapur'],
-    'Dapur Asrama Putri': ['Pengadaan Bahan', 'Operasional Dapur']
+    'Dapur Asrama Putri': ['Pengadaan Bahan', 'Operasional Dapur'],
+    'Dapur Umum': ['Pengadaan Bahan', 'Operasional Dapur']
 };
 
 const DEFAULT_SUMBER_DANA: Record<string, string[]> = {
@@ -72,7 +74,8 @@ const DEFAULT_SUMBER_DANA: Record<string, string[]> = {
     'Asrama Putri': ['Dana Pesantren/Yayasan', 'Kas Internal', 'Uang Saku'],
     'THQ': ['Dana Pesantren/Yayasan', 'Uang Saku', 'Tabungan Siswa'],
     'Dapur Asrama Putra': ['Kas Internal'],
-    'Dapur Asrama Putri': ['Kas Internal']
+    'Dapur Asrama Putri': ['Kas Internal'],
+    'Dapur Umum': ['Kas Internal']
 };
 
 export default function KelolaSumberDanaPage() {

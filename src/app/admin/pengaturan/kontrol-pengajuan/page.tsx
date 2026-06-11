@@ -45,7 +45,8 @@ export default function KontrolPengajuanPage() {
         'Asrama Putra',
         'Asrama Putri',
         'Dapur Asrama Putra',
-        'Dapur Asrama Putri'
+        'Dapur Asrama Putri',
+        'Dapur Umum'
     ];
 
     useEffect(() => {

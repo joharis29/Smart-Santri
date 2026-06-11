@@ -111,6 +111,9 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
     ],
     'Dapur Asrama Putri': [
         'Kas Internal'
+    ],
+    'Dapur Umum': [
+        'Kas Internal'
     ]
 };
 
@@ -230,6 +233,10 @@ const BIDANG_BY_UNIT: Record<string, string[]> = {
     'Operasional Dapur'
   ],
   'Dapur Asrama Putri': [
+    'Pengadaan Bahan',
+    'Operasional Dapur'
+  ],
+  'Dapur Umum': [
     'Pengadaan Bahan',
     'Operasional Dapur'
   ]
@@ -2067,9 +2074,10 @@ export default function BuatRealisasiPage() {
                                         <option value="Asrama Putri">Asrama Putri</option>
                                         <option value="Dapur Asrama Putra">Dapur Asrama Putra</option>
                                         <option value="Dapur Asrama Putri">Dapur Asrama Putri</option>
+                                        <option value="Dapur Umum">Dapur Umum</option>
                                         <option value="THQ">THQ</option>
                                         <option value="Pusat (Yayasan)">Pusat (Yayasan)</option>
-                                        {unit && !["SDIT 1", "SDIT 2", "SMPIT", "SMAIT", "Pesantren", "TK", "MTs", "MA", "Diniyah", "Asrama Putra", "Asrama Putri", "Dapur Asrama Putra", "Dapur Asrama Putri", "THQ", "Pusat (Yayasan)"].includes(unit) && (
+                                        {unit && !["SDIT 1", "SDIT 2", "SMPIT", "SMAIT", "Pesantren", "TK", "MTs", "MA", "Diniyah", "Asrama Putra", "Asrama Putri", "Dapur Asrama Putra", "Dapur Asrama Putri", "Dapur Umum", "THQ", "Pusat (Yayasan)"].includes(unit) && (
                                             <option value={unit}>{unit}</option>
                                         )}
                                     </select>

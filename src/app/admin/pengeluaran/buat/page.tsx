@@ -87,6 +87,9 @@ const FUNDING_SOURCES_BY_UNIT: Record<string, string[]> = {
     ],
     'Dapur Asrama Putri': [
         'Kas Internal'
+    ],
+    'Dapur Umum': [
+        'Kas Internal'
     ]
 };
 

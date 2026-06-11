@@ -31,7 +31,8 @@ const STRUKTUR_BIDANG: Record<string, string[]> = {
     'Asrama Putra': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
     'Asrama Putri': ['Sekretaris', 'Bendahara', 'Pendidikan Dan Pengasuhan', 'Kesantrian Dan Kedisiplinan', 'Pondok Tahfidz', 'Kesehatan Dan Kesejahteraan', 'Sarana Dan Kebersihan Lingkungan'],
     'Dapur Asrama Putra': [],
-    'Dapur Asrama Putri': []
+    'Dapur Asrama Putri': [],
+    'Dapur Umum': []
 };
 
 export default function RKAReferencePage() {

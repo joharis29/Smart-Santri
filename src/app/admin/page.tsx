@@ -37,7 +37,7 @@ import { getDashboardBalances } from './dashboardActions';
 
 const UNITS = [
   'Pusat (Yayasan)', 'TK', 'SDIT 1', 'SDIT 2', 'MTs', 'MA', 'Diniyah', 
-  'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri'
+  'Asrama Putra', 'Asrama Putri', 'THQ', 'Dapur Asrama Putra', 'Dapur Asrama Putri', 'Dapur Umum'
 ];
 
 const AVAILABLE_STATUSES = ['MENUNGGU VERIFIKASI', 'MENUNGGU KEPALA', 'MENUNGGU PUSAT', 'MENUNGGU CAIR', 'CAIR', 'DITOLAK', 'BUTUH REVISI', 'SELESAI', 'SUDAH DITERIMA', 'DRAFT'];
