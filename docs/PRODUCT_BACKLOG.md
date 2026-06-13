@@ -119,15 +119,15 @@ Fitur-fitur tambahan untuk meningkatkan efisiensi dan tata kelola.
 
 ---
 
-## 🚀 Fase 5: Pengujian & Peluncuran (On-Going)
+## 🚀 Fase 5: Pengujian & Peluncuran (Selesai)
 Fokus pada pemastian kualitas, keamanan, dan penerimaan pengguna.
 
-- [ ] *Unit Testing* & *Integration Testing* (Terutama kalkulasi nominal saldo).
-- [/] Pemindaian keamanan kode (*Static Code Analysis*) dengan SonarCloud. (Sistem sudah mematuhi _Quality Gate_ secara bertahap, perbaikan *bug accessibility/reliability* telah diselesaikan).
-- [ ] Simulasi dan Pengujian Kotak Hitam (*Black Box Testing*).
-- [/] *User Acceptance Testing* (UAT) bersama Bendahara Pesantren.
+- [x] *Unit Testing* & *Integration Testing* (Terutama kalkulasi nominal saldo).
+- [x] Pemindaian keamanan kode (*Static Code Analysis*) dengan SonarCloud. (Sistem sudah mematuhi _Quality Gate_ secara bertahap, perbaikan *bug accessibility/reliability* telah diselesaikan).
+- [x] Simulasi dan Pengujian Kotak Hitam (*Black Box Testing*).
+- [x] *User Acceptance Testing* (UAT) bersama Bendahara Pesantren.
   - [x] Penyiapan dokumen formal skenario UAT berbasis kerangka metodologi DSRM yang disesuaikan dengan peran (*Role-Based*).
-- [ ] Peluncuran *Production* di Vercel dan *Monitoring* Performa (Core Web Vitals).
+- [x] Peluncuran *Production* di Vercel dan *Monitoring* Performa (Core Web Vitals).
 
 ---
 *Catatan: Centang kotak `[ ]` menjadi `[x]` seiring berjalannya progres pengembangan aplikasi.*
