@@ -33,8 +33,9 @@ const MONTHS_LABELS: Record<string, string> = {
   '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun'
 };
 
-const formatCompactNumber = (number: number) => {
-  if (!number || number === 0) return '';
+const formatCompactNumber = (value: any) => {
+  const number = Number(value);
+  if (!number || number === 0 || isNaN(number)) return '';
   const formatter = Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   return formatter.format(number);
 };
