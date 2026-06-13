@@ -30,6 +30,7 @@ import { AsramaWidgets } from '@/components/dashboard/AsramaWidgets';
 import { DapurWidgets } from '@/components/dashboard/DapurWidgets';
 import { DynamicWidgets } from '@/components/dashboard/DynamicWidgets';
 import { UniversalCashFlowWidgets } from '@/components/dashboard/UniversalCashFlowWidgets';
+import { MonthlyCashFlowChart } from '@/components/dashboard/MonthlyCashFlowChart';
 import { verifikasiPengajuan, revisiPengajuan } from './pengajuan/buat/actions';
 import { switchActiveProfile } from './users/actions';
 import { createClient } from '@/utils/supabase/client';
@@ -141,6 +142,9 @@ export default function AdminDashboardPage() {
   });
   const [exactBalances, setExactBalances] = useState<Record<string, number>>({});
   const [customSources, setCustomSources] = useState<{name: string}[]>([]);
+
+  const [txInTAState, setTxInTAState] = useState<any[]>([]);
+  const [txOutTAState, setTxOutTAState] = useState<any[]>([]);
 
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
 
@@ -564,6 +568,9 @@ export default function AdminDashboardPage() {
           setCustomSources([]);
         }
 
+        if (txInTA) setTxInTAState(txInTA);
+        if (txOutTA) setTxOutTAState(txOutTA);
+
         setBalances(newBalances);
       }
     } catch (err) {
@@ -802,6 +809,16 @@ export default function AdminDashboardPage() {
       {/* UNIVERSAL CASH FLOW WIDGETS */}
       {userRole !== 'STAFF' && prefs['UniversalAkumulasi'] !== false && (
         <UniversalCashFlowWidgets balances={balances} />
+      )}
+
+      {/* MONTHLY CASH FLOW CHART */}
+      {userRole !== 'STAFF' && (
+        <MonthlyCashFlowChart 
+          txIn={txInTAState} 
+          txOut={txOutTAState} 
+          sources={customSources} 
+          activeTahunAjaran={activeTahunAjaran} 
+        />
       )}
 
       {/* Integrated Audit Trail with Working Filter */}

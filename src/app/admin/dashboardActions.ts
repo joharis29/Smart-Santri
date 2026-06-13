@@ -29,14 +29,14 @@ export async function getDashboardBalances(activeUnit: string, activeTahunAjaran
 
     const { data: txOutTA } = await adminClient
         .from('transaksi_pengeluaran')
-        .select('nominal, sumber_dana')
+        .select('nominal, sumber_dana, tanggal')
         .eq('unit', activeUnit.trim())
         .gte('tanggal', firstDay)
         .lte('tanggal', lastDay);
 
     const { data: txInTA } = await adminClient
         .from('transaksi_pendapatan')
-        .select('nominal, sumber_dana')
+        .select('nominal, sumber_dana, tanggal')
         .eq('unit', activeUnit.trim())
         .gte('tanggal', firstDay)
         .lte('tanggal', lastDay);
