@@ -36,8 +36,17 @@ const MONTHS_LABELS: Record<string, string> = {
 const formatCompactNumber = (value: any) => {
   const number = Number(value);
   if (!number || number === 0 || isNaN(number)) return '';
-  const formatter = Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-  return formatter.format(number);
+  
+  if (number >= 1_000_000_000) {
+    return (number / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + ' M'; // Milyar
+  }
+  if (number >= 1_000_000) {
+    return (number / 1_000_000).toFixed(1).replace(/\.0$/, '') + ' Jt'; // Juta
+  }
+  if (number >= 1_000) {
+    return (number / 1_000).toFixed(1).replace(/\.0$/, '') + ' Rb'; // Ribu
+  }
+  return number.toString();
 };
 
 export function MonthlyCashFlowChart({ txIn, txOut, sources, activeTahunAjaran }: MonthlyCashFlowChartProps) {
