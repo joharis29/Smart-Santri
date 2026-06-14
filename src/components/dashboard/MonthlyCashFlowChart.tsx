@@ -134,7 +134,7 @@ export function MonthlyCashFlowChart({ txIn, txOut, sources, activeTahunAjaran }
         </div>
       </div>
 
-      <div className="p-4 flex-1 min-h-[350px]">
+      <div className="p-4 h-[350px] w-full mt-2">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 30, right: 10, left: 0, bottom: 0 }} barGap={2} barCategoryGap="20%">
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
