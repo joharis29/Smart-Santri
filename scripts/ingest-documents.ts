@@ -25,7 +25,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // Gunakan service role key untuk insert
 )
 
-const REGULASI_DIR = path.resolve(__dirname, '../../docs/regulasi')
+const REGULASI_DIR = path.join(__dirname, '../docs/regulasi')
 
 async function ingest(targetFiles: string[] = []) {
   console.log('Memulai proses ingestion dokumen regulasi...')
@@ -38,8 +38,10 @@ async function ingest(targetFiles: string[] = []) {
   
   for (const source of sources) {
     const sourcePath = path.join(REGULASI_DIR, source)
+    console.log('Mengecek sourcePath:', sourcePath);
     
     if (!fs.existsSync(sourcePath)) {
+      console.log('TIDAK DITEMUKAN:', sourcePath);
       continue
     }
 
