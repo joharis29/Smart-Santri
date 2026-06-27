@@ -14,9 +14,11 @@ import {
     Database,
     ArrowUp, 
     ArrowDown, 
-    ArrowUpDown
+    ArrowUpDown,
+    Download
 } from 'lucide-react';
 import { getKaryawan, upsertKaryawan, toggleKaryawanStatus, deleteKaryawan } from './actions';
+import ExcelJS from 'exceljs';
 
 const UNITS = [
     'TK', 
@@ -170,6 +172,88 @@ export default function KelolaKaryawanPage() {
         return 0;
     });
 
+    const handleExportExcel = async () => {
+        if (sortedData.length === 0) {
+            alert('Tidak ada data karyawan untuk diekspor!');
+            return;
+        }
+
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Data Karyawan');
+
+            worksheet.columns = [
+                { header: 'No', key: 'no', width: 6 },
+                { header: 'Nama Lengkap', key: 'nama', width: 28 },
+                { header: 'NIK', key: 'nik', width: 20 },
+                { header: 'Jabatan', key: 'jabatan', width: 22 },
+                { header: 'Unit Penempatan', key: 'unit', width: 30 },
+                { header: 'Nomor HP/WA', key: 'no_hp', width: 18 },
+                { header: 'Alamat Email', key: 'email', width: 25 },
+                { header: 'Alamat Lengkap', key: 'alamat', width: 40 },
+                { header: 'Status', key: 'status', width: 15 }
+            ];
+
+            sortedData.forEach((k, idx) => {
+                worksheet.addRow({
+                    no: idx + 1,
+                    nama: k.nama,
+                    nik: k.nik || '-',
+                    jabatan: k.jabatan,
+                    unit: k.unit,
+                    no_hp: k.no_hp,
+                    email: k.email,
+                    alamat: k.alamat,
+                    status: k.is_active ? 'Aktif' : 'Non-Aktif'
+                });
+            });
+
+            // Styling Header
+            const headerRow = worksheet.getRow(1);
+            headerRow.height = 24;
+            headerRow.eachCell((cell) => {
+                cell.font = { name: 'Times New Roman', size: 11, bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70C160' } };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.border = {
+                    top: { style: 'thin' }, left: { style: 'thin' },
+                    bottom: { style: 'thin' }, right: { style: 'thin' }
+                };
+            });
+
+            // Styling Data Rows
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+                row.height = 20;
+                row.eachCell((cell, colNumber) => {
+                    cell.font = { name: 'Times New Roman', size: 11 };
+                    cell.border = {
+                        top: { style: 'thin' }, left: { style: 'thin' },
+                        bottom: { style: 'thin' }, right: { style: 'thin' }
+                    };
+                    if (colNumber === 1 || colNumber === 9) { // No and Status
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    } else {
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                    }
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Data_Karyawan_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error generating Excel file:', error);
+            alert('Gagal mengekspor data ke Excel.');
+        }
+    };
+
     if (tableError) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
@@ -225,6 +309,13 @@ export default function KelolaKaryawanPage() {
                             className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl pl-10 pr-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                         />
                     </div>
+                    <button 
+                        onClick={handleExportExcel}
+                        className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 p-2.5 md:px-5 md:py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm shrink-0"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden md:block">Ekspor Excel</span>
+                    </button>
                     <button 
                         onClick={() => handleOpenModal()}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 md:px-5 md:py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md shadow-emerald-200 shrink-0"
