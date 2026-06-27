@@ -83,6 +83,7 @@ interface RkaRow {
   catatan_revisi?: string
   auditResult?: { status: string; alasan: string; referensi: string[] }
   isAuditing?: boolean
+  lastAuditedHash?: string
 }
 
 const DEFAULT_DETAILS: RkaDetails = {
@@ -901,11 +902,36 @@ function BuatPengajuanContent() {
       
       const result = await response.json()
       
-      setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: false, auditResult: result } : r))
+      const currentDataHash = `${row.program}|${row.operasional}|${row.jumlah}|${row.waktu}|${row.tempat}|${row.pic}|${row.sasaran}|${row.nominal}`;
+      setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: false, auditResult: result, lastAuditedHash: currentDataHash } : r))
     } catch (error) {
       setRows(prev => prev.map(r => r.id === id ? { ...r, isAuditing: false, auditResult: { status: 'ERROR', alasan: 'Gagal terhubung ke AI. Silakan coba lagi.', referensi: [] } } : r))
     }
   }
+
+  // --- Auto Smart Audit Effect ---
+  useEffect(() => {
+    const timeoutIds: NodeJS.Timeout[] = [];
+    
+    rows.forEach(row => {
+      // Periksa apakah baris sudah lengkap untuk diaudit
+      if (row.isFilled && row.program && row.operasional && row.nominal > 0 && !row.isAuditing) {
+        // Cek apakah data ini sudah diaudit sebelumnya dengan nilai yang sama
+        const currentDataHash = `${row.program}|${row.operasional}|${row.jumlah}|${row.waktu}|${row.tempat}|${row.pic}|${row.sasaran}|${row.nominal}`;
+        
+        if (row.lastAuditedHash !== currentDataHash) {
+           const timer = setTimeout(() => {
+              handleSmartAudit(row.id);
+           }, 2000); // Debounce 2 detik
+           timeoutIds.push(timer);
+        }
+      }
+    });
+
+    return () => {
+      timeoutIds.forEach(clearTimeout);
+    };
+  }, [rows]);
 
   // --- Logic: Rincian Modal ---
   const openRincian = (id: string) => {
@@ -1957,17 +1983,15 @@ function BuatPengajuanContent() {
                           <button 
                             onClick={() => deleteRow(row.id)}
                             className="p-1.5 bg-rose-50 text-rose-400 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-all"
+                            title="Hapus Baris"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleSmartAudit(row.id)}
-                            disabled={row.isAuditing}
-                            className={`p-1.5 rounded-lg transition-all flex items-center justify-center ${row.isAuditing ? 'bg-emerald-100 text-emerald-500 cursor-not-allowed' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
-                            title="Smart Audit"
-                          >
-                            {row.isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
-                          </button>
+                          {row.isAuditing && (
+                            <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-500" title="Sedang mengaudit AI...">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            </div>
+                          )}
                           {violation && (
                             <div title="Pelanggaran Kepatuhan Syariah!" className="animate-bounce">
                               <AlertTriangle className="w-4 h-4 text-rose-600" />
