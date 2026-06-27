@@ -61,6 +61,7 @@ export default function UserManagementPage() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | string | null>(null);
+  const [availableKaryawan, setAvailableKaryawan] = useState<any[]>([]);
   
   // Form states
   const [formData, setFormData] = useState<{
@@ -104,6 +105,15 @@ export default function UserManagementPage() {
       const { data: multiRolesData } = await supabase
         .from('profiles_multi_role')
         .select('*, unit:unit_id(name)');
+
+      // 3. Fetch karyawan for dropdown
+      const { data: karyawanData } = await supabase
+        .from('karyawan')
+        .select('nama, email');
+        
+      if (karyawanData) {
+        setAvailableKaryawan(karyawanData);
+      }
       
       if (profilesData) {
         const mappedUsers = profilesData.map((p: any) => {
@@ -166,6 +176,10 @@ export default function UserManagementPage() {
   };
 
   // Filter users
+  const unregisteredKaryawan = availableKaryawan.filter(
+    k => !users.some(u => u.name.toLowerCase() === k.nama.toLowerCase())
+  );
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -860,14 +874,36 @@ export default function UserManagementPage() {
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <User className="w-4 h-4 text-slate-400" />
                       </div>
-                      <input 
-                        type="text" 
-                        required 
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        placeholder="Masukkan nama lengkap" 
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
-                      />
+                      {modalMode === 'add' ? (
+                        <select 
+                          required 
+                          value={formData.name}
+                          onChange={(e) => {
+                            const selectedName = e.target.value;
+                            const k = unregisteredKaryawan.find(x => x.nama === selectedName);
+                            setFormData({
+                              ...formData, 
+                              name: selectedName, 
+                              email: k?.email || formData.email 
+                            });
+                          }}
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer bg-white" 
+                        >
+                          <option value="">Pilih karyawan yang belum terdaftar...</option>
+                          {unregisteredKaryawan.map((k, idx) => (
+                            <option key={idx} value={k.nama}>{k.nama}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type="text" 
+                          required 
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          placeholder="Masukkan nama lengkap" 
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
+                        />
+                      )}
                     </div>
                   </div>
 
