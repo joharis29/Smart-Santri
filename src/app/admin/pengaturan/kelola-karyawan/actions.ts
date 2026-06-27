@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function getKaryawan() {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
         const { data, error } = await supabase
             .from('karyawan')
             .select('*')
@@ -28,7 +28,7 @@ export async function getKaryawan() {
 
 export async function upsertKaryawan(formData: any) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
         
         const payload = {
             nama: formData.nama,
@@ -68,7 +68,7 @@ export async function upsertKaryawan(formData: any) {
 
 export async function toggleKaryawanStatus(id: string, isActive: boolean) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
         const { error } = await supabase
             .from('karyawan')
             .update({ is_active: isActive, updated_at: new Date().toISOString() })
@@ -86,7 +86,7 @@ export async function toggleKaryawanStatus(id: string, isActive: boolean) {
 
 export async function deleteKaryawan(id: string) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
         const { error } = await supabase
             .from('karyawan')
             .delete()
