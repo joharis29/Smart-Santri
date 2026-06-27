@@ -341,9 +341,10 @@ export default function KelolaKaryawanPage() {
                                 </div>
                                 {/* Jabatan */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Jabatan</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Jabatan <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="text" 
+                                        required
                                         value={formData.jabatan}
                                         onChange={(e) => setFormData({...formData, jabatan: e.target.value})}
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -380,9 +381,10 @@ export default function KelolaKaryawanPage() {
                                 </div>
                                 {/* No HP */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nomor HP/WA</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nomor HP/WA <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="text" 
+                                        required
                                         value={formData.no_hp}
                                         onChange={(e) => setFormData({...formData, no_hp: e.target.value})}
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -391,9 +393,10 @@ export default function KelolaKaryawanPage() {
                                 </div>
                                 {/* Email */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alamat Email</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alamat Email <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="email" 
+                                        required
                                         value={formData.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -402,8 +405,9 @@ export default function KelolaKaryawanPage() {
                                 </div>
                                 {/* Alamat */}
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alamat Lengkap</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alamat Lengkap <span className="text-rose-500">*</span></label>
                                     <textarea 
+                                        required
                                         value={formData.alamat}
                                         onChange={(e) => setFormData({...formData, alamat: e.target.value})}
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all min-h-[80px]"
@@ -422,7 +426,7 @@ export default function KelolaKaryawanPage() {
                             </button>
                             <button 
                                 onClick={handleSave}
-                                disabled={isSaving || !formData.nama || formData.unit.length === 0}
+                                disabled={isSaving || !formData.nama || formData.unit.length === 0 || !formData.jabatan || !formData.no_hp || !formData.email || !formData.alamat}
                                 className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isSaving ? (
