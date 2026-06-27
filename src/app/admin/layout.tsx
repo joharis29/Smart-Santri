@@ -50,6 +50,9 @@ function hasMenuAccess(role: string, path: string): boolean {
         case '/admin/pengaturan/kelola-sumber-dana': // Kelola Bidang & Sumber Dana
             return ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
+        case '/admin/pengaturan/kelola-karyawan': // Kelola Karyawan
+            return ['ADMINISTRATOR', 'BENDAHARA_PUSAT', 'PIMPINAN', 'KEPALA_UNIT'].includes(cleanRole);
+
         case '/admin/pengaturan/rka-referensi': // Program
             return ['BENDAHARA_PUSAT', 'BENDAHARA_JENJANG', 'BENDAHARA_UNIT'].includes(cleanRole);
 
@@ -523,6 +526,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           hasMenuAccess(activeRole, '/admin/roles') ||
                           hasMenuAccess(activeRole, '/admin/pengaturan/rka-referensi') ||
                           hasMenuAccess(activeRole, '/admin/pengaturan/kontrol-pengajuan') ||
+                          hasMenuAccess(activeRole, '/admin/pengaturan/kelola-karyawan') ||
                           hasMenuAccess(activeRole, '/admin/pengaturan/kelola-sumber-dana')) && (
                             <div className="pt-2">
                                 <button 
@@ -571,6 +575,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
                                                 <Banknote className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
                                                 <span className="truncate">Kelola Bidang & Dana</span>
+                                            </Link>
+                                        )}
+                                        {hasMenuAccess(activeRole, '/admin/pengaturan/kelola-karyawan') && (
+                                            <Link href="/admin/pengaturan/kelola-karyawan" className="flex items-center gap-3 px-3 py-2 text-emerald-100/80 hover:text-white hover:bg-emerald-800 rounded-lg transition-all group text-xs font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400"></div>
+                                                <User className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
+                                                <span className="truncate">Kelola Karyawan</span>
                                             </Link>
                                         )}
                                     </div>
