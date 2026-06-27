@@ -22,6 +22,7 @@ export async function batchSavePengajuan(payload: {
   bidang: string,
   bulan: string,
   tahun_ajaran: string,
+  waktu_kebutuhan: string,
   status: 'DRAFT' | 'MENUNGGU_VERIFIKASI' | 'MENUNGGU_KEPALA' | 'REVISI',
   parent_id?: string,
   data: any[]
@@ -166,7 +167,8 @@ export async function batchSavePengajuan(payload: {
       const finalDetails = {
         ...(row.details || {}),
         jumlah_kegiatan: row.jumlah || '1',
-        _tanggal_pengajuan: payload.bulan
+        _tanggal_pengajuan: payload.bulan,
+        _waktu_kebutuhan: payload.waktu_kebutuhan
       };
 
       return {

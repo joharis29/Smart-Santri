@@ -609,7 +609,7 @@ export default function RekapitulasiDraftPage() {
                         
                         <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
                             {/* Metadata Grid */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Operasional</p>
                                     <p className="text-xs font-black text-slate-800">{selectedDetail.coa}</p>
@@ -619,10 +619,19 @@ export default function RekapitulasiDraftPage() {
                                     <p className="text-xs font-black text-slate-800">{selectedDetail.pic}</p>
                                 </div>
                                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Waktu Kebutuhan Dana</p>
+                                    <p className="text-xs font-black text-slate-800">
+                                        {selectedDetail.rincian?._waktu_kebutuhan 
+                                            ? new Date(selectedDetail.rincian._waktu_kebutuhan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                            : '-'
+                                        }
+                                    </p>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Waktu & Tempat</p>
                                     <p className="text-xs font-black text-slate-800">{selectedDetail.waktu} @ {selectedDetail.tempat}</p>
                                 </div>
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 md:col-span-2">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sasaran Strategis</p>
                                     <p className="text-xs font-black text-slate-800">{selectedDetail.sasaran}</p>
                                 </div>

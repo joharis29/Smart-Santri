@@ -437,6 +437,7 @@ function BuatPengajuanContent() {
   const [bidang, setBidang] = useState('')
   const [bulan, setBulan] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
+  const [waktuKebutuhan, setWaktuKebutuhan] = useState('')
   const [docStatus, setDocStatus] = useState<'DRAFT' | 'REVISI' | 'MENUNGGU_KEPALA' | ''>('')
   const [catatanRevisi, setCatatanRevisi] = useState('')
   const [availablePrograms, setAvailablePrograms] = useState<string[]>([])
@@ -483,7 +484,7 @@ function BuatPengajuanContent() {
   const videoRef = useRef<HTMLVideoElement>(null)
   
   const isFormValid = useMemo(() => {
-    if (!unit || !bidang || !bulan || !tahunAjaran) return false;
+    if (!unit || !bidang || !bulan || !tahunAjaran || !waktuKebutuhan) return false;
     
     return rows.length > 0 && rows.every(r => 
       r.program && 
@@ -495,7 +496,7 @@ function BuatPengajuanContent() {
       r.sasaran && 
       r.nominal > 0
     );
-  }, [unit, bidang, bulan, tahunAjaran, rows]);
+  }, [unit, bidang, bulan, tahunAjaran, waktuKebutuhan, rows]);
   
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -695,6 +696,9 @@ function BuatPengajuanContent() {
                 const firstDetails = typeof d.items[0].rincian_json === 'string' ? JSON.parse(d.items[0].rincian_json) : (d.items[0].rincian_json || {})
                 if (firstDetails._tanggal_pengajuan) {
                    savedBulan = firstDetails._tanggal_pengajuan
+                }
+                if (firstDetails._waktu_kebutuhan) {
+                   setWaktuKebutuhan(firstDetails._waktu_kebutuhan)
                 }
             } catch(e) {}
           }
@@ -1039,6 +1043,7 @@ function BuatPengajuanContent() {
       bidang,
       bulan,
       tahun_ajaran: tahunAjaran,
+      waktu_kebutuhan: waktuKebutuhan,
       status: 'DRAFT' as const,
       data: rows
     }
@@ -1070,6 +1075,7 @@ function BuatPengajuanContent() {
       bidang,
       bulan,
       tahun_ajaran: tahunAjaran,
+      waktu_kebutuhan: waktuKebutuhan,
       status: 'MENUNGGU_VERIFIKASI' as const,
       data: rows
     }
@@ -1663,7 +1669,7 @@ function BuatPengajuanContent() {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
               <div className="space-y-1">
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Building2 className="w-3 h-3 text-emerald-600" /> Pilih Unit <span className="text-rose-600">*</span>
@@ -1766,6 +1772,17 @@ function BuatPengajuanContent() {
                     );
                   })()}
                 </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3 text-emerald-600" /> Kebutuhan Dana <span className="text-rose-600">*</span>
+                </label>
+                <input 
+                  type="date"
+                  value={waktuKebutuhan}
+                  onChange={(e) => setWaktuKebutuhan(e.target.value)}
+                  className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                />
               </div>
             </div>
           </div>

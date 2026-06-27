@@ -1136,6 +1136,18 @@ export default function AdminDashboardPage() {
                     </div>
                     <p className="text-[10px] font-bold opacity-90 uppercase tracking-tighter">
                         {selectedTrxForReview.unit} / {selectedTrxForReview.desc} • {selectedTrxForReview.date}
+                        {(() => {
+                            let wkt = '';
+                            try {
+                                const fItem = selectedTrxForReview.items?.[0];
+                                if (fItem) {
+                                    const details = typeof fItem.rincian_json === 'string' ? JSON.parse(fItem.rincian_json) : (fItem.rincian_json || {});
+                                    wkt = details._waktu_kebutuhan || '';
+                                }
+                            } catch(e) {}
+                            if (wkt) return ` • Kebutuhan Dana: ${new Date(wkt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+                            return '';
+                        })()}
                     </p>
                 </div>
               </div>
