@@ -168,7 +168,8 @@ export async function batchSavePengajuan(payload: {
         ...(row.details || {}),
         jumlah_kegiatan: row.jumlah || '1',
         _tanggal_pengajuan: payload.bulan,
-        _waktu_kebutuhan: payload.waktu_kebutuhan
+        _waktu_kebutuhan: payload.waktu_kebutuhan,
+        auditResult: row.auditResult
       };
 
       return {

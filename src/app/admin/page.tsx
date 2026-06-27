@@ -22,7 +22,8 @@ import {
     Search,
     ArrowUpRight,
     Info,
-    Banknote
+    Banknote,
+    Bot
 } from 'lucide-react';
 import { YayasanWidgets } from '@/components/dashboard/YayasanWidgets';
 import { PendidikanWidgets } from '@/components/dashboard/PendidikanWidgets';
@@ -1695,6 +1696,38 @@ export default function AdminDashboardPage() {
                                                             ));
                                                         })()}
                                                     </div>
+
+                                                    {(() => {
+                                                        let details: any = {};
+                                                        try { details = typeof it.rincian_json === 'string' ? JSON.parse(it.rincian_json) : (it.rincian_json || {}); } catch(e) {}
+                                                        if (details.auditResult) {
+                                                            const audit = details.auditResult;
+                                                            return (
+                                                                <div className={`mt-3 p-3 rounded-xl border ${audit.status === 'AMAN' ? 'bg-emerald-50/50 border-emerald-100' : 'bg-rose-50/50 border-rose-100'} space-y-2`}>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Bot className={`w-3.5 h-3.5 ${audit.status === 'AMAN' ? 'text-emerald-600' : 'text-rose-600'}`} />
+                                                                        <h4 className={`text-[10px] font-black uppercase tracking-widest ${audit.status === 'AMAN' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                                            Hasil Analisis Smart Audit: {audit.status}
+                                                                        </h4>
+                                                                    </div>
+                                                                    <p className="text-[10px] font-bold text-slate-700 italic leading-relaxed">
+                                                                        {audit.alasan}
+                                                                    </p>
+                                                                    {audit.referensi && audit.referensi.length > 0 && (
+                                                                        <div className="pt-2 border-t border-slate-200/50">
+                                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-1">Referensi Kebijakan:</span>
+                                                                            <ul className="list-disc pl-3 text-[9px] font-bold text-slate-600 space-y-0.5">
+                                                                                {audit.referensi.map((ref: string, i: number) => (
+                                                                                    <li key={i}>{ref}</li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
 
                                                     {canReview && (
                                                         <div className="space-y-1.5 pt-3 border-t border-slate-100">
