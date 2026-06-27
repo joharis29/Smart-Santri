@@ -11,7 +11,10 @@ import {
     XCircle, 
     X,
     AlertCircle,
-    Database
+    Database,
+    ArrowUp, 
+    ArrowDown, 
+    ArrowUpDown
 } from 'lucide-react';
 import { getKaryawan, upsertKaryawan, toggleKaryawanStatus, deleteKaryawan } from './actions';
 
@@ -38,6 +41,9 @@ export default function KelolaKaryawanPage() {
     const [tableError, setTableError] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
+    // Sort State
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
     // Form State
     const [formData, setFormData] = useState<{
         id: string;
@@ -141,6 +147,29 @@ export default function KelolaKaryawanPage() {
         k.unit?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const requestSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedData = [...filteredData].sort((a, b) => {
+        if (!sortConfig) return 0;
+        const { key, direction } = sortConfig;
+        
+        let aValue = a[key] ?? '';
+        let bValue = b[key] ?? '';
+        
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+        
+        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
     if (tableError) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
@@ -212,9 +241,33 @@ export default function KelolaKaryawanPage() {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informasi Pegawai</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kontak & Alamat</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th 
+                                    className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort('nama')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Informasi Pegawai
+                                        {sortConfig?.key === 'nama' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                                    </div>
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 transition-colors"
+                                    onClick={() => requestSort('email')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Kontak & Alamat
+                                        {sortConfig?.key === 'email' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                                    </div>
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 transition-colors text-center"
+                                    onClick={() => requestSort('is_active')}
+                                >
+                                    <div className="flex items-center justify-center gap-1">
+                                        Status
+                                        {sortConfig?.key === 'is_active' ? (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                                    </div>
+                                </th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -226,7 +279,7 @@ export default function KelolaKaryawanPage() {
                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memuat Data...</p>
                                     </td>
                                 </tr>
-                            ) : filteredData.length === 0 ? (
+                            ) : sortedData.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center">
                                         <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
@@ -234,7 +287,7 @@ export default function KelolaKaryawanPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredData.map((k) => (
+                                sortedData.map((k) => (
                                     <tr key={k.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-start gap-3">
