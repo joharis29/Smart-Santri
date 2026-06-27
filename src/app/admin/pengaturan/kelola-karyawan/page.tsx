@@ -39,12 +39,22 @@ export default function KelolaKaryawanPage() {
     const [isSaving, setIsSaving] = useState(false);
     
     // Form State
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        id: string;
+        nama: string;
+        nik: string;
+        jabatan: string;
+        unit: string[];
+        no_hp: string;
+        email: string;
+        alamat: string;
+        is_active: boolean;
+    }>({
         id: '',
         nama: '',
         nik: '',
         jabatan: '',
-        unit: 'Yayasan/Pesantren (Pusat)',
+        unit: ['Yayasan/Pesantren (Pusat)'],
         no_hp: '',
         email: '',
         alamat: '',
@@ -76,7 +86,7 @@ export default function KelolaKaryawanPage() {
                 nama: item.nama || '',
                 nik: item.nik || '',
                 jabatan: item.jabatan || '',
-                unit: item.unit || 'Yayasan/Pesantren (Pusat)',
+                unit: item.unit ? item.unit.split(', ') : ['Yayasan/Pesantren (Pusat)'],
                 no_hp: item.no_hp || '',
                 email: item.email || '',
                 alamat: item.alamat || '',
@@ -88,7 +98,7 @@ export default function KelolaKaryawanPage() {
                 nama: '',
                 nik: '',
                 jabatan: '',
-                unit: 'Yayasan/Pesantren (Pusat)',
+                unit: ['Yayasan/Pesantren (Pusat)'],
                 no_hp: '',
                 email: '',
                 alamat: '',
@@ -343,16 +353,30 @@ export default function KelolaKaryawanPage() {
                                 {/* Unit */}
                                 <div className="space-y-2 md:col-span-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Unit Penempatan <span className="text-rose-500">*</span></label>
-                                    <select 
-                                        required
-                                        value={formData.unit}
-                                        onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                                    >
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                         {UNITS.map(u => (
-                                            <option key={u} value={u}>{u}</option>
+                                            <label key={u} className="flex items-center gap-2 cursor-pointer group">
+                                                <input 
+                                                    type="checkbox"
+                                                    value={u}
+                                                    checked={formData.unit.includes(u)}
+                                                    onChange={(e) => {
+                                                        const currentUnits = [...formData.unit];
+                                                        if (e.target.checked) {
+                                                            setFormData({...formData, unit: [...currentUnits, u]});
+                                                        } else {
+                                                            setFormData({...formData, unit: currentUnits.filter(unit => unit !== u)});
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                                />
+                                                <span className="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">{u}</span>
+                                            </label>
                                         ))}
-                                    </select>
+                                    </div>
+                                    {(!formData.unit || formData.unit.length === 0) && (
+                                        <p className="text-[10px] text-rose-500 font-bold mt-1">Pilih minimal satu unit penempatan.</p>
+                                    )}
                                 </div>
                                 {/* No HP */}
                                 <div className="space-y-2">
@@ -398,7 +422,7 @@ export default function KelolaKaryawanPage() {
                             </button>
                             <button 
                                 onClick={handleSave}
-                                disabled={isSaving || !formData.nama || !formData.unit}
+                                disabled={isSaving || !formData.nama || formData.unit.length === 0}
                                 className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isSaving ? (

@@ -34,7 +34,7 @@ export async function upsertKaryawan(formData: any) {
             nama: formData.nama,
             nik: formData.nik,
             jabatan: formData.jabatan,
-            unit: formData.unit,
+            unit: Array.isArray(formData.unit) ? formData.unit.join(', ') : formData.unit,
             no_hp: formData.no_hp,
             email: formData.email,
             alamat: formData.alamat,
