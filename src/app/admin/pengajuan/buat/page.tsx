@@ -511,6 +511,9 @@ function BuatPengajuanContent() {
   const [isSavingTemplate, setIsSavingTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
 
+  // Karyawan State for PIC Dropdown
+  const [karyawanList, setKaryawanList] = useState<any[]>([])
+
 
   const [userRole, setUserRole] = useState('')
   const [assignedUnit, setAssignedUnit] = useState('')
@@ -572,6 +575,18 @@ function BuatPengajuanContent() {
       checkRkaGate()
     }
   }, [unit])
+
+  // Fetch Karyawan
+  useEffect(() => {
+    const fetchKaryawan = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.from('karyawan').select('nama, unit').eq('is_active', true)
+      if (data) setKaryawanList(data)
+    }
+    fetchKaryawan()
+  }, [])
+
+  const unitKaryawan = karyawanList.filter(k => k.unit?.includes(unit))
 
   // Load User Profile to handle Role-Based Access Control on Unit & Bidang selections
   useEffect(() => {
@@ -1903,12 +1918,16 @@ function BuatPengajuanContent() {
                         />
                       </td>
                       <td className="p-0 border-r border-slate-100">
-                        <AutoResizeTextarea 
+                        <select 
                           value={row.pic}
                           onChange={(e) => updateRow(row.id, 'pic', e.target.value)}
-                          className="w-full min-h-[40px] px-3 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all resize-none break-words whitespace-normal"
-                          placeholder="-"
-                        />
+                          className="w-full h-full min-h-[40px] px-2 py-2 bg-white border border-slate-200 outline-none text-[11px] font-black text-black focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer appearance-none"
+                        >
+                          <option value="">Pilih PIC...</option>
+                          {unitKaryawan.map((k, idx) => (
+                            <option key={idx} value={k.nama}>{k.nama}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-0 border-r border-slate-100">
                         <AutoResizeTextarea 

@@ -249,6 +249,9 @@ export default function RkaRevisiPage() {
 
   // State for the editable revision rows
   const [rows, setRows] = useState<any[]>([])
+  
+  // Karyawan State for PIC Dropdown
+  const [karyawanList, setKaryawanList] = useState<any[]>([])
 
   useEffect(() => {
     const checkGate = async () => {
@@ -884,6 +887,18 @@ export default function RkaRevisiPage() {
     )
   }
 
+  // Fetch Karyawan
+  useEffect(() => {
+    const fetchKaryawan = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.from('karyawan').select('nama, unit').eq('is_active', true)
+      if (data) setKaryawanList(data)
+    }
+    fetchKaryawan()
+  }, [])
+
+  const unitKaryawan = karyawanList.filter(k => k.unit?.includes(unit))
+
   if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
 
   // Date Logic for Rescheduling blocks
@@ -1316,12 +1331,16 @@ export default function RkaRevisiPage() {
                                         />
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
-                                        <AutoResizeTextarea 
+                                        <select 
                                             value={row.pic}
                                             onChange={(e) => updateRow(row.id, 'pic', e.target.value)}
-                                            className="w-full min-h-[40px] px-3 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 resize-none break-words whitespace-normal"
-                                            placeholder="..."
-                                        />
+                                            className="w-full h-full min-h-[40px] px-2 py-2 bg-white border-none outline-none text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer appearance-none"
+                                        >
+                                            <option value="">Pilih PIC...</option>
+                                            {unitKaryawan.map((k, idx) => (
+                                                <option key={idx} value={k.nama}>{k.nama}</option>
+                                            ))}
+                                        </select>
                                     </td>
                                     <td className="p-0 border-r border-slate-100">
                                         <AutoResizeTextarea 
