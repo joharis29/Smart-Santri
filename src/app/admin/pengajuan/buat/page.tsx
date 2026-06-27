@@ -586,7 +586,7 @@ function BuatPengajuanContent() {
     fetchKaryawan()
   }, [])
 
-  const unitKaryawan = karyawanList.filter(k => k.unit?.includes(unit))
+  const unitKaryawan = karyawanList.filter(k => k.unit?.split(',').map((u: string) => u.trim()).includes(unit))
 
   // Load User Profile to handle Role-Based Access Control on Unit & Bidang selections
   useEffect(() => {

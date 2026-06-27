@@ -393,7 +393,7 @@ export default function BuatRealisasiPage() {
         fetchKaryawan();
     }, []);
 
-    const unitKaryawan = karyawanList.filter(k => k.unit?.includes(unit));
+    const unitKaryawan = karyawanList.filter(k => k.unit?.split(',').map((u: string) => u.trim()).includes(unit));
 
     // Check if LPJ (Buat LPJ) is active for this unit / globally
     useEffect(() => {

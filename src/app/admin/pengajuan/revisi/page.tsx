@@ -897,7 +897,7 @@ export default function RkaRevisiPage() {
     fetchKaryawan()
   }, [])
 
-  const unitKaryawan = karyawanList.filter(k => k.unit?.includes(unit))
+  const unitKaryawan = karyawanList.filter(k => k.unit?.split(',').map((u: string) => u.trim()).includes(unit))
 
   if (loading) return <div className="p-8 animate-pulse text-gray-500">Memuat data RKA...</div>
 
