@@ -75,6 +75,7 @@ export default function AdminDashboardPage() {
   const [reviewNote, setReviewNote] = useState('');
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [parentRkaData, setParentRkaData] = useState<any>(null);
+  const [paguReviewData, setPaguReviewData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchParentRka = async () => {
@@ -123,7 +124,28 @@ export default function AdminDashboardPage() {
       }
     };
     
+    const fetchPaguData = async () => {
+      if (!selectedTrxForReview || !selectedTrxForReview.unit) {
+         setPaguReviewData([]);
+         return;
+      }
+      try {
+          const supabase = createClient();
+          const { data: periodData } = await supabase.from('periode_anggaran').select('id, tahun_ajaran').eq('status', 'AKTIF').maybeSingle();
+          if (periodData) {
+              const { data: paguData } = await supabase.from('pagu_unit').select('*').eq('periode_id', periodData.id).eq('unit', selectedTrxForReview.unit);
+              setPaguReviewData(paguData || []);
+          } else {
+              setPaguReviewData([]);
+          }
+      } catch(e) {
+          console.error("Gagal mengambil pagu:", e);
+          setPaguReviewData([]);
+      }
+    };
+
     fetchParentRka();
+    fetchPaguData();
   }, [selectedTrxForReview]);
   
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -1233,6 +1255,26 @@ export default function AdminDashboardPage() {
 
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-slate-50/30">
+                {/* SISA PAGU WIDGET FOR REVIEWER */}
+                <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5">
+                        <Banknote className="w-3.5 h-3.5 text-blue-600" />
+                        <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Konteks Sisa Pagu Aktif (Unit: {selectedTrxForReview.unit})</h4>
+                    </div>
+                    {paguReviewData.length === 0 ? (
+                        <p className="text-[10px] text-slate-500 italic font-medium px-1">Tidak ada data pagu aktif yang ditemukan untuk unit ini.</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-3 mt-1">
+                            {paguReviewData.map((pagu, idx) => (
+                                <div key={idx} className="bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 min-w-[150px] shadow-sm">
+                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">{pagu.sumber_dana}</p>
+                                    <p className="text-[11px] font-black text-slate-800">Rp {Number(pagu.sisa_pagu).toLocaleString('id-ID')}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Status & Summary Bar */}
                 <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                     <div className="flex items-center gap-2">

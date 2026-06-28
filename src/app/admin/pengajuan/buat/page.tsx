@@ -442,6 +442,8 @@ function BuatPengajuanContent() {
   const [docStatus, setDocStatus] = useState<'DRAFT' | 'REVISI' | 'MENUNGGU_KEPALA' | ''>('')
   const [catatanRevisi, setCatatanRevisi] = useState('')
   const [availablePrograms, setAvailablePrograms] = useState<string[]>([])
+  const [periodeAktif, setPeriodeAktif] = useState<any>(null)
+  const [paguUnitList, setPaguUnitList] = useState<any[]>([])
 
   useEffect(() => {
     const fetchPrograms = async () => {
@@ -691,6 +693,31 @@ function BuatPengajuanContent() {
     fetchCustomMetadata();
   }, [unit]);
 
+  useEffect(() => {
+    const fetchPeriodeAndPagu = async () => {
+      if (!unit || isGuest) return;
+      try {
+        const supabase = createClient();
+        const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
+        if (periodData) {
+          setPeriodeAktif(periodData);
+          if (!editId) {
+            setTahunAjaran(periodData.tahun_ajaran);
+          }
+          const { data: paguData } = await supabase.from('pagu_unit').select('*').eq('periode_id', periodData.id).eq('unit', unit);
+          if (paguData) {
+            setPaguUnitList(paguData);
+          } else {
+            setPaguUnitList([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching pagu:", err);
+      }
+    };
+    fetchPeriodeAndPagu();
+  }, [unit, editId, isGuest]);
+
   // Remove problematic useEffect that resets bidang prematurely
 
   // Load Edit Data if ID present
@@ -786,6 +813,34 @@ function BuatPengajuanContent() {
     })
     return acc
   }, [rows])
+
+  const paguStatus = useMemo(() => {
+    if (!periodeAktif) return { isOverBudget: true, statusList: [] };
+    if (paguUnitList.length === 0) return { isOverBudget: true, statusList: [] };
+
+    let isOverBudget = false;
+    const statusList = paguUnitList.map(pagu => {
+      const requested = summary[pagu.sumber_dana] || 0;
+      const sisa = Number(pagu.sisa_pagu);
+      const isOver = requested > sisa;
+      if (isOver) isOverBudget = true;
+      return {
+        sumber_dana: pagu.sumber_dana,
+        sisa_pagu: sisa,
+        requested,
+        isOver
+      };
+    });
+
+    Object.keys(summary).forEach(source => {
+      if (summary[source] > 0 && !paguUnitList.find(p => p.sumber_dana === source)) {
+         isOverBudget = true; 
+      }
+    });
+
+    return { isOverBudget, statusList };
+  }, [summary, paguUnitList, periodeAktif]);
+
   const [stream, setStream] = useState<MediaStream | null>(null)
 
   const startCamera = async () => {
@@ -1790,29 +1845,13 @@ function BuatPengajuanContent() {
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Layers className="w-3 h-3 text-emerald-600" /> Tahun Ajaran <span className="text-rose-600">*</span>
                 </label>
-                <select 
-                  value={tahunAjaran} 
-                  onChange={(e) => setTahunAjaran(e.target.value)}
-                  className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">Pilih Tahun...</option>
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const currentMonth = new Date().getMonth(); // 0-11
-                    // If month < 6 (Jan-Jun), academic year started last year.
-                    const startYear = currentMonth < 6 ? currentYear - 1 : currentYear;
-                    const prevYearStr = `${startYear - 1}/${startYear}`;
-                    const currYearStr = `${startYear}/${startYear + 1}`;
-                    const nextYearStr = `${startYear + 1}/${startYear + 2}`;
-                    return (
-                      <>
-                        <option value={prevYearStr} disabled>{prevYearStr} (Lampau)</option>
-                        <option value={currYearStr}>{currYearStr} (Aktif)</option>
-                        <option value={nextYearStr}>{nextYearStr}</option>
-                      </>
-                    );
-                  })()}
-                </select>
+                <input 
+                  value={periodeAktif ? periodeAktif.tahun_ajaran : tahunAjaran}
+                  readOnly={!!periodeAktif}
+                  onChange={(e) => !periodeAktif && setTahunAjaran(e.target.value)}
+                  className={`w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold ${periodeAktif ? 'text-emerald-800 cursor-not-allowed opacity-90' : 'text-emerald-800'} outline-none focus:ring-2 focus:ring-emerald-500`}
+                  placeholder="Contoh: 2024/2025"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -2071,19 +2110,32 @@ function BuatPengajuanContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
 
-          {Object.keys(summary).length > 0 && (
-            <div className="space-y-3 pt-2">
-              <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-50 pb-1.5">List Alokasi Dana</h3>
-              <div className="space-y-2">
-                {Object.entries(summary).map(([source, amount]) => (
-                  <div key={source} className="flex justify-between items-center bg-emerald-50/30 px-3 py-2 rounded-xl border border-emerald-100/50">
-                    <span className="text-[10px] font-extrabold text-emerald-700">{source}</span>
-                    <span className="text-[11px] font-black text-emerald-900">Rp {amount.toLocaleString('id-ID')}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="space-y-3">
+             <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-blue-500" /> Sisa Pagu Anggaran Tahunan</h3>
+             {!periodeAktif ? (
+                 <div className="p-3 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-bold italic border border-amber-200">Menunggu Sinkronisasi Periode...</div>
+             ) : paguUnitList.length === 0 ? (
+                 <div className="p-3 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-bold italic border border-rose-200 flex items-start gap-2">
+                     <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                     <span>Belum ada pagu tahunan yang ditetapkan untuk unit ini. Pengajuan baru tidak diizinkan. Silakan hubungi Bendahara Pusat.</span>
+                 </div>
+             ) : (
+                 <div className="space-y-2">
+                     {paguStatus.statusList.map(status => (
+                         <div key={status.sumber_dana} className={`p-3 rounded-xl border ${status.isOver ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
+                             <div className="flex justify-between items-center mb-1">
+                                 <span className="text-[10px] font-extrabold text-slate-700">{status.sumber_dana}</span>
+                                 <span className={`text-[11px] font-black ${status.isOver ? 'text-rose-700' : 'text-emerald-700'}`}>Rp {status.sisa_pagu.toLocaleString('id-ID')}</span>
+                             </div>
+                             <div className="flex justify-between items-center text-[9px] font-bold">
+                                 <span className="text-slate-500">Total Diajukan: Rp {status.requested.toLocaleString('id-ID')}</span>
+                                 {status.isOver && <span className="text-rose-600 uppercase tracking-wider font-black flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Overbudget!</span>}
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             )}
+          </div>
 
           <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Pengajuan</span>
@@ -2094,7 +2146,7 @@ function BuatPengajuanContent() {
         <div className="flex flex-col gap-3 items-end">
           <button 
             onClick={handleKirim}
-            disabled={!isFormValid || loading}
+            disabled={!isFormValid || paguStatus.isOverBudget || loading}
             className="w-full max-w-[320px] bg-amber-400 hover:bg-amber-500 disabled:bg-slate-100 disabled:text-slate-300 text-amber-900 font-extrabold py-3 px-6 rounded-2xl shadow-xl shadow-amber-100 transition-all flex flex-col items-center justify-center gap-0.5 group relative overflow-hidden active:scale-95 border-b-4 border-amber-500 disabled:border-slate-200"
           >
             <div className="flex items-center gap-2">
