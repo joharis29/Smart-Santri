@@ -454,7 +454,7 @@ function BuatPengajuanContent() {
         const supabase = createClient();
         const { data, error } = await supabase
           .from('program_kegiatan')
-          .select('program, nama_kegiatan')
+          .select('id, program, nama_kegiatan')
           .eq('unit', unit);
           
         if (error) throw error;
