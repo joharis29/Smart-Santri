@@ -870,16 +870,15 @@ export default function RKAReferencePage() {
                                         onChange={(e) => setFormData({ ...formData, pelaksana: e.target.value })}
                                     />
                                 </div>
-                                    <div className="space-y-0.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Sasaran</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
-                                            placeholder="Target sasaran..."
-                                            value={formData.sasaran}
-                                            onChange={(e) => setFormData({ ...formData, sasaran: e.target.value })}
-                                        />
-                                    </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Sasaran</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                        placeholder="Target sasaran..."
+                                        value={formData.sasaran}
+                                        onChange={(e) => setFormData({ ...formData, sasaran: e.target.value })}
+                                    />
                                 </div>
 
                                 <div className="space-y-0.5 relative" ref={programDropdownRef}>
