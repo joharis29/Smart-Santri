@@ -658,6 +658,10 @@ export default function RKAReferencePage() {
                     >
                         Referensi Program
                     </button>
+                    <button
+                        onClick={() => setActiveTab('SIKLUS')}
+                        className={`px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${activeTab === 'SIKLUS' ? 'border-emerald-500 text-emerald-700 bg-emerald-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                    >
                         Siklus Periode
                     </button>
                 </div>
