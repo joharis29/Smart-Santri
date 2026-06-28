@@ -852,20 +852,24 @@ export default function RKAReferencePage() {
                                 </div>
                                 <div className="space-y-0.5">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Standar Pembiayaan</label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
-                                            value={formData.standar}
-                                            onChange={(e) => setFormData({ ...formData, standar: e.target.value })}
-                                        >
-                                        <input
-                                            type="text"
-                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
-                                            placeholder="Pelaksana..."
-                                            value={formData.pelaksana}
-                                            onChange={(e) => setFormData({ ...formData, pelaksana: e.target.value })}
-                                        />
-                                    </div>
+                                    <input
+                                        type="text"
+                                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                        placeholder="Contoh: Standar Isi"
+                                        value={formData.standar}
+                                        onChange={(e) => setFormData({ ...formData, standar: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Pelaksana</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                        placeholder="Pelaksana..."
+                                        value={formData.pelaksana}
+                                        onChange={(e) => setFormData({ ...formData, pelaksana: e.target.value })}
+                                    />
+                                </div>
                                     <div className="space-y-0.5">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Sasaran</label>
                                         <input
