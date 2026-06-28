@@ -442,8 +442,9 @@ function BuatPengajuanContent() {
   const [docStatus, setDocStatus] = useState<'DRAFT' | 'REVISI' | 'MENUNGGU_KEPALA' | ''>('')
   const [catatanRevisi, setCatatanRevisi] = useState('')
   const [availablePrograms, setAvailablePrograms] = useState<string[]>([])
+  const [programIdMap, setProgramIdMap] = useState<Record<string, string>>({})
   const [periodeAktif, setPeriodeAktif] = useState<any>(null)
-  const [paguUnitList, setPaguUnitList] = useState<any[]>([])
+  const [paguProgramList, setPaguProgramList] = useState<any[]>([])
 
   useEffect(() => {
     const fetchPrograms = async () => {
@@ -460,14 +461,17 @@ function BuatPengajuanContent() {
         
         if (data) {
           const programSet = new Set<string>();
+          const idMap: Record<string, string> = {};
           data.forEach(item => {
+            let key = item.program;
             if (item.program && item.nama_kegiatan && item.nama_kegiatan !== '-') {
-              programSet.add(`${item.program} - ${item.nama_kegiatan}`);
-            } else if (item.program) {
-              programSet.add(item.program);
+              key = `${item.program} - ${item.nama_kegiatan}`;
             }
+            programSet.add(key);
+            idMap[key] = item.id;
           });
           setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
+          setProgramIdMap(idMap);
         }
       } catch (err) {
         console.error("Gagal memuat program referensi:", err);
@@ -704,11 +708,11 @@ function BuatPengajuanContent() {
           if (!editId) {
             setTahunAjaran(periodData.tahun_ajaran);
           }
-          const { data: paguData } = await supabase.from('pagu_unit').select('*').eq('periode_id', periodData.id).eq('unit', unit);
+          const { data: paguData } = await supabase.from('pagu_program').select('*').eq('periode_id', periodData.id);
           if (paguData) {
-            setPaguUnitList(paguData);
+            setPaguProgramList(paguData);
           } else {
-            setPaguUnitList([]);
+            setPaguProgramList([]);
           }
         }
       } catch (err) {
@@ -816,30 +820,37 @@ function BuatPengajuanContent() {
 
   const paguStatus = useMemo(() => {
     if (!periodeAktif) return { isOverBudget: true, statusList: [] };
-    if (paguUnitList.length === 0) return { isOverBudget: true, statusList: [] };
+    if (paguProgramList.length === 0) return { isOverBudget: true, statusList: [] };
 
     let isOverBudget = false;
-    const statusList = paguUnitList.map(pagu => {
-      const requested = summary[pagu.sumber_dana] || 0;
-      const sisa = Number(pagu.sisa_pagu);
+    
+    // Hitung total request per program dari semua baris form
+    const requestedPerProgram: Record<string, number> = {};
+    rows.forEach(row => {
+      if (row.program && row.nominal > 0) {
+        requestedPerProgram[row.program] = (requestedPerProgram[row.program] || 0) + row.nominal;
+      }
+    });
+
+    const statusList = Object.keys(requestedPerProgram).map(programStr => {
+      const requested = requestedPerProgram[programStr];
+      const pId = programIdMap[programStr];
+      const pagu = paguProgramList.find(p => p.program_id === pId);
+      
+      const sisa = pagu ? Number(pagu.sisa_pagu) : 0;
       const isOver = requested > sisa;
       if (isOver) isOverBudget = true;
+      
       return {
-        sumber_dana: pagu.sumber_dana,
+        sumber_dana: programStr, // Use sumber_dana property name just to keep UI component compatibility
         sisa_pagu: sisa,
         requested,
         isOver
       };
     });
 
-    Object.keys(summary).forEach(source => {
-      if (summary[source] > 0 && !paguUnitList.find(p => p.sumber_dana === source)) {
-         isOverBudget = true; 
-      }
-    });
-
     return { isOverBudget, statusList };
-  }, [summary, paguUnitList, periodeAktif]);
+  }, [rows, paguProgramList, periodeAktif, programIdMap]);
 
   const [stream, setStream] = useState<MediaStream | null>(null)
 
@@ -2114,18 +2125,18 @@ function BuatPengajuanContent() {
              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-blue-500" /> Sisa Pagu Anggaran Tahunan</h3>
              {!periodeAktif ? (
                  <div className="p-3 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-bold italic border border-amber-200">Menunggu Sinkronisasi Periode...</div>
-             ) : paguUnitList.length === 0 ? (
-                 <div className="p-3 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-bold italic border border-rose-200 flex items-start gap-2">
+             ) : paguStatus.statusList.length === 0 ? (
+                 <div className="p-3 bg-slate-50 text-slate-500 rounded-xl text-[10px] font-bold italic border border-slate-200 flex items-start gap-2">
                      <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-                     <span>Belum ada pagu tahunan yang ditetapkan untuk unit ini. Pengajuan baru tidak diizinkan. Silakan hubungi Bendahara Pusat.</span>
+                     <span>Silakan pilih Program/Kegiatan dan isi nominal pada baris rincian di atas untuk memvalidasi sisa anggaran.</span>
                  </div>
              ) : (
                  <div className="space-y-2">
                      {paguStatus.statusList.map(status => (
                          <div key={status.sumber_dana} className={`p-3 rounded-xl border ${status.isOver ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
                              <div className="flex justify-between items-center mb-1">
-                                 <span className="text-[10px] font-extrabold text-slate-700">{status.sumber_dana}</span>
-                                 <span className={`text-[11px] font-black ${status.isOver ? 'text-rose-700' : 'text-emerald-700'}`}>Rp {status.sisa_pagu.toLocaleString('id-ID')}</span>
+                                 <span className="text-[10px] font-extrabold text-slate-700 max-w-[70%] leading-tight">{status.sumber_dana}</span>
+                                 <span className={`text-[11px] font-black shrink-0 ${status.isOver ? 'text-rose-700' : 'text-emerald-700'}`}>Rp {status.sisa_pagu.toLocaleString('id-ID')}</span>
                              </div>
                              <div className="flex justify-between items-center text-[9px] font-bold">
                                  <span className="text-slate-500">Total Diajukan: Rp {status.requested.toLocaleString('id-ID')}</span>

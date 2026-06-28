@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Search, Edit2, Trash2, X, ChevronDown, Filter, FileText, CheckCircle2, AlertCircle, BookOpen, Save, Loader2, ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import * as XLSX from 'xlsx-js-style';
-import { PaguTahunanTab } from './PaguTahunanTab';
 import { SiklusPeriodeTab } from './SiklusPeriodeTab';
 
 interface RKAReference {
@@ -19,6 +18,11 @@ interface RKAReference {
     sasaran: string;
     prioritas: string;
     indikator: string;
+    // Data Pagu
+    pagu_id?: string;
+    nominal_pagu?: number;
+    terpakai?: number;
+    sisa_pagu?: number;
 }
 
 const STRUKTUR_BIDANG: Record<string, string[]> = {
@@ -38,10 +42,12 @@ const STRUKTUR_BIDANG: Record<string, string[]> = {
 };
 
 export default function RKAReferencePage() {
-    const [activeTab, setActiveTab] = useState<'PROGRAM' | 'PAGU' | 'SIKLUS'>('PROGRAM');
+    const [activeTab, setActiveTab] = useState<'PROGRAM' | 'SIKLUS'>('PROGRAM');
     const [data, setData] = useState<RKAReference[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    
+    const [periodeAktif, setPeriodeAktif] = useState<any>(null);
     
     const [searchQuery, setSearchQuery] = useState('');
     const [filterUnit, setFilterUnit] = useState('');
@@ -89,25 +95,49 @@ export default function RKAReferencePage() {
                 }
             }
 
+            // Ambil periode aktif
+            const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
+            if (periodData) {
+                setPeriodeAktif(periodData);
+            }
+
+            // Ambil data pagu program untuk periode ini
+            let paguMap = new Map();
+            if (periodData) {
+                const { data: paguDataResult } = await supabase.from('pagu_program').select('*').eq('periode_id', periodData.id);
+                if (paguDataResult) {
+                    paguDataResult.forEach((pagu: any) => {
+                        paguMap.set(pagu.program_id, pagu);
+                    });
+                }
+            }
+
             if (allData.length > 0) {
                 // Remove any duplicates just in case (e.g. from tied timestamps during pagination)
                 const uniqueDataMap = new Map();
                 allData.forEach(item => uniqueDataMap.set(item.id, item));
                 const uniqueAllData = Array.from(uniqueDataMap.values());
 
-                const formattedData: RKAReference[] = uniqueAllData.map((item: any) => ({
-                    id: item.id,
-                    unit: item.unit,
-                    bidang: item.bidang,
-                    standar: item.standar,
-                    program: item.program,
-                    namaKegiatan: item.nama_kegiatan,
-                    kegiatan: item.detail_kegiatan || '',
-                    pelaksana: item.pelaksana || '',
-                    sasaran: item.sasaran || '',
-                    prioritas: item.prioritas || '',
-                    indikator: item.indikator || ''
-                }));
+                const formattedData: RKAReference[] = uniqueAllData.map((item: any) => {
+                    const pagu = paguMap.get(item.id);
+                    return {
+                        id: item.id,
+                        unit: item.unit,
+                        bidang: item.bidang,
+                        standar: item.standar,
+                        program: item.program,
+                        namaKegiatan: item.nama_kegiatan,
+                        kegiatan: item.detail_kegiatan || '',
+                        pelaksana: item.pelaksana || '',
+                        sasaran: item.sasaran || '',
+                        prioritas: item.prioritas || '',
+                        indikator: item.indikator || '',
+                        pagu_id: pagu ? pagu.id : undefined,
+                        nominal_pagu: pagu ? Number(pagu.nominal_pagu) : undefined,
+                        terpakai: pagu ? Number(pagu.terpakai) : undefined,
+                        sisa_pagu: pagu ? Number(pagu.sisa_pagu) : undefined
+                    };
+                });
                 setData(formattedData);
             }
         } catch (error) {
@@ -171,6 +201,11 @@ export default function RKAReferencePage() {
     const [newBidangName, setNewBidangName] = useState('');
     const [newProgramName, setNewProgramName] = useState('');
     const [newKegiatanName, setNewKegiatanName] = useState('');
+    
+    // Pagu Modal States
+    const [isPaguModalOpen, setIsPaguModalOpen] = useState(false);
+    const [editingPaguItem, setEditingPaguItem] = useState<RKAReference | null>(null);
+    const [newPaguNominal, setNewPaguNominal] = useState<number>(0);
     
     const defaultFormState = {
         unit: userUnit || 'Pusat (Yayasan)',
@@ -418,6 +453,35 @@ export default function RKAReferencePage() {
         }
     };
 
+    const handleSavePagu = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!periodeAktif || !editingPaguItem) return;
+        setIsSaving(true);
+        try {
+            const payload = {
+                periode_id: periodeAktif.id,
+                program_id: editingPaguItem.id,
+                nominal_pagu: newPaguNominal
+            };
+            
+            if (editingPaguItem.pagu_id) {
+                await supabase.from('pagu_program').update({ nominal_pagu: newPaguNominal }).eq('id', editingPaguItem.pagu_id);
+            } else {
+                await supabase.from('pagu_program').insert(payload);
+            }
+            
+            // Refetch to sync pagu changes
+            fetchData(filterUnit !== '' ? filterUnit : undefined);
+            setIsPaguModalOpen(false);
+            setEditingPaguItem(null);
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menyimpan Pagu.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
@@ -594,16 +658,6 @@ export default function RKAReferencePage() {
                     >
                         Referensi Program
                     </button>
-                    <button
-                        onClick={() => setActiveTab('PAGU')}
-                        className={`px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${activeTab === 'PAGU' ? 'border-emerald-500 text-emerald-700 bg-emerald-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                    >
-                        Pagu Tahunan
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('SIKLUS')}
-                        className={`px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${activeTab === 'SIKLUS' ? 'border-emerald-500 text-emerald-700 bg-emerald-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                    >
                         Siklus Periode
                     </button>
                 </div>
@@ -697,6 +751,9 @@ export default function RKAReferencePage() {
                                         {renderSortableHeader('Prioritas', 'prioritas', 'min-w-[90px]')}
                                         {renderSortableHeader('Kegiatan', 'namaKegiatan', 'min-w-[140px]')}
                                         {renderSortableHeader('Detail', 'kegiatan', 'min-w-[160px]')}
+                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[110px]">Pagu Aktif (Rp)</th>
+                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[90px]">Terpakai</th>
+                                        <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[90px]">Sisa</th>
                                         <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-16 sticky right-0 bg-slate-50/95 backdrop-blur-sm z-10 border-l border-slate-200/50 shadow-[-8px_0_15px_-3px_rgba(0,0,0,0.05)]">Aksi</th>
                                     </tr>
                                 </thead>
@@ -738,6 +795,22 @@ export default function RKAReferencePage() {
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan || '-'}</p>
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    {item.nominal_pagu !== undefined ? (
+                                                        <div className="flex items-center justify-end gap-1.5 group/pagu cursor-pointer" onClick={() => { if(isCentral) { setEditingPaguItem(item); setNewPaguNominal(item.nominal_pagu || 0); setIsPaguModalOpen(true); } }}>
+                                                            <span className="text-[10px] font-bold text-slate-700">{item.nominal_pagu.toLocaleString('id-ID')}</span>
+                                                            {isCentral && <Edit2 className="w-3 h-3 text-slate-300 opacity-0 group-hover/pagu:opacity-100 transition-opacity" />}
+                                                        </div>
+                                                    ) : (
+                                                        <button onClick={() => { setEditingPaguItem(item); setNewPaguNominal(0); setIsPaguModalOpen(true); }} disabled={!isCentral || !periodeAktif} className="text-[9px] font-bold text-slate-400 hover:text-emerald-600 disabled:opacity-50">Set Pagu</button>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <span className="text-[10px] font-bold text-rose-600">{item.terpakai !== undefined ? item.terpakai.toLocaleString('id-ID') : '-'}</span>
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <span className="text-[10px] font-bold text-emerald-600">{item.sisa_pagu !== undefined ? item.sisa_pagu.toLocaleString('id-ID') : '-'}</span>
                                                 </td>
                                                 <td className="px-3 py-2 sticky right-0 bg-white group-hover:bg-slate-50/80 transition-colors z-10 border-l border-slate-50 shadow-[-8px_0_15px_-3px_rgba(0,0,0,0.03)]">
                                                     <div className="flex items-center justify-center gap-1">
@@ -1094,8 +1167,77 @@ export default function RKAReferencePage() {
                 </div>
             )}
 
-            {activeTab === 'PAGU' && (
-                <PaguTahunanTab isCentral={isCentral} units={units} />
+            {isPaguModalOpen && editingPaguItem && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
+                        <div className="px-4 py-3 bg-white border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-650">
+                                    <Save className="w-3.5 h-3.5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">Set Pagu Program</h3>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Tahun Ajaran: {periodeAktif?.tahun_ajaran}</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsPaguModalOpen(false)} 
+                                className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-650 rounded-full transition-all border border-transparent hover:border-slate-200"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-4">
+                            <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{editingPaguItem.unit} - {editingPaguItem.bidang}</p>
+                                <p className="text-sm font-black text-slate-800 leading-snug">{editingPaguItem.program}</p>
+                                <p className="text-xs font-bold text-emerald-650 mt-1">{editingPaguItem.namaKegiatan}</p>
+                            </div>
+                            
+                            <form onSubmit={handleSavePagu} className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">Nominal Pagu Aktif (Rp)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">Rp</span>
+                                        <input
+                                            type="number"
+                                            autoFocus
+                                            min="0"
+                                            required
+                                            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-black text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                            value={newPaguNominal}
+                                            onChange={(e) => setNewPaguNominal(Number(e.target.value))}
+                                        />
+                                    </div>
+                                    <p className="text-[9px] font-bold text-slate-400 mt-1 ml-0.5">Anggaran ini akan mengikat pengajuan RKA untuk program ini.</p>
+                                </div>
+
+                                <div className="pt-2 flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPaguModalOpen(false)}
+                                        disabled={isSaving}
+                                        className="flex-1 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 disabled:opacity-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="flex-1 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-md shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                    >
+                                        {isSaving ? (
+                                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan...</>
+                                        ) : (
+                                            <><Save className="w-3.5 h-3.5" /> Simpan Pagu</>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {activeTab === 'SIKLUS' && (

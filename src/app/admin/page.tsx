@@ -133,8 +133,43 @@ export default function AdminDashboardPage() {
           const supabase = createClient();
           const { data: periodData } = await supabase.from('periode_anggaran').select('id, tahun_ajaran').eq('status', 'AKTIF').maybeSingle();
           if (periodData) {
-              const { data: paguData } = await supabase.from('pagu_unit').select('*').eq('periode_id', periodData.id).eq('unit', selectedTrxForReview.unit);
-              setPaguReviewData(paguData || []);
+              const { data: paguData } = await supabase
+                  .from('pagu_program')
+                  .select('id, nominal_pagu, sisa_pagu, terpakai, program_kegiatan!inner(unit, program, nama_kegiatan)')
+                  .eq('periode_id', periodData.id)
+                  .eq('program_kegiatan.unit', selectedTrxForReview.unit);
+              
+              if (paguData && paguData.length > 0) {
+                  // Get the programs requested in the transaction
+                  let relevantPrograms: string[] = [];
+                  if (selectedTrxForReview.items && selectedTrxForReview.items.length > 0) {
+                      relevantPrograms = selectedTrxForReview.items.map((it: any) => it.judul_kegiatan);
+                  } else if (selectedTrxForReview.type === 'LPJ' && selectedTrxForReview.items?.[0]) {
+                      relevantPrograms = [selectedTrxForReview.items[0].judul_kegiatan];
+                  }
+
+                  const filteredPagu = paguData.filter((p: any) => {
+                      const pName = p.program_kegiatan?.nama_kegiatan && p.program_kegiatan.nama_kegiatan !== '-' 
+                          ? `${p.program_kegiatan.program} - ${p.program_kegiatan.nama_kegiatan}` 
+                          : p.program_kegiatan?.program;
+                      return relevantPrograms.includes(pName) || relevantPrograms.includes(p.program_kegiatan?.program);
+                  });
+                  
+                  const formattedPagu = (filteredPagu.length > 0 ? filteredPagu : paguData).map((p: any) => {
+                      const pName = p.program_kegiatan?.nama_kegiatan && p.program_kegiatan.nama_kegiatan !== '-' 
+                          ? `${p.program_kegiatan.program} - ${p.program_kegiatan.nama_kegiatan}` 
+                          : p.program_kegiatan?.program;
+                      return {
+                          sumber_dana: pName,
+                          sisa_pagu: p.sisa_pagu,
+                          nominal_pagu: p.nominal_pagu,
+                          terpakai: p.terpakai
+                      };
+                  });
+                  setPaguReviewData(formattedPagu);
+              } else {
+                  setPaguReviewData([]);
+              }
           } else {
               setPaguReviewData([]);
           }
