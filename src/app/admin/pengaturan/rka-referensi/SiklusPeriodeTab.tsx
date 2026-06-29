@@ -12,6 +12,8 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [tahunAjaran, setTahunAjaran] = useState('');
+    const [tanggalMulai, setTanggalMulai] = useState('');
+    const [tanggalSelesai, setTanggalSelesai] = useState('');
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -33,9 +35,16 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
         e.preventDefault();
         setIsProcessing(true);
         try {
-            await supabase.from('periode_anggaran').insert({ tahun_ajaran: tahunAjaran, status: 'DRAFT' });
+            await supabase.from('periode_anggaran').insert({ 
+                tahun_ajaran: tahunAjaran, 
+                status: 'DRAFT',
+                tanggal_mulai: tanggalMulai || null,
+                tanggal_selesai: tanggalSelesai || null
+            });
             setIsModalOpen(false);
             setTahunAjaran('');
+            setTanggalMulai('');
+            setTanggalSelesai('');
             fetchData();
         } catch (err) {
             alert('Gagal membuat periode. Format mungkin sudah ada.');
@@ -191,6 +200,16 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
                             <div>
                                 <label className="text-[10px] font-black text-slate-500 uppercase">Tahun Ajaran</label>
                                 <input type="text" placeholder="Contoh: 2024/2025" className="w-full mt-1 p-2 border border-slate-200 rounded-lg text-xs font-bold" value={tahunAjaran} onChange={e => setTahunAjaran(e.target.value)} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase">Tanggal Mulai</label>
+                                    <input type="date" className="w-full mt-1 p-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700" value={tanggalMulai} onChange={e => setTanggalMulai(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase">Tanggal Selesai</label>
+                                    <input type="date" className="w-full mt-1 p-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700" value={tanggalSelesai} onChange={e => setTanggalSelesai(e.target.value)} />
+                                </div>
                             </div>
                             <div className="flex gap-2 pt-2">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 text-xs font-black text-slate-500 bg-slate-100 rounded-lg">Batal</button>
