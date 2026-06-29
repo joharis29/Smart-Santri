@@ -48,6 +48,8 @@ export default function RKAReferencePage() {
     const [isSaving, setIsSaving] = useState(false);
     
     const [periodeAktif, setPeriodeAktif] = useState<any>(null);
+    const [periodeList, setPeriodeList] = useState<any[]>([]);
+    const [filterPeriodeId, setFilterPeriodeId] = useState<string>('');
     
     const [searchQuery, setSearchQuery] = useState('');
     const [filterUnit, setFilterUnit] = useState('');
@@ -60,7 +62,7 @@ export default function RKAReferencePage() {
     const supabase = createClient();
 
     // Fetch Data from Supabase
-    const fetchData = async (unitParam?: string) => {
+    const fetchData = async (unitParam?: string, periodeIdParam?: string) => {
         setIsLoading(true);
         try {
             let allData: any[] = [];
@@ -95,16 +97,25 @@ export default function RKAReferencePage() {
                 }
             }
 
-            // Ambil periode aktif
-            const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
-            if (periodData) {
-                setPeriodeAktif(periodData);
+            // Ambil semua periode untuk filter
+            let targetPeriodeId = periodeIdParam || filterPeriodeId;
+            const { data: periodDataAll } = await supabase.from('periode_anggaran').select('*').order('tahun_ajaran', { ascending: false });
+            if (periodDataAll) {
+                setPeriodeList(periodDataAll);
+                const activeP = periodDataAll.find((p: any) => p.status === 'AKTIF');
+                if (activeP) {
+                    setPeriodeAktif(activeP);
+                    if (!targetPeriodeId) {
+                        targetPeriodeId = activeP.id;
+                        setFilterPeriodeId(activeP.id);
+                    }
+                }
             }
 
             // Ambil data pagu program untuk periode ini
             let paguMap = new Map();
-            if (periodData) {
-                const { data: paguDataResult } = await supabase.from('pagu_program').select('*').eq('periode_id', periodData.id);
+            if (targetPeriodeId) {
+                const { data: paguDataResult } = await supabase.from('pagu_program').select('*').eq('periode_id', targetPeriodeId);
                 if (paguDataResult) {
                     paguDataResult.forEach((pagu: any) => {
                         paguMap.set(pagu.program_id, pagu);
@@ -143,6 +154,33 @@ export default function RKAReferencePage() {
         } catch (error) {
             console.error('Error fetching data:', error);
             alert('Gagal memuat data referensi RKA.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePeriodeChange = async (newPeriodeId: string) => {
+        setFilterPeriodeId(newPeriodeId);
+        setIsLoading(true);
+        try {
+            const { data: paguDataResult } = await supabase.from('pagu_program').select('*').eq('periode_id', newPeriodeId);
+            const paguMap = new Map();
+            if (paguDataResult) {
+                paguDataResult.forEach((pagu: any) => paguMap.set(pagu.program_id, pagu));
+            }
+            
+            setData(prevData => prevData.map(item => {
+                const pagu = paguMap.get(item.id);
+                return {
+                    ...item,
+                    pagu_id: pagu ? pagu.id : undefined,
+                    nominal_pagu: pagu ? Number(pagu.nominal_pagu) : undefined,
+                    terpakai: pagu ? Number(pagu.terpakai) : undefined,
+                    sisa_pagu: pagu ? Number(pagu.sisa_pagu) : undefined
+                };
+            }));
+        } catch(e) {
+            console.error(e);
         } finally {
             setIsLoading(false);
         }
@@ -455,11 +493,12 @@ export default function RKAReferencePage() {
 
     const handleSavePagu = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!periodeAktif || !editingPaguItem) return;
+        const targetPeriodToSave = filterPeriodeId || periodeAktif?.id;
+        if (!targetPeriodToSave || !editingPaguItem) return;
         setIsSaving(true);
         try {
             const payload = {
-                periode_id: periodeAktif.id,
+                periode_id: targetPeriodToSave,
                 program_id: editingPaguItem.id,
                 nominal_pagu: newPaguNominal
             };
@@ -703,6 +742,17 @@ export default function RKAReferencePage() {
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <select
+                        className="px-2.5 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                        value={filterPeriodeId}
+                        onChange={(e) => handlePeriodeChange(e.target.value)}
+                    >
+                        {periodeList.map(p => (
+                            <option key={p.id} value={p.id}>
+                                {p.tahun_ajaran} {p.status === 'AKTIF' ? '(Aktif)' : ''}
+                            </option>
+                        ))}
+                    </select>
                     {isCentral && (
                         <select
                             className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-650 outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
