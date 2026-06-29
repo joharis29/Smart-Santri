@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, Plus, Lock, Unlock, RefreshCw, AlertTriangle, Play, Calendar } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, RefreshCw, AlertTriangle, Play, Calendar, Trash2 } from 'lucide-react';
 
 export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
     const [periodes, setPeriodes] = useState<any[]>([]);
@@ -74,6 +74,21 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
         } catch (err) {
             console.error(err);
             alert('Gagal melakukan Tutup Buku.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('PERINGATAN: Menghapus tahun ajaran ini akan ikut menghapus SEMUA pagu anggaran yang telah tersimpan di periode ini secara permanen. Apakah Anda benar-benar yakin ingin menghapusnya?')) return;
+        setIsProcessing(true);
+        try {
+            const { error } = await supabase.from('periode_anggaran').delete().eq('id', id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghapus periode anggaran.');
         } finally {
             setIsProcessing(false);
         }
@@ -157,6 +172,9 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
                                         {item.status === 'DITUTUP' && (
                                             <span className="text-[9px] font-bold text-slate-400 italic flex items-center gap-1 justify-center"><Lock className="w-3 h-3" /> Locked</span>
                                         )}
+                                        <button onClick={() => handleDelete(item.id)} disabled={isProcessing} className="bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-md text-[8px] font-black flex items-center gap-1 hover:bg-red-100 uppercase disabled:opacity-50">
+                                            <Trash2 className="w-3 h-3" /> Hapus
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
