@@ -1105,21 +1105,15 @@ export default function RkaRevisiPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <GraduationCap size={16} className="text-emerald-600" />
                     </div>
-                    <select
+                    <input
                         value={tahunAjaran}
-                        onChange={(e) => setTahunAjaran(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-pointer hover:border-emerald-300"
-                    >
-                        <option value="">-- Pilih Tahun Ajaran --</option>
-                        {availableTahunAjaranList.map(ta => (
-                            <option key={ta} value={ta} disabled={isPastTahunAjaran(ta)}>
-                                {ta} {isPastTahunAjaran(ta) ? '(Berlalu)' : ''}
-                            </option>
-                        ))}
-                    </select>
+                        readOnly
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none cursor-not-allowed opacity-90"
+                        placeholder="Tahun Ajaran"
+                    />
                 </div>
             </div>
-            <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5"><Info className="w-3.5 h-3.5"/> Ubah Bulan atau Tahun Ajaran jika kegiatan dilakukan reschedule (Pergeseran Waktu).</p>
+            <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5"><Info className="w-3.5 h-3.5"/> Ubah Bulan jika kegiatan dilakukan reschedule (Pergeseran Waktu) dalam Tahun Ajaran yang sama.</p>
         </div>
       )}
 

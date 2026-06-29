@@ -2156,29 +2156,12 @@ export default function BuatRealisasiPage() {
                                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                                         <Layers className="w-3 h-3 text-emerald-600" /> Tahun Ajaran <span className="text-rose-600">*</span>
                                     </label>
-                                    <select 
+                                    <input 
                                         value={tahunAjaran}
-                                        onChange={(e) => setTahunAjaran(e.target.value)}
-                                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                                    >
-                                        <option value="">Pilih Tahun...</option>
-                                        {(() => {
-                                            const currentYear = new Date().getFullYear();
-                                            const currentMonth = new Date().getMonth(); // 0-11
-                                            // If month < 6 (Jan-Jun), academic year started last year.
-                                            const startYear = currentMonth < 6 ? currentYear - 1 : currentYear;
-                                            const prevYearStr = `${startYear - 1}/${startYear}`;
-                                            const currYearStr = `${startYear}/${startYear + 1}`;
-                                            const nextYearStr = `${startYear + 1}/${startYear + 2}`;
-                                            return (
-                                                <>
-                                                    <option value={prevYearStr} disabled>{prevYearStr} (Lampau)</option>
-                                                    <option value={currYearStr}>{currYearStr} (Aktif)</option>
-                                                    <option value={nextYearStr}>{nextYearStr}</option>
-                                                </>
-                                            );
-                                        })()}
-                                    </select>
+                                        readOnly
+                                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 outline-none cursor-not-allowed transition-all opacity-75"
+                                        placeholder="Pilih RKA terlebih dahulu..."
+                                    />
                                 </div>
                             </div>
                         </div>
