@@ -255,7 +255,8 @@ export default function RKAReferencePage() {
         pelaksana: '',
         sasaran: '',
         prioritas: 'Program Tetap & Wajib',
-        indikator: ''
+        indikator: '',
+        nominal_pagu: 0
     };
     
     const [formData, setFormData] = useState<Omit<RKAReference, 'id'>>(defaultFormState);
@@ -434,7 +435,8 @@ export default function RKAReferencePage() {
             pelaksana: item.pelaksana || '',
             sasaran: item.sasaran || '',
             prioritas: item.prioritas || '',
-            indikator: item.indikator || ''
+            indikator: item.indikator || '',
+            nominal_pagu: item.nominal_pagu || 0
         });
         setIsModalOpen(true);
     };
@@ -550,7 +552,16 @@ export default function RKAReferencePage() {
                 if (error) throw error;
                 
                 if (updated) {
-                    setData(prev => prev.map(item => item.id === editingItem.id ? { ...formData, id: updated.id } : item));
+                    if (isCentral && periodeAktif) {
+                        const targetPeriod = filterPeriodeId || periodeAktif.id;
+                        if (editingItem.pagu_id) {
+                            await supabase.from('pagu_program').update({ nominal_pagu: formData.nominal_pagu }).eq('id', editingItem.pagu_id);
+                        } else {
+                            await supabase.from('pagu_program').insert({ periode_id: targetPeriod, program_id: updated.id, nominal_pagu: formData.nominal_pagu });
+                        }
+                    }
+                    // Fetch data to refresh pagu mapping accurately
+                    fetchData(filterUnit !== '' ? filterUnit : undefined, filterPeriodeId !== '' ? filterPeriodeId : undefined);
                 }
             } else {
                 const { data: inserted, error } = await supabase
@@ -562,7 +573,12 @@ export default function RKAReferencePage() {
                 if (error) throw error;
                 
                 if (inserted) {
-                    setData(prev => [{ ...formData, id: inserted.id }, ...prev]);
+                    if (isCentral && periodeAktif) {
+                        const targetPeriod = filterPeriodeId || periodeAktif.id;
+                        await supabase.from('pagu_program').insert({ periode_id: targetPeriod, program_id: inserted.id, nominal_pagu: formData.nominal_pagu });
+                    }
+                    // Fetch data to refresh pagu mapping accurately
+                    fetchData(filterUnit !== '' ? filterUnit : undefined, filterPeriodeId !== '' ? filterPeriodeId : undefined);
                 }
             }
             setIsModalOpen(false);
@@ -1193,6 +1209,19 @@ export default function RKAReferencePage() {
                                         onChange={(e) => setFormData({ ...formData, indikator: e.target.value })}
                                     />
                                 </div>
+                                
+                                {isCentral && (
+                                    <div className="space-y-0.5">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Pagu Aktif (Rp)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+                                            placeholder="0"
+                                            value={formData.nominal_pagu || ''}
+                                            onChange={(e) => setFormData({ ...formData, nominal_pagu: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="pt-2 flex gap-2 sticky bottom-0 bg-white">
                                     <button
