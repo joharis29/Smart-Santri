@@ -800,11 +800,11 @@ export default function RKAReferencePage() {
                                         <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-10 text-center">No</th>
                                         {renderSortableHeader('Unit / Jenjang', 'unit', 'min-w-[100px]')}
                                         {renderSortableHeader('Bidang / Departemen', 'bidang', 'min-w-[120px]')}
-                                        {renderSortableHeader('Standar', 'standar', 'min-w-[120px]')}
+                                        <th className="hidden">{renderSortableHeader('Standar', 'standar', 'min-w-[120px]')}</th>
                                         {renderSortableHeader('Program', 'program', 'min-w-[140px]')}
-                                        {renderSortableHeader('Prioritas', 'prioritas', 'min-w-[90px]')}
-                                        {renderSortableHeader('Kegiatan', 'namaKegiatan', 'min-w-[140px]')}
-                                        {renderSortableHeader('Detail', 'kegiatan', 'min-w-[160px]')}
+                                        <th className="hidden">{renderSortableHeader('Prioritas', 'prioritas', 'min-w-[90px]')}</th>
+                                        <th className="hidden">{renderSortableHeader('Kegiatan', 'namaKegiatan', 'min-w-[140px]')}</th>
+                                        <th className="hidden">{renderSortableHeader('Detail', 'kegiatan', 'min-w-[160px]')}</th>
                                         <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[110px]">Pagu Aktif (Rp)</th>
                                         <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[90px]">Terpakai</th>
                                         <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right min-w-[90px]">Sisa</th>
@@ -833,21 +833,21 @@ export default function RKAReferencePage() {
                                                         {item.bidang}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 py-2">
+                                                <td className="hidden px-3 py-2">
                                                     <p className="text-[9px] font-bold text-slate-450 uppercase italic leading-none">{item.standar}</p>
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     <p className="text-[10px] font-black text-slate-800 leading-snug">{item.program}</p>
                                                 </td>
-                                                <td className="px-3 py-2">
+                                                <td className="hidden px-3 py-2">
                                                     <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[8px] font-bold rounded-md border border-slate-200 uppercase tracking-tighter inline-block">
                                                         {item.prioritas}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 py-2">
+                                                <td className="hidden px-3 py-2">
                                                     <p className="text-[10px] font-black text-emerald-700 leading-snug">{item.namaKegiatan}</p>
                                                 </td>
-                                                <td className="px-3 py-2">
+                                                <td className="hidden px-3 py-2">
                                                     <p className="text-[10px] font-bold text-slate-550 leading-relaxed whitespace-pre-line">{item.kegiatan || '-'}</p>
                                                 </td>
                                                 <td className="px-3 py-2 text-right">
