@@ -46,6 +46,8 @@ export default function RKAReferencePage() {
     const [data, setData] = useState<RKAReference[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     const [periodeAktif, setPeriodeAktif] = useState<any>(null);
     const [periodeList, setPeriodeList] = useState<any[]>([]);
@@ -597,11 +599,14 @@ export default function RKAReferencePage() {
         }
 
         const unitName = filterUnit ? filterUnit.toUpperCase() : 'SEMUA UNIT / JENJANG';
-        const titleRow1 = ['PROGRAM KEGIATAN TAHUN AJARAN 2025/2026'];
+        const targetPeriode = periodeList.find(p => p.id === (filterPeriodeId || periodeAktif?.id));
+        const tahunAjaran = targetPeriode ? targetPeriode.tahun_ajaran : '...';
+        
+        const titleRow1 = [`PROGRAM KEGIATAN TAHUN AJARAN ${tahunAjaran}`];
         const titleRow2 = [`(${unitName})`];
         const emptyRow: string[] = [];
         
-        const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas', 'Indikator Keberhasilan'];
+        const headers = ['No', 'Unit / Jenjang', 'Bidang / Departemen', 'Standar', 'Program', 'Kegiatan', 'Detail Kegiatan', 'Pelaksana', 'Sasaran', 'Prioritas', 'Indikator Keberhasilan', 'Pagu Aktif (Rp)', 'ID Database'];
 
         const dataRows = sortedData.map((item, index) => [
             index + 1,
@@ -614,7 +619,9 @@ export default function RKAReferencePage() {
             item.pelaksana || '-',
             item.sasaran || '-',
             item.prioritas || '-',
-            item.indikator || '-'
+            item.indikator || '-',
+            item.nominal_pagu || 0,
+            item.id
         ]);
 
         const worksheetData = [titleRow1, titleRow2, emptyRow, headers, ...dataRows];
@@ -689,6 +696,105 @@ export default function RKAReferencePage() {
         XLSX.writeFile(wb, `RKA_Referensi_${unitStr}_${dateStr}.xlsx`);
     };
 
+    const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        const reader = new FileReader();
+        
+        reader.onload = async (event) => {
+            try {
+                const data = event.target?.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                // Data starts at row 5 (index 4)
+                const dataRows = rows.slice(4);
+
+                if (dataRows.length === 0) {
+                    alert("Tidak ada data yang ditemukan di dalam file Excel.");
+                    return;
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+                const targetPeriode = filterPeriodeId || periodeAktif?.id;
+
+                for (const row of dataRows) {
+                    // Cek jika baris kosong
+                    if (!row[1] || !row[4]) continue; // Unit dan Program wajib ada
+
+                    // Validasi Akses Unit
+                    const rowUnit = row[1]?.toString().trim();
+                    if (!isCentral && rowUnit !== userUnit) {
+                        errorCount++;
+                        continue; 
+                    }
+
+                    const payload = {
+                        unit: rowUnit,
+                        bidang: row[2]?.toString().trim() || '',
+                        standar: row[3]?.toString().trim() || '(-)',
+                        program: row[4]?.toString().trim() || '',
+                        nama_kegiatan: row[5]?.toString().trim() || '',
+                        detail_kegiatan: row[6]?.toString().trim() || '',
+                        pelaksana: row[7]?.toString().trim() || '',
+                        sasaran: row[8]?.toString().trim() || '',
+                        prioritas: row[9]?.toString().trim() || 'Program Tetap & Wajib',
+                        indikator: row[10]?.toString().trim() || ''
+                    };
+
+                    const paguValue = row[11]?.toString().replace(/[^0-9]/g, '');
+                    const paguNominal = paguValue ? parseInt(paguValue, 10) : 0;
+                    const idDatabase = row[12]?.toString().trim();
+
+                    let programId = idDatabase;
+
+                    if (idDatabase) {
+                        const { error } = await supabase.from('program_kegiatan').update(payload).eq('id', idDatabase);
+                        if (error) { console.error("Update error:", error); errorCount++; continue; }
+                    } else {
+                        const { data: inserted, error } = await supabase.from('program_kegiatan').insert(payload).select().single();
+                        if (error) { console.error("Insert error:", error); errorCount++; continue; }
+                        programId = inserted.id;
+                    }
+
+                    // Handle Pagu
+                    if (targetPeriode && programId) {
+                        const { data: existingPagu } = await supabase.from('pagu_program')
+                            .select('id').eq('periode_id', targetPeriode).eq('program_id', programId).maybeSingle();
+                            
+                        if (existingPagu) {
+                            await supabase.from('pagu_program').update({ nominal_pagu: paguNominal }).eq('id', existingPagu.id);
+                        } else {
+                            await supabase.from('pagu_program').insert({ 
+                                periode_id: targetPeriode, 
+                                program_id: programId, 
+                                nominal_pagu: paguNominal 
+                            });
+                        }
+                    }
+                    successCount++;
+                }
+
+                alert(`Impor selesai! Berhasil memproses ${successCount} baris. ${errorCount > 0 ? `Gagal: ${errorCount} baris (termasuk validasi unit/error DB).` : ''}`);
+                fetchData(filterUnit !== '' ? filterUnit : undefined, filterPeriodeId !== '' ? filterPeriodeId : undefined);
+
+            } catch (err) {
+                console.error("Error import:", err);
+                alert("Terjadi kesalahan saat memproses file Excel. Pastikan format file sesuai dengan template hasil Ekspor.");
+            } finally {
+                setIsImporting(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        };
+
+        reader.readAsBinaryString(file);
+    };
+
     return (
         <div className="p-3 md:p-4 space-y-4 bg-slate-50/50 min-h-screen">
             {/* Header with Tabs */}
@@ -728,9 +834,25 @@ export default function RKAReferencePage() {
                     <div className="bg-white rounded-xl p-3 px-4 shadow-sm border border-slate-200">
                         <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    ref={fileInputRef}
+                                    onChange={handleImportExcel}
+                                    className="hidden"
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isImporting}
+                                    className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-indigo-100 uppercase tracking-widest flex-1 sm:flex-none justify-center disabled:opacity-50"
+                                >
+                                    {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
+                                    Impor Excel
+                                </button>
                                 <button
                                     onClick={handleExportExcel}
-                                    className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-slate-100 uppercase tracking-widest flex-1 sm:flex-none justify-center"
+                                    disabled={isImporting}
+                                    className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-slate-100 uppercase tracking-widest flex-1 sm:flex-none justify-center disabled:opacity-50"
                                 >
                                     <Download className="w-3.5 h-3.5" /> Ekspor Excel
                                 </button>
