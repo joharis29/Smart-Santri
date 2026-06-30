@@ -47,7 +47,7 @@ export async function registerUserByAdmin(userData: {
     const mapDropdownToEnum = (roleStr: string) => {
       switch (roleStr) {
         case 'Administrator': return 'ADMINISTRATOR';
-        case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+        case 'Bendahara Pusat (Yayasan)': return 'BENDAHARA_PUSAT';
         case 'Pimpinan Pesantren': return 'PIMPINAN';
         case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
         case 'Kepala Jenjang': return 'KEPALA_JENJANG';
@@ -110,7 +110,7 @@ export async function updateUserByAdmin(userId: string, userData: {
     const mapDropdownToEnum = (roleStr: string) => {
       switch (roleStr) {
         case 'Administrator': return 'ADMINISTRATOR';
-        case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+        case 'Bendahara Pusat (Yayasan)': return 'BENDAHARA_PUSAT';
         case 'Pimpinan Pesantren': return 'PIMPINAN';
         case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
         case 'Kepala Jenjang': return 'KEPALA_JENJANG';
@@ -225,7 +225,7 @@ export async function deleteUserByAdmin(userId: string, roleName?: string, unitN
       const mapDropdownToEnum = (roleStr: string) => {
         switch (roleStr) {
           case 'Administrator': return 'ADMINISTRATOR';
-          case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+          case 'Bendahara Pusat (Yayasan)': return 'BENDAHARA_PUSAT';
           case 'Pimpinan Pesantren': return 'PIMPINAN';
           case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
           case 'Kepala Jenjang': return 'KEPALA_JENJANG';
@@ -240,7 +240,7 @@ export async function deleteUserByAdmin(userId: string, roleName?: string, unitN
       const mapEnumToDropdown = (roleEnum: string) => {
         switch (roleEnum) {
           case 'ADMINISTRATOR': return 'Administrator';
-          case 'BENDAHARA_PUSAT': return 'Bendahara Yayasan/Pesantren (Pusat)';
+          case 'BENDAHARA_PUSAT': return 'Bendahara Pusat (Yayasan)';
           case 'PIMPINAN': return 'Pimpinan Pesantren';
           case 'BENDAHARA_JENJANG': return 'Bendahara Jenjang';
           case 'KEPALA_JENJANG': return 'Kepala Jenjang';

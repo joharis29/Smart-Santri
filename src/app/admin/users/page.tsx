@@ -24,7 +24,7 @@ const INITIAL_USERS: UserData[] = [];
 const mapDropdownToEnum = (roleStr: string) => {
   switch (roleStr) {
     case 'Administrator': return 'ADMINISTRATOR';
-    case 'Bendahara Yayasan/Pesantren (Pusat)': return 'BENDAHARA_PUSAT';
+    case 'Bendahara Pusat (Yayasan)': return 'BENDAHARA_PUSAT';
     case 'Pimpinan Pesantren': return 'PIMPINAN';
     case 'Bendahara Jenjang': return 'BENDAHARA_JENJANG';
     case 'Kepala Jenjang': return 'KEPALA_JENJANG';
@@ -39,7 +39,7 @@ const mapDropdownToEnum = (roleStr: string) => {
 const mapEnumToDropdown = (roleEnum: string) => {
   switch (roleEnum) {
     case 'ADMINISTRATOR': return 'Administrator';
-    case 'BENDAHARA_PUSAT': return 'Bendahara Yayasan/Pesantren (Pusat)';
+    case 'BENDAHARA_PUSAT': return 'Bendahara Pusat (Yayasan)';
     case 'PIMPINAN': return 'Pimpinan Pesantren';
     case 'BENDAHARA_JENJANG': return 'Bendahara Jenjang';
     case 'KEPALA_JENJANG': return 'Kepala Jenjang';
@@ -618,7 +618,7 @@ export default function UserManagementPage() {
                   >
                     <option value="ALL">Semua Peran</option>
                     <option value="Administrator">Administrator</option>
-                    <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Pusat</option>
+                    <option value="Bendahara Pusat (Yayasan)">Bendahara Pusat</option>
                     <option value="Bendahara Unit">Bendahara Unit</option>
                     <option value="Kepala Unit">Kepala Unit</option>
                     <option value="Staf Unit">Staf Unit</option>
@@ -728,7 +728,7 @@ export default function UserManagementPage() {
                           <div className="flex flex-wrap gap-1 mt-0.5 max-w-[200px]">
                             {user.concurrentRoles.map((cr: any, idx: number) => {
                               if (cr.role === user.role && cr.unit === user.unit) return null;
-                              const labelShort = cr.role === 'Bendahara Yayasan/Pesantren (Pusat)' ? 'B. Pusat' : cr.role === 'Bendahara Unit' ? 'B. Unit' : cr.role === 'Kepala Unit' ? 'K. Unit' : cr.role === 'Staf Unit' ? 'Staf' : cr.role;
+                              const labelShort = cr.role === 'Bendahara Pusat (Yayasan)' ? 'B. Pusat' : cr.role === 'Bendahara Unit' ? 'B. Unit' : cr.role === 'Kepala Unit' ? 'K. Unit' : cr.role === 'Staf Unit' ? 'Staf' : cr.role;
                               return (
                                 <span key={idx} className="inline-flex items-center px-1 py-0.5 rounded text-[8px] bg-slate-50 text-slate-500 font-bold border border-slate-100 whitespace-nowrap">
                                   {labelShort} ({cr.unit})
@@ -946,7 +946,7 @@ export default function UserManagementPage() {
                           >
                             <option value="">Pilih peran akses...</option>
                             <option value="Administrator">Administrator</option>
-                            <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Yayasan/Pesantren (Pusat)</option>
+                            <option value="Bendahara Pusat (Yayasan)">Bendahara Pusat (Yayasan)</option>
                             <option value="Pimpinan Pesantren">Pimpinan Pesantren</option>
                             <option value="Bendahara Jenjang">Bendahara Jenjang</option>
                             <option value="Kepala Jenjang">Kepala Jenjang</option>
@@ -1018,7 +1018,7 @@ export default function UserManagementPage() {
                               >
                                 <option value="">Pilih peran akses...</option>
                                 <option value="Administrator">Administrator</option>
-                                <option value="Bendahara Yayasan/Pesantren (Pusat)">Bendahara Yayasan/Pesantren (Pusat)</option>
+                                <option value="Bendahara Pusat (Yayasan)">Bendahara Pusat (Yayasan)</option>
                                 <option value="Pimpinan Pesantren">Pimpinan Pesantren</option>
                                 <option value="Bendahara Jenjang">Bendahara Jenjang</option>
                                 <option value="Kepala Jenjang">Kepala Jenjang</option>
