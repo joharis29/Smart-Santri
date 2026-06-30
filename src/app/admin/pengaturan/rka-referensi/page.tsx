@@ -1362,11 +1362,14 @@ export default function RKAReferencePage() {
                                     <div className="space-y-0.5">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Pagu Aktif (Rp)</label>
                                         <input
-                                            type="number"
+                                            type="text"
                                             className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
                                             placeholder="0"
-                                            value={formData.nominal_pagu || ''}
-                                            onChange={(e) => setFormData({ ...formData, nominal_pagu: Number(e.target.value) })}
+                                            value={formData.nominal_pagu ? Number(formData.nominal_pagu).toLocaleString('id-ID') : ''}
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value.replace(/\D/g, "");
+                                                setFormData({ ...formData, nominal_pagu: rawValue ? Number(rawValue) : 0 })
+                                            }}
                                         />
                                     </div>
                                 )}
@@ -1432,13 +1435,15 @@ export default function RKAReferencePage() {
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">Rp</span>
                                         <input
-                                            type="number"
+                                            type="text"
                                             autoFocus
-                                            min="0"
                                             required
                                             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-black text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                                            value={newPaguNominal}
-                                            onChange={(e) => setNewPaguNominal(Number(e.target.value))}
+                                            value={newPaguNominal ? Number(newPaguNominal).toLocaleString('id-ID') : ''}
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value.replace(/\D/g, "");
+                                                setNewPaguNominal(rawValue ? Number(rawValue) : 0)
+                                            }}
                                         />
                                     </div>
                                     <p className="text-[9px] font-bold text-slate-400 mt-1 ml-0.5">Anggaran ini akan mengikat pengajuan RKA untuk program ini.</p>
