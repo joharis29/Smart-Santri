@@ -1026,6 +1026,32 @@ export default function RKAReferencePage() {
                                         ))
                                     )}
                                 </tbody>
+                                {sortedData.length > 0 && (
+                                    <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-100">
+                                        <tr>
+                                            <td className="px-3 py-3"></td>
+                                            <td className="px-3 py-3"></td>
+                                            <td className="px-3 py-3"></td>
+                                            <td className="hidden px-3 py-3"></td>
+                                            <td className="px-3 py-3 text-right text-[10px] font-black text-emerald-800 uppercase tracking-widest">
+                                                Total Keseluruhan
+                                            </td>
+                                            <td className="hidden px-3 py-3"></td>
+                                            <td className="hidden px-3 py-3"></td>
+                                            <td className="hidden px-3 py-3"></td>
+                                            <td className="px-3 py-3 text-right text-[11px] font-black text-slate-800">
+                                                {sortedData.reduce((acc, item) => acc + (item.nominal_pagu || 0), 0).toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-3 py-3 text-right text-[11px] font-black text-rose-600">
+                                                {sortedData.reduce((acc, item) => acc + (item.terpakai || 0), 0).toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-3 py-3 text-right text-[11px] font-black text-emerald-600">
+                                                {sortedData.reduce((acc, item) => acc + (item.sisa_pagu || 0), 0).toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-3 py-3 sticky right-0 bg-emerald-50/95 backdrop-blur-sm z-10 border-l border-emerald-100 shadow-[-8px_0_15px_-3px_rgba(0,0,0,0.05)]"></td>
+                                        </tr>
+                                    </tfoot>
+                                )}
                             </table>
                         </div>
                     </div>
