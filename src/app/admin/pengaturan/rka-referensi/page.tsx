@@ -60,6 +60,7 @@ export default function RKAReferencePage() {
     const [userRole, setUserRole] = useState<string>('');
     const [userUnit, setUserUnit] = useState<string>('');
     const [isCentral, setIsCentral] = useState(true);
+    const [isProgramDisabled, setIsProgramDisabled] = useState(false);
 
     const supabase = createClient();
 
@@ -204,6 +205,17 @@ export default function RKAReferencePage() {
                 
                 const central = savedRole === 'Administrator' || savedUnit === 'Pusat (Yayasan)';
                 setIsCentral(central);
+                
+                let programDisabled = false;
+                if (!central && savedUnit) {
+                    const { data: kontrolData } = await supabase.from('kontrol_pengajuan').select('*').in('unit_name', ['GLOBAL', savedUnit]);
+                    const globalConfig = kontrolData?.find(d => d.unit_name === 'GLOBAL');
+                    const unitConfig = kontrolData?.find(d => d.unit_name === savedUnit);
+                    
+                    if (globalConfig && globalConfig.program_aktif === false) programDisabled = true;
+                    if (unitConfig && unitConfig.program_aktif === false) programDisabled = true;
+                }
+                setIsProgramDisabled(programDisabled);
                 
                 if (!central && savedUnit) {
                     setFilterUnit(savedUnit);
@@ -795,6 +807,11 @@ export default function RKAReferencePage() {
         reader.readAsBinaryString(file);
     };
 
+    const isTutupBuku = React.useMemo(() => {
+        const p = periodeList.find(p => p.id === filterPeriodeId);
+        return p?.status === 'TUTUP_BUKU' || isProgramDisabled;
+    }, [periodeList, filterPeriodeId, isProgramDisabled]);
+
     return (
         <div className="p-3 md:p-4 space-y-4 bg-slate-50/50 min-h-screen">
             {/* Header with Tabs */}
@@ -843,8 +860,8 @@ export default function RKAReferencePage() {
                                 />
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    disabled={isImporting}
-                                    className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-indigo-100 uppercase tracking-widest flex-1 sm:flex-none justify-center disabled:opacity-50"
+                                    disabled={isImporting || isTutupBuku}
+                                    className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-sm shadow-indigo-100 uppercase tracking-widest flex-1 sm:flex-none justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
                                     Impor Excel
@@ -858,7 +875,8 @@ export default function RKAReferencePage() {
                                 </button>
                                 <button
                                     onClick={handleOpenAdd}
-                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-md shadow-emerald-100 uppercase tracking-widest flex-1 sm:flex-none justify-center"
+                                    disabled={isTutupBuku}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-lg text-[10px] transition-all shadow-md shadow-emerald-100 uppercase tracking-widest flex-1 sm:flex-none justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Plus className="w-3.5 h-3.5" /> Tambah Program
                                 </button>
@@ -990,12 +1008,12 @@ export default function RKAReferencePage() {
                                                 </td>
                                                 <td className="px-3 py-2 text-right">
                                                     {item.nominal_pagu !== undefined ? (
-                                                        <div className="flex items-center justify-end gap-1.5 group/pagu cursor-pointer" onClick={() => { if(isCentral) { setEditingPaguItem(item); setNewPaguNominal(item.nominal_pagu || 0); setIsPaguModalOpen(true); } }}>
+                                                        <div className={`flex items-center justify-end gap-1.5 group/pagu ${!isTutupBuku && isCentral ? 'cursor-pointer' : ''}`} onClick={() => { if(!isTutupBuku && isCentral) { setEditingPaguItem(item); setNewPaguNominal(item.nominal_pagu || 0); setIsPaguModalOpen(true); } }}>
                                                             <span className="text-[10px] font-bold text-slate-700">{item.nominal_pagu.toLocaleString('id-ID')}</span>
-                                                            {isCentral && <Edit2 className="w-3 h-3 text-slate-300 opacity-0 group-hover/pagu:opacity-100 transition-opacity" />}
+                                                            {!isTutupBuku && isCentral && <Edit2 className="w-3 h-3 text-slate-300 opacity-0 group-hover/pagu:opacity-100 transition-opacity" />}
                                                         </div>
                                                     ) : (
-                                                        <button onClick={() => { setEditingPaguItem(item); setNewPaguNominal(0); setIsPaguModalOpen(true); }} disabled={!isCentral || !periodeAktif} className="text-[9px] font-bold text-slate-400 hover:text-emerald-600 disabled:opacity-50">Set Pagu</button>
+                                                        <button onClick={() => { setEditingPaguItem(item); setNewPaguNominal(0); setIsPaguModalOpen(true); }} disabled={!isCentral || !periodeAktif || isTutupBuku} className="text-[9px] font-bold text-slate-400 hover:text-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">Set Pagu</button>
                                                     )}
                                                 </td>
                                                 <td className="px-3 py-2 text-right">
@@ -1008,14 +1026,16 @@ export default function RKAReferencePage() {
                                                     <div className="flex items-center justify-center gap-1">
                                                         <button
                                                             onClick={() => handleOpenEdit(item)}
-                                                            className="p-1 px-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100/60"
+                                                            disabled={isTutupBuku}
+                                                            className="p-1 px-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100/60 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 disabled:cursor-not-allowed"
                                                             title="Edit Program"
                                                         >
                                                             <Edit2 className="w-3 h-3" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(item.id)}
-                                                            className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all border border-transparent hover:border-rose-100/60"
+                                                            disabled={isTutupBuku}
+                                                            className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all border border-transparent hover:border-rose-100/60 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 disabled:cursor-not-allowed"
                                                             title="Hapus Program"
                                                         >
                                                             <Trash2 className="w-3 h-3" />
