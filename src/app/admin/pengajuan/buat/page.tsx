@@ -454,8 +454,13 @@ function BuatPengajuanContent() {
         const supabase = createClient();
         
         // 1. Fetch active period
-        const { data: periodData } = await supabase.from('periode_anggaran').select('id, tahun_ajaran').eq('status', 'AKTIF').maybeSingle();
-        if (periodData) setPeriodeAktif(periodData);
+        const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
+        if (periodData) {
+          setPeriodeAktif(periodData);
+          if (!editId) {
+            setTahunAjaran(periodData.tahun_ajaran);
+          }
+        }
 
         // 2. Fetch programs
         const { data, error } = await supabase
@@ -466,9 +471,17 @@ function BuatPengajuanContent() {
         if (error) throw error;
         
         if (data) {
+          let paguData: any[] = [];
+          if (periodData) {
+              const { data: pData } = await supabase
+                  .from('pagu_program')
+                  .select('*')
+                  .eq('periode_id', periodData.id);
+              if (pData) paguData = pData;
+          }
+
           const programSet = new Set<string>();
           const idMap: Record<string, string> = {};
-          const programIds = data.map(item => item.id);
 
           data.forEach(item => {
             let key = item.program;
@@ -476,23 +489,23 @@ function BuatPengajuanContent() {
               key = `${item.program} - ${item.nama_kegiatan}`;
             }
             programSet.add(key);
-            idMap[key] = item.id;
+            
+            if (!idMap[key]) {
+                idMap[key] = item.id;
+            } else {
+                // Smart fallback: If exact duplicates exist (same Program & Kegiatan),
+                // prioritize the ID that actually has a Pagu assigned.
+                const existingHasPagu = paguData.find(p => p.program_id === idMap[key] && Number(p.nominal_pagu) > 0);
+                const currentHasPagu = paguData.find(p => p.program_id === item.id && Number(p.nominal_pagu) > 0);
+                if (!existingHasPagu && currentHasPagu) {
+                    idMap[key] = item.id;
+                }
+            }
           });
+          
           setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
           setProgramIdMap(idMap);
-
-          // 3. Fetch Pagu for these programs
-          if (periodData && programIds.length > 0) {
-              const { data: paguData } = await supabase
-                  .from('pagu_program')
-                  .select('program_id, nominal_pagu, terpakai, sisa_pagu')
-                  .eq('periode_id', periodData.id)
-                  .in('program_id', programIds);
-              
-              if (paguData) {
-                  setPaguProgramList(paguData);
-              }
-          }
+          setPaguProgramList(paguData);
         }
       } catch (err) {
         console.error("Gagal memuat program referensi:", err);
@@ -718,30 +731,6 @@ function BuatPengajuanContent() {
     fetchCustomMetadata();
   }, [unit]);
 
-  useEffect(() => {
-    const fetchPeriodeAndPagu = async () => {
-      if (!unit || isGuest) return;
-      try {
-        const supabase = createClient();
-        const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
-        if (periodData) {
-          setPeriodeAktif(periodData);
-          if (!editId) {
-            setTahunAjaran(periodData.tahun_ajaran);
-          }
-          const { data: paguData } = await supabase.from('pagu_program').select('*').eq('periode_id', periodData.id);
-          if (paguData) {
-            setPaguProgramList(paguData);
-          } else {
-            setPaguProgramList([]);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching pagu:", err);
-      }
-    };
-    fetchPeriodeAndPagu();
-  }, [unit, editId, isGuest]);
 
   // Remove problematic useEffect that resets bidang prematurely
 

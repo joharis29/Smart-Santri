@@ -555,6 +555,21 @@ export default function RKAReferencePage() {
         };
 
         try {
+            // Check for duplicates
+            const { data: duplicateCheck } = await supabase
+                .from('program_kegiatan')
+                .select('id')
+                .eq('unit', formData.unit)
+                .ilike('program', formData.program.trim())
+                .ilike('nama_kegiatan', formData.namaKegiatan.trim())
+                .maybeSingle();
+
+            if (duplicateCheck && duplicateCheck.id !== editingItem?.id) {
+                alert(`Gagal menyimpan: Program "${formData.program}" dengan Kegiatan "${formData.namaKegiatan}" sudah ada di unit ${formData.unit}.`);
+                setIsSaving(false);
+                return;
+            }
+
             if (editingItem) {
                 const { data: updated, error } = await supabase
                     .from('program_kegiatan')
@@ -735,6 +750,17 @@ export default function RKAReferencePage() {
                 let errorCount = 0;
                 const targetPeriode = filterPeriodeId || periodeAktif?.id;
 
+                // Pre-fetch existing data to check for duplicates
+                const unitsInExcel = Array.from(new Set(dataRows.map(row => row[1]?.toString().trim()).filter(Boolean)));
+                const { data: existingData } = await supabase
+                    .from('program_kegiatan')
+                    .select('id, unit, program, nama_kegiatan')
+                    .in('unit', unitsInExcel);
+                
+                const existingSet = new Set(
+                    existingData?.map(r => `${r.unit}-${r.program?.toLowerCase().trim()}-${r.nama_kegiatan?.toLowerCase().trim()}`) || []
+                );
+
                 for (const row of dataRows) {
                     // Cek jika baris kosong
                     if (!row[1] || !row[4]) continue; // Unit dan Program wajib ada
@@ -764,14 +790,21 @@ export default function RKAReferencePage() {
                     const idDatabase = row[12]?.toString().trim();
 
                     let programId = idDatabase;
+                    const duplicateKey = `${rowUnit}-${payload.program.toLowerCase().trim()}-${payload.nama_kegiatan.toLowerCase().trim()}`;
 
                     if (idDatabase) {
                         const { error } = await supabase.from('program_kegiatan').update(payload).eq('id', idDatabase);
                         if (error) { console.error("Update error:", error); errorCount++; continue; }
                     } else {
+                        if (existingSet.has(duplicateKey)) {
+                            console.warn("Skipping duplicate import:", duplicateKey);
+                            errorCount++;
+                            continue;
+                        }
                         const { data: inserted, error } = await supabase.from('program_kegiatan').insert(payload).select().single();
                         if (error) { console.error("Insert error:", error); errorCount++; continue; }
                         programId = inserted.id;
+                        existingSet.add(duplicateKey); // Add to set to prevent duplicate duplicates in the same file
                     }
 
                     // Handle Pagu
