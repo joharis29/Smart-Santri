@@ -40,7 +40,8 @@ import {
   FileEdit,
   Lock,
   Bot,
-  Loader2
+  Loader2,
+  BookOpen
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
