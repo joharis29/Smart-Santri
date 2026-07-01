@@ -452,6 +452,12 @@ function BuatPengajuanContent() {
       
       try {
         const supabase = createClient();
+        
+        // 1. Fetch active period
+        const { data: periodData } = await supabase.from('periode_anggaran').select('id, tahun_ajaran').eq('status', 'AKTIF').maybeSingle();
+        if (periodData) setPeriodeAktif(periodData);
+
+        // 2. Fetch programs
         const { data, error } = await supabase
           .from('program_kegiatan')
           .select('id, program, nama_kegiatan')
@@ -462,6 +468,8 @@ function BuatPengajuanContent() {
         if (data) {
           const programSet = new Set<string>();
           const idMap: Record<string, string> = {};
+          const programIds = data.map(item => item.id);
+
           data.forEach(item => {
             let key = item.program;
             if (item.program && item.nama_kegiatan && item.nama_kegiatan !== '-') {
@@ -472,6 +480,19 @@ function BuatPengajuanContent() {
           });
           setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
           setProgramIdMap(idMap);
+
+          // 3. Fetch Pagu for these programs
+          if (periodData && programIds.length > 0) {
+              const { data: paguData } = await supabase
+                  .from('pagu_program')
+                  .select('program_id, nominal_pagu, terpakai, sisa_pagu')
+                  .eq('periode_id', periodData.id)
+                  .in('program_id', programIds);
+              
+              if (paguData) {
+                  setPaguProgramList(paguData);
+              }
+          }
         }
       } catch (err) {
         console.error("Gagal memuat program referensi:", err);
@@ -1926,6 +1947,37 @@ function BuatPengajuanContent() {
             </button>
           </div>
         </div>
+
+        {/* Dynamic Pagu Information Bar */}
+        {(() => {
+            const selectedPrograms = Array.from(new Set(rows.map(r => r.program).filter(Boolean)));
+            if (selectedPrograms.length === 0) return null;
+
+            return (
+                <div className="px-5 py-3 border-b border-emerald-100 bg-emerald-50/50">
+                    <p className="text-[9px] font-black uppercase text-emerald-800 tracking-widest mb-2 flex items-center gap-1.5"><BookOpen className="w-3 h-3" /> Informasi Pagu Anggaran Program Terpilih</p>
+                    <div className="flex flex-wrap gap-3">
+                        {selectedPrograms.map(progName => {
+                            const progId = programIdMap[progName];
+                            const pagu = paguProgramList.find(p => p.program_id === progId);
+                            
+                            return (
+                                <div key={progName} className="bg-white px-3 py-2 rounded-xl border border-emerald-200/60 shadow-sm flex items-center gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-slate-700 tracking-wider truncate max-w-[200px]" title={progName}>{progName}</p>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <p className="text-[9px] font-bold text-slate-500">Pagu Aktif: <span className="text-emerald-600 font-black">Rp {pagu?.nominal_pagu ? pagu.nominal_pagu.toLocaleString('id-ID') : '0'}</span></p>
+                                            <div className="w-px h-3 bg-slate-200"></div>
+                                            <p className="text-[9px] font-bold text-slate-500">Sisa: <span className="text-amber-600 font-black">Rp {pagu?.sisa_pagu !== undefined ? pagu.sisa_pagu.toLocaleString('id-ID') : (pagu?.nominal_pagu ? pagu.nominal_pagu.toLocaleString('id-ID') : '0')}</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )
+        })()}
 
         <div className="overflow-x-auto">
             {/* --- Mode Reguler: Tabel RKA --- */}
