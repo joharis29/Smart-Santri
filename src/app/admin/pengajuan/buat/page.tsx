@@ -2194,8 +2194,8 @@ function BuatPengajuanContent() {
             <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5"><Banknote className="w-3.5 h-3.5 text-amber-500" /> Ringkasan Alokasi Sumber Dana</h3>
             {(() => {
                 const alokasiSummary = rows.reduce((acc, row) => {
-                    if (row.alokasi && row.alokasi.length > 0) {
-                        row.alokasi.forEach(split => {
+                    if (row.details?.fundingSplits && row.details.fundingSplits.length > 0) {
+                        row.details.fundingSplits.forEach(split => {
                             if (!acc[split.source]) acc[split.source] = 0;
                             acc[split.source] += Number(split.nominal) || 0;
                         });
