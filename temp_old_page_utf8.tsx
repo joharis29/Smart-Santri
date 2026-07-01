@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react'
 import { createPortal } from 'react-dom'
@@ -40,8 +40,7 @@ import {
   FileEdit,
   Lock,
   Bot,
-  Loader2,
-  BookOpen
+  Loader2
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
@@ -453,60 +452,26 @@ function BuatPengajuanContent() {
       
       try {
         const supabase = createClient();
-        
-        // 1. Fetch active period
-        const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
-        if (periodData) {
-          setPeriodeAktif(periodData);
-          if (!editId) {
-            setTahunAjaran(periodData.tahun_ajaran);
-          }
-        }
-
-        // 2. Fetch programs
         const { data, error } = await supabase
           .from('program_kegiatan')
-          .select('id, program, nama_kegiatan')
+          .select('program, nama_kegiatan')
           .eq('unit', unit);
           
         if (error) throw error;
         
         if (data) {
-          let paguData: any[] = [];
-          if (periodData) {
-              const { data: pData } = await supabase
-                  .from('pagu_program')
-                  .select('*')
-                  .eq('periode_id', periodData.id);
-              if (pData) paguData = pData;
-          }
-
           const programSet = new Set<string>();
           const idMap: Record<string, string> = {};
-
           data.forEach(item => {
             let key = item.program;
             if (item.program && item.nama_kegiatan && item.nama_kegiatan !== '-') {
               key = `${item.program} - ${item.nama_kegiatan}`;
             }
             programSet.add(key);
-            
-            if (!idMap[key]) {
-                idMap[key] = item.id;
-            } else {
-                // Smart fallback: If exact duplicates exist (same Program & Kegiatan),
-                // prioritize the ID that actually has a Pagu assigned.
-                const existingHasPagu = paguData.find(p => p.program_id === idMap[key] && Number(p.nominal_pagu) > 0);
-                const currentHasPagu = paguData.find(p => p.program_id === item.id && Number(p.nominal_pagu) > 0);
-                if (!existingHasPagu && currentHasPagu) {
-                    idMap[key] = item.id;
-                }
-            }
+            idMap[key] = item.id;
           });
-          
           setAvailablePrograms(Array.from(programSet).sort((a, b) => a.localeCompare(b)));
           setProgramIdMap(idMap);
-          setPaguProgramList(paguData);
         }
       } catch (err) {
         console.error("Gagal memuat program referensi:", err);
@@ -732,6 +697,30 @@ function BuatPengajuanContent() {
     fetchCustomMetadata();
   }, [unit]);
 
+  useEffect(() => {
+    const fetchPeriodeAndPagu = async () => {
+      if (!unit || isGuest) return;
+      try {
+        const supabase = createClient();
+        const { data: periodData } = await supabase.from('periode_anggaran').select('*').eq('status', 'AKTIF').maybeSingle();
+        if (periodData) {
+          setPeriodeAktif(periodData);
+          if (!editId) {
+            setTahunAjaran(periodData.tahun_ajaran);
+          }
+          const { data: paguData } = await supabase.from('pagu_program').select('*').eq('periode_id', periodData.id);
+          if (paguData) {
+            setPaguProgramList(paguData);
+          } else {
+            setPaguProgramList([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching pagu:", err);
+      }
+    };
+    fetchPeriodeAndPagu();
+  }, [unit, editId, isGuest]);
 
   // Remove problematic useEffect that resets bidang prematurely
 
@@ -1284,7 +1273,7 @@ function BuatPengajuanContent() {
             if (item.name || item.total > 0) {
               tableData.push([
                 '', // No
-                `   • ${item.name || '(Tanpa Nama)'}`, // Indented
+                `   ΓÇó ${item.name || '(Tanpa Nama)'}`, // Indented
                 '', // Jumlah Kegiatan (empty for sub-items)
                 item.unit || '-',
                 item.price,
@@ -1457,9 +1446,9 @@ function BuatPengajuanContent() {
 
             newRkaRows.push(mainRow)
             currentParent = mainRow
-          } else if (desc.includes('•') && currentParent) {
+          } else if (desc.includes('ΓÇó') && currentParent) {
             // It's a Detail Item
-            const itemName = desc.replace(/•/g, '').trim()
+            const itemName = desc.replace(/ΓÇó/g, '').trim()
             currentParent.details.items.push({
               name: itemName,
               unit: String(row[4] || ''),
@@ -1602,7 +1591,7 @@ function BuatPengajuanContent() {
             if (item.name || item.total > 0) {
               const subRow = worksheet.addRow([
                 '',
-                `   • ${item.name || '(Tanpa Nama)'}`,
+                `   ΓÇó ${item.name || '(Tanpa Nama)'}`,
                 '', // Operasional
                 '', // Jml Kegiatan
                 item.unit || '-',
@@ -1938,37 +1927,6 @@ function BuatPengajuanContent() {
           </div>
         </div>
 
-        {/* Dynamic Pagu Information Bar */}
-        {(() => {
-            const selectedPrograms = Array.from(new Set(rows.map(r => r.program).filter(Boolean)));
-            if (selectedPrograms.length === 0) return null;
-
-            return (
-                <div className="px-5 py-3 border-b border-emerald-100 bg-emerald-50/50">
-                    <p className="text-[9px] font-black uppercase text-emerald-800 tracking-widest mb-2 flex items-center gap-1.5"><BookOpen className="w-3 h-3" /> Informasi Pagu Anggaran Program Terpilih</p>
-                    <div className="flex flex-wrap gap-3">
-                        {selectedPrograms.map(progName => {
-                            const progId = programIdMap[progName];
-                            const pagu = paguProgramList.find(p => p.program_id === progId);
-                            
-                            return (
-                                <div key={progName} className="bg-white px-3 py-2 rounded-xl border border-emerald-200/60 shadow-sm flex items-center gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase text-slate-700 tracking-wider truncate max-w-[200px]" title={progName}>{progName}</p>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <p className="text-[9px] font-bold text-slate-500">Pagu Aktif: <span className="text-emerald-600 font-black">Rp {pagu?.nominal_pagu ? pagu.nominal_pagu.toLocaleString('id-ID') : '0'}</span></p>
-                                            <div className="w-px h-3 bg-slate-200"></div>
-                                            <p className="text-[9px] font-bold text-slate-500">Sisa: <span className="text-amber-600 font-black">Rp {pagu?.sisa_pagu !== undefined ? pagu.sisa_pagu.toLocaleString('id-ID') : (pagu?.nominal_pagu ? pagu.nominal_pagu.toLocaleString('id-ID') : '0')}</span></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )
-        })()}
-
         <div className="overflow-x-auto">
             {/* --- Mode Reguler: Tabel RKA --- */}
             <table className="w-full border-collapse">
@@ -2188,37 +2146,6 @@ function BuatPengajuanContent() {
                      ))}
                  </div>
              )}
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5"><Banknote className="w-3.5 h-3.5 text-amber-500" /> Ringkasan Alokasi Sumber Dana</h3>
-            {(() => {
-                const alokasiSummary = rows.reduce((acc, row) => {
-                    if (row.alokasi && row.alokasi.length > 0) {
-                        row.alokasi.forEach(split => {
-                            if (!acc[split.source]) acc[split.source] = 0;
-                            acc[split.source] += Number(split.nominal) || 0;
-                        });
-                    }
-                    return acc;
-                }, {} as Record<string, number>);
-
-                const sources = Object.entries(alokasiSummary);
-                if (sources.length === 0) {
-                    return <p className="text-[10px] font-bold text-slate-400 italic">Belum ada alokasi dana.</p>;
-                }
-
-                return (
-                    <div className="space-y-1.5">
-                        {sources.map(([source, amount]) => (
-                            <div key={source} className="flex justify-between items-center text-[10px]">
-                                <span className="font-extrabold text-slate-600">{source}</span>
-                                <span className="font-black text-slate-800">Rp {amount.toLocaleString('id-ID')}</span>
-                            </div>
-                        ))}
-                    </div>
-                );
-            })()}
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
@@ -2561,7 +2488,7 @@ function BuatPengajuanContent() {
 
       {/* Footer Branding */}
       <div className="text-center pt-8 border-t border-slate-100">
-        <p className="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Smart Santri Accounting RKA Grid • Universitas Tazkia</p>
+        <p className="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Smart Santri Accounting RKA Grid ΓÇó Universitas Tazkia</p>
       </div>
 
     </div>

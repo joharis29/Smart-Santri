@@ -1,0 +1,13 @@
+﻿diff --git a/src/app/admin/pengajuan/buat/page.tsx b/src/app/admin/pengajuan/buat/page.tsx
+index 2155f76..5b775a4 100644
+--- a/src/app/admin/pengajuan/buat/page.tsx
++++ b/src/app/admin/pengajuan/buat/page.tsx
+@@ -454,7 +454,7 @@ function BuatPengajuanContent() {
+         const supabase = createClient();
+         const { data, error } = await supabase
+           .from('program_kegiatan')
+-          .select('program, nama_kegiatan')
++          .select('id, program, nama_kegiatan')
+           .eq('unit', unit);
+           
+         if (error) throw error;
