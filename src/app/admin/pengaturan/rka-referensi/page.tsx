@@ -757,10 +757,12 @@ export default function RKAReferencePage() {
                     .select('id, unit, program, nama_kegiatan')
                     .in('unit', unitsInExcel);
                 
+                const normalizeStr = (s?: string) => (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+
                 const existingMap = new Map();
                 if (existingData) {
                     existingData.forEach(r => {
-                        const key = `${r.unit}-${(r.program || '').toLowerCase().trim()}-${(r.nama_kegiatan || '').toLowerCase().trim()}`;
+                        const key = `${normalizeStr(r.unit)}-${normalizeStr(r.program)}-${normalizeStr(r.nama_kegiatan)}`;
                         existingMap.set(key, r.id);
                     });
                 }
@@ -794,7 +796,7 @@ export default function RKAReferencePage() {
                     const idDatabase = row[12]?.toString().trim();
 
                     let programId = idDatabase;
-                    const duplicateKey = `${rowUnit}-${(payload.program || '').toLowerCase().trim()}-${(payload.nama_kegiatan || '').toLowerCase().trim()}`;
+                    const duplicateKey = `${normalizeStr(rowUnit)}-${normalizeStr(payload.program)}-${normalizeStr(payload.nama_kegiatan)}`;
 
                     if (idDatabase) {
                         const { error } = await supabase.from('program_kegiatan').update(payload).eq('id', idDatabase);
