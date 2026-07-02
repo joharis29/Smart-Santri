@@ -93,16 +93,59 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
         }
     };
 
-    const handleTutupBuku = async (id: string) => {
+    const handleTutupBuku = async (id: string, tahunAjaranLama: string) => {
         if (!confirm('PERHATIAN SANGAT PENTING: Tutup Buku akan mengunci seluruh pagu dan membuat laporan carryover. Tindakan ini tidak bisa dibatalkan secara sistem. YAKIN TUTUP BUKU?')) return;
         setIsProcessing(true);
         try {
-            // 1. Close period
+            // 1. Dapatkan user ID yang melakukan Tutup Buku
+            const { data: { user } } = await supabase.auth.getUser();
+            const userId = user?.id;
+
+            // 2. Hitung Tahun Ajaran Berikutnya (Tujuan Carryover)
+            // Contoh: "2025/2026" -> "2026/2027"
+            let tahunAjaranBaru = 'N/A';
+            if (tahunAjaranLama && tahunAjaranLama.includes('/')) {
+                const parts = tahunAjaranLama.split('/');
+                if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+                    tahunAjaranBaru = `${Number(parts[0]) + 1}/${Number(parts[1]) + 1}`;
+                }
+            }
+
+            // 3. Ambil Snapshot Seluruh Saldo Dompet (Yang Tidak Sama Dengan 0)
+            const { data: dompetData, error: dompetErr } = await supabase
+                .from('dompet_dana')
+                .select('*')
+                .neq('saldo', 0); // Ambil saldo sisa dan saldo defisit (minus)
+
+            if (dompetErr) throw dompetErr;
+
+            // 4. Siapkan Data Saldo Awal untuk di-insert
+            if (dompetData && dompetData.length > 0) {
+                const saldoAwalPayload = dompetData.map((d: any) => ({
+                    tahun_ajaran_tujuan: tahunAjaranBaru,
+                    unit_id: d.unit_id,
+                    jenjang_id: d.jenjang_id,
+                    kategori: d.kategori,
+                    nominal: d.saldo,
+                    disahkan_oleh: userId
+                }));
+
+                // 5. Insert ke tabel saldo_awal_periode
+                const { error: insertErr } = await supabase
+                    .from('saldo_awal_periode')
+                    .insert(saldoAwalPayload);
+
+                if (insertErr) {
+                    console.error("Gagal menyimpan snapshot saldo awal:", insertErr);
+                    // Lanjut saja ke penutupan agar siklus tidak tersendat, tapi beri warning
+                    alert('Peringatan: Gagal mem-backup saldo kas ke periode baru. Silakan hubungi teknisi.');
+                }
+            }
+
+            // 6. Tutup Periode (Lock)
             await supabase.from('periode_anggaran').update({ status: 'DITUTUP', tanggal_selesai: new Date().toISOString() }).eq('id', id);
             
-            // 2. Here we would ideally calculate dompet_dana and store in saldo_carryover.
-            // For now, closing the period is the primary step.
-            alert('Tutup Buku berhasil. Periode telah dikunci.');
+            alert(`Tutup Buku berhasil! Saldo kas telah diteruskan (carryover) ke tahun ajaran ${tahunAjaranBaru}. Periode ini telah dikunci.`);
             fetchData();
         } catch (err) {
             console.error(err);
@@ -198,7 +241,7 @@ export function SiklusPeriodeTab({ isCentral }: { isCentral: boolean }) {
                                             </button>
                                         )}
                                         {item.status === 'AKTIF' && (
-                                            <button onClick={() => handleTutupBuku(item.id)} disabled={isProcessing} className="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1 rounded-md text-[8px] font-black flex items-center gap-1 hover:bg-rose-100 uppercase disabled:opacity-50">
+                                            <button onClick={() => handleTutupBuku(item.id, item.tahun_ajaran)} disabled={isProcessing} className="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1 rounded-md text-[8px] font-black flex items-center gap-1 hover:bg-rose-100 uppercase disabled:opacity-50">
                                                 <Lock className="w-3 h-3" /> Tutup Buku
                                             </button>
                                         )}

@@ -303,7 +303,40 @@ export default function BukuBesarPage() {
             //    dan transaksi_pengeluaran (Pusat) oleh sistem saat RKA disetujui (di admin/page.tsx).
             //    Sehingga tidak perlu lagi di-query secara dinamis dari tabel dokumen_pengajuan untuk menghindari pencatatan ganda.
 
-            // 4. Sort chronologically by date ascending
+            // 4. Saldo Awal (Carryover dari Tutup Buku)
+            const { data: saldoAwal, error: saldoErr } = await supabase.from('saldo_awal_periode').select('*, unit:unit_id(name)');
+            if (saldoErr) console.error("Error fetching saldo awal:", saldoErr);
+
+            saldoAwal?.forEach((item: any) => {
+                let coaName = item.kategori || 'Dana Pesantren/Yayasan';
+                if (coaName === 'SPP' || coaName === 'Dana SPP') {
+                    coaName = 'DANA SPP';
+                }
+                const unitName = item.unit?.name || 'Pusat (Yayasan)';
+                
+                // Jika sedang mem-filter unit dan unit tidak cocok, lewati
+                if (filterUnit && unitName !== filterUnit) return;
+
+                // Tentukan tipe jurnal berdasarkan nilai nominal (positif = debet/sisa, negatif = kredit/defisit)
+                const isPositive = Number(item.nominal) >= 0;
+
+                entries.push({
+                    id: item.id.substring(0, 8).toUpperCase(),
+                    tanggal: item.tanggal_pengesahan,
+                    keterangan: 'SALDO AWAL CARRYOVER DARI TAHUN SEBELUMNYA',
+                    unit: unitName,
+                    coa: coaName,
+                    tipe: isPositive ? 'DEBET' : 'KREDIT',
+                    nominal: Math.abs(Number(item.nominal)),
+                    saldo: 0,
+                    refId: item.id.substring(0, 8).toUpperCase(),
+                    metode: 'Sistem / Otomatis',
+                    bidang: 'Saldo Awal',
+                    tahunAjaran: item.tahun_ajaran_tujuan
+                });
+            });
+
+            // 5. Sort chronologically by date ascending
             entries.sort((a, b) => {
                 const dateA = new Date(a.tanggal).getTime();
                 const dateB = new Date(b.tanggal).getTime();
