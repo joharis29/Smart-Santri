@@ -760,7 +760,7 @@ export default function RKAReferencePage() {
                 const existingMap = new Map();
                 if (existingData) {
                     existingData.forEach(r => {
-                        const key = `${r.unit}-${r.program?.toLowerCase().trim()}-${r.nama_kegiatan?.toLowerCase().trim()}`;
+                        const key = `${r.unit}-${(r.program || '').toLowerCase().trim()}-${(r.nama_kegiatan || '').toLowerCase().trim()}`;
                         existingMap.set(key, r.id);
                     });
                 }
@@ -794,7 +794,7 @@ export default function RKAReferencePage() {
                     const idDatabase = row[12]?.toString().trim();
 
                     let programId = idDatabase;
-                    const duplicateKey = `${rowUnit}-${payload.program.toLowerCase().trim()}-${payload.nama_kegiatan.toLowerCase().trim()}`;
+                    const duplicateKey = `${rowUnit}-${(payload.program || '').toLowerCase().trim()}-${(payload.nama_kegiatan || '').toLowerCase().trim()}`;
 
                     if (idDatabase) {
                         const { error } = await supabase.from('program_kegiatan').update(payload).eq('id', idDatabase);
@@ -814,23 +814,29 @@ export default function RKAReferencePage() {
 
                     // Handle Pagu
                     if (targetPeriode && programId) {
-                        const { data: existingPagu } = await supabase.from('pagu_program')
+                        const { data: existingPagu, error: existingPaguErr } = await supabase.from('pagu_program')
                             .select('id').eq('periode_id', targetPeriode).eq('program_id', programId).maybeSingle();
                             
+                        if (existingPaguErr && existingPaguErr.code !== 'PGRST116') {
+                            console.error("Fetch existing pagu error:", existingPaguErr);
+                        }
+                            
                         if (existingPagu) {
-                            await supabase.from('pagu_program').update({ nominal_pagu: paguNominal }).eq('id', existingPagu.id);
+                            const { error: updatePaguErr } = await supabase.from('pagu_program').update({ nominal_pagu: paguNominal }).eq('id', existingPagu.id);
+                            if (updatePaguErr) { console.error("Update pagu error:", updatePaguErr); errorCount++; }
                         } else {
-                            await supabase.from('pagu_program').insert({ 
+                            const { error: insertPaguErr } = await supabase.from('pagu_program').insert({ 
                                 periode_id: targetPeriode, 
                                 program_id: programId, 
                                 nominal_pagu: paguNominal 
                             });
+                            if (insertPaguErr) { console.error("Insert pagu error:", insertPaguErr); errorCount++; }
                         }
                     }
                     successCount++;
                 }
 
-                alert(`Impor selesai! Berhasil memproses ${successCount} baris. ${errorCount > 0 ? `Gagal: ${errorCount} baris (termasuk validasi unit/error DB).` : ''}`);
+                alert(`Impor selesai! Berhasil memproses ${successCount} baris. ${errorCount > 0 ? `Gagal: ${errorCount} baris (termasuk duplikat/error).` : ''}`);
                 fetchData(filterUnit !== '' ? filterUnit : undefined, filterPeriodeId !== '' ? filterPeriodeId : undefined);
 
             } catch (err) {
